@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2026-07-27 14:04:33
+-- 生成日期： 2026-07-27 22:48:22
 -- 服务器版本： 5.7.44-log
 -- PHP 版本： 8.2.28
 
@@ -543,70 +543,6 @@ CREATE TABLE `honeypot_logs` (
 -- --------------------------------------------------------
 
 --
--- 表的结构 `ifdian_auto_replies`
---
-
-CREATE TABLE `ifdian_auto_replies` (
-  `id` int(11) NOT NULL,
-  `plan_id` varchar(64) NOT NULL COMMENT '方案ID',
-  `reply_content` text COMMENT '自动回复内容',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='爱发电自动回复配置';
-
--- --------------------------------------------------------
-
---
--- 表的结构 `ifdian_manual_sponsors`
---
-
-CREATE TABLE `ifdian_manual_sponsors` (
-  `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL COMMENT '名称',
-  `qq` varchar(20) DEFAULT '' COMMENT 'QQ号',
-  `avatar` varchar(255) DEFAULT '' COMMENT '头像URL',
-  `description` varchar(255) DEFAULT '' COMMENT '描述',
-  `link` varchar(255) DEFAULT '' COMMENT '链接',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序(小到大)',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='手动鸣谢列表';
-
--- --------------------------------------------------------
-
---
--- 表的结构 `ifdian_plan_configs`
---
-
-CREATE TABLE `ifdian_plan_configs` (
-  `id` int(11) NOT NULL,
-  `plan_id` varchar(64) NOT NULL COMMENT '方案ID',
-  `is_show_in_thanks` tinyint(1) DEFAULT '1' COMMENT '是否在鸣谢页展示 (0:否, 1:是)',
-  `show_duration_type` tinyint(1) DEFAULT '0' COMMENT '展示时长类型 (0:永久, 1:按月, 2:按年, 3:直到过期, 4:按天)',
-  `show_duration_value` int(11) DEFAULT '0' COMMENT '时长数值',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='爱发电方案配置';
-
--- --------------------------------------------------------
-
---
--- 表的结构 `ifdian_sponsors`
---
-
-CREATE TABLE `ifdian_sponsors` (
-  `user_id` varchar(64) NOT NULL COMMENT '爱发电用户ID',
-  `name` varchar(255) DEFAULT '' COMMENT '昵称',
-  `avatar` varchar(500) DEFAULT '' COMMENT '头像URL',
-  `all_sum_amount` decimal(10,2) DEFAULT '0.00' COMMENT '累计赞助金额',
-  `last_pay_time` int(11) DEFAULT '0' COMMENT '最后支付时间戳',
-  `current_plan_id` varchar(64) DEFAULT '' COMMENT '当前方案ID',
-  `current_plan_expire_time` int(11) DEFAULT '0' COMMENT '当前方案过期时间',
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='爱发电赞助者缓存';
-
--- --------------------------------------------------------
-
---
 -- 替换视图以便查看 `ip_visit_summary`
 -- （参见下面的实际视图）
 --
@@ -1017,17 +953,6 @@ CREATE TABLE `website_config` (
   `epay_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '易支付接口地址',
   `epay_pid` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '易支付商户ID',
   `epay_key` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '易支付商户密钥',
-  `ifdian_user_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '爱发电 User ID',
-  `ifdian_api_token` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '爱发电 API Token',
-  `ifdian_cookie` text COLLATE utf8mb4_unicode_ci COMMENT '爱发电 Cookie',
-  `ifdian_public_key` text COLLATE utf8mb4_unicode_ci COMMENT '爱发电公钥',
-  `ifdian_show_sponsor` tinyint(1) DEFAULT '0' COMMENT '在博客页显示赞助',
-  `ifdian_username` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '爱发电用户名',
-  `ifdian_permanent_threshold` decimal(10,2) DEFAULT '0.00' COMMENT '永久显示金额阈值',
-  `ifdian_permanent_enable` tinyint(1) DEFAULT '0' COMMENT '启用永久显示阈值',
-  `ifdian_show_tab_sponsor` tinyint(1) DEFAULT '1' COMMENT '显示赞助支持分页',
-  `ifdian_show_tab_manual` tinyint(1) DEFAULT '1' COMMENT '显示特别鸣谢分页',
-  `ifdian_show_tab_history` tinyint(1) DEFAULT '1' COMMENT '显示赞助历史分页',
   `max_devices` int(11) DEFAULT '2' COMMENT '单用户最大同时在线设备数',
   `remember_duration` int(11) DEFAULT '30' COMMENT '记住我有效期（天）',
   `image_bed_enabled` tinyint(1) DEFAULT '0' COMMENT '是否启用图床',
@@ -1047,8 +972,8 @@ CREATE TABLE `website_config` (
 -- 转存表中的数据 `website_config`
 --
 
-INSERT INTO `website_config` (`id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`, `website_announcement`, `website_announcement_date`, `website_announcement_popup`, `website_announcement_enable`, `website_description`, `description`, `website_detail`, `robot_description`, `logo`, `favicon`, `home_bg_image`, `home_bg_video`, `use_bing_bg`, `contact_email`, `contact_qq`, `social_wechat`, `social_github`, `music_enabled`, `music_playlist_id`, `music_song_id`, `music_position`, `music_embed`, `music_theme`, `music_default_minimized`, `music_lyric`, `music_autoplay`, `music_auto_pause`, `email_mode`, `updated_at`, `website_start_time`, `bing_api`, `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`, `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`, `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`, `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`, `newyear_enable`, `newyear_message`, `newyear_video`, `newyear_start_time`, `newyear_end_time`, `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`, `ifdian_user_id`, `ifdian_api_token`, `ifdian_cookie`, `ifdian_public_key`, `ifdian_show_sponsor`, `ifdian_username`, `ifdian_permanent_threshold`, `ifdian_permanent_enable`, `ifdian_show_tab_sponsor`, `ifdian_show_tab_manual`, `ifdian_show_tab_history`, `max_devices`, `remember_duration`, `image_bed_enabled`, `image_bed_display_enabled`, `image_bed_api_url`, `image_bed_api_key`, `ai_feature_enabled`, `ai_max_input_chars`, `ai_max_output_tokens`, `ai_temperature`, `ai_summary_section_title`, `terms_content`, `privacy_content`) VALUES
-(1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1, '', NULL, 0, 0, '', '', '', '', '', '/assets/images/favicon.png', '', '', 1, '', '', '', '', 1, '', '', 'bottom-right', 0, 'auto', 1, 1, 0, 1, 'production', '2026-07-27 06:04:12', '2025-05-20 05:20:00', 'https://wallpaper.lygalaxy.cn/api/random.php?apikey=bk_26c54a517de0db0403836a53389c27375679a70e5a4a0e03e20f06591c9a5', '', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls', '', '43.129.255.54', 1785128559, 'qq.com', 0, '乙巳辞旧岁，丙午迎新春！愿你龙马精神，岁岁皆安。🎆🎆🎆', '/uploads/videos/20260216_140955_6992b4b3bdba2.mp4', NULL, '2026-04-08 21:28:00', 'Powered by LyGalaxy', '', '', '', '', '', '', '', '-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwwdaCg1Bt+UKZKs0R54y\r\nlYnuANma49IpgoOwNmk3a0rhg/PQuhUJ0EOZSowIC44l0K3+fqGns3Ygi4AfmEfS\r\n4EKbdk1ahSxu7Zkp2rHMt+R9GarQFQkwSS/5x1dYiHNVMiR8oIXDgjmvxuNes2Cr\r\n8fw9dEF0xNBKdkKgG2qAawcN1nZrdyaKWtPVT9m2Hl0ddOO9thZmVLFOb9NVzgYf\r\njEgI+KWX6aY19Ka/ghv/L4t1IXmz9pctablN5S0CRWpJW3Cn0k6zSXgjVdKm4uN7\r\njRlgSRaf/Ind46vMCm3N2sgwxu/g3bnooW+db0iLo13zzuvyn727Q3UDQ0MmZcEW\r\nMQIDAQAB\r\n-----END PUBLIC KEY-----', 1, 'lygalaxy', 188.00, 1, 1, 1, 0, 3, 20, 0, 0, '', '', 1, 12000, 512, 0.30, 'AI文章摘要', '1. 接受条款\r\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\r\n\r\n2. 网站描述\r\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\r\n\r\n3. 使用许可\r\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\r\n- 不得将网站用于任何非法或未经授权的目的\r\n- 不得干扰或破坏网站的正常运行\r\n- 不得试图获取未经授权的访问权限\r\n- 不得复制或重复使用网站内容，除非获得明确许可\r\n\r\n4. 内容所有权\r\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\r\n\r\n5. 用户责任\r\n作为用户，您同意：\r\n- 提供准确和真实的信息\r\n- 不发布虚假、误导性或违法内容\r\n- 尊重他人的知识产权和隐私权\r\n- 不从事任何可能损害网站声誉的活动\r\n\r\n6. 免责声明\r\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\r\n- 网站服务的连续性或无中断\r\n- 网站内容的准确性或完整性\r\n- 网站免受病毒或其他恶意组件的侵害\r\n- 因使用网站而导致的任何损失或损害\r\n\r\n7. 服务限制\r\n我们保留以下权利：\r\n- 随时修改或终止网站服务\r\n- 拒绝向任何人提供服务\r\n- 删除违反服务条款的内容\r\n- 暂停或终止违规用户的访问权限\r\n\r\n8. 第三方链接\r\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\r\n\r\n9. 争议解决\r\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\r\n\r\n10. 条款修改\r\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\r\n\r\n11. 联系我们\r\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日', '1. 信息收集\r\n我们可能收集以下类型的信息：\r\n- 您通过联系表单提供的姓名、电子邮件地址等信息\r\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\r\n- 通过Cookie收集的使用偏好信息\r\n\r\n2. 信息使用\r\n收集的信息可能用于：\r\n- 回复您的咨询和请求\r\n- 改善网站内容和用户体验\r\n- 发送重要的通知和更新\r\n- 网站分析和安全监控\r\n\r\n3. 信息共享\r\n我们不会向第三方出售、交易或转让您的个人信息，除非：\r\n- 获得您的明确同意\r\n- 法律要求或法律程序需要\r\n- 保护网站、用户或公众的权利、财产或安全\r\n\r\n4. 数据安全\r\n我们采取适当的安全措施来保护您的个人信息，包括：\r\n- 使用安全的服务器和加密技术\r\n- 限制对个人信息的访问权限\r\n- 定期更新安全协议\r\n\r\n5. Cookie使用\r\n本网站可能使用Cookie来：\r\n- 记住您的偏好设置\r\n- 分析网站流量和使用情况\r\n- 提供个性化的内容\r\n您可以通过浏览器设置控制Cookie的使用。\r\n\r\n6. 您的权利\r\n您有权：\r\n- 访问您的个人信息\r\n- 更正不准确的信息\r\n- 删除您的个人信息\r\n- 反对处理您的信息\r\n\r\n7. 政策更新\r\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\r\n\r\n8. 联系我们\r\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日');
+INSERT INTO `website_config` (`id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`, `website_announcement`, `website_announcement_date`, `website_announcement_popup`, `website_announcement_enable`, `website_description`, `description`, `website_detail`, `robot_description`, `logo`, `favicon`, `home_bg_image`, `home_bg_video`, `use_bing_bg`, `contact_email`, `contact_qq`, `social_wechat`, `social_github`, `music_enabled`, `music_playlist_id`, `music_song_id`, `music_position`, `music_embed`, `music_theme`, `music_default_minimized`, `music_lyric`, `music_autoplay`, `music_auto_pause`, `email_mode`, `updated_at`, `website_start_time`, `bing_api`, `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`, `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`, `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`, `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`, `newyear_enable`, `newyear_message`, `newyear_video`, `newyear_start_time`, `newyear_end_time`, `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`, `max_devices`, `remember_duration`, `image_bed_enabled`, `image_bed_display_enabled`, `image_bed_api_url`, `image_bed_api_key`, `ai_feature_enabled`, `ai_max_input_chars`, `ai_max_output_tokens`, `ai_temperature`, `ai_summary_section_title`, `terms_content`, `privacy_content`) VALUES
+(1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1, '', NULL, 0, 0, '', '', '', '', '', '/assets/images/favicon.png', '', '', 1, '', '', '', '', 1, '', '', 'bottom-right', 0, 'auto', 1, 1, 0, 1, 'production', '2026-07-27 06:04:12', '2025-05-20 05:20:00', 'https://wallpaper.lygalaxy.cn/api/random.php?apikey=bk_26c54a517de0db0403836a53389c27375679a70e5a4a0e03e20f06591c9a5', '', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls', '', '43.129.255.54', 1785128559, 'qq.com', 0, '乙巳辞旧岁，丙午迎新春！愿你龙马精神，岁岁皆安。🎆🎆🎆', '/uploads/videos/20260216_140955_6992b4b3bdba2.mp4', NULL, '2026-04-08 21:28:00', 'Powered by LyGalaxy', '', '', '', '', 3, 20, 0, 0, '', '', 1, 12000, 512, 0.30, 'AI文章摘要', '1. 接受条款\r\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\r\n\r\n2. 网站描述\r\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\r\n\r\n3. 使用许可\r\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\r\n- 不得将网站用于任何非法或未经授权的目的\r\n- 不得干扰或破坏网站的正常运行\r\n- 不得试图获取未经授权的访问权限\r\n- 不得复制或重复使用网站内容，除非获得明确许可\r\n\r\n4. 内容所有权\r\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\r\n\r\n5. 用户责任\r\n作为用户，您同意：\r\n- 提供准确和真实的信息\r\n- 不发布虚假、误导性或违法内容\r\n- 尊重他人的知识产权和隐私权\r\n- 不从事任何可能损害网站声誉的活动\r\n\r\n6. 免责声明\r\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\r\n- 网站服务的连续性或无中断\r\n- 网站内容的准确性或完整性\r\n- 网站免受病毒或其他恶意组件的侵害\r\n- 因使用网站而导致的任何损失或损害\r\n\r\n7. 服务限制\r\n我们保留以下权利：\r\n- 随时修改或终止网站服务\r\n- 拒绝向任何人提供服务\r\n- 删除违反服务条款的内容\r\n- 暂停或终止违规用户的访问权限\r\n\r\n8. 第三方链接\r\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\r\n\r\n9. 争议解决\r\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\r\n\r\n10. 条款修改\r\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\r\n\r\n11. 联系我们\r\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日', '1. 信息收集\r\n我们可能收集以下类型的信息：\r\n- 您通过联系表单提供的姓名、电子邮件地址等信息\r\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\r\n- 通过Cookie收集的使用偏好信息\r\n\r\n2. 信息使用\r\n收集的信息可能用于：\r\n- 回复您的咨询和请求\r\n- 改善网站内容和用户体验\r\n- 发送重要的通知和更新\r\n- 网站分析和安全监控\r\n\r\n3. 信息共享\r\n我们不会向第三方出售、交易或转让您的个人信息，除非：\r\n- 获得您的明确同意\r\n- 法律要求或法律程序需要\r\n- 保护网站、用户或公众的权利、财产或安全\r\n\r\n4. 数据安全\r\n我们采取适当的安全措施来保护您的个人信息，包括：\r\n- 使用安全的服务器和加密技术\r\n- 限制对个人信息的访问权限\r\n- 定期更新安全协议\r\n\r\n5. Cookie使用\r\n本网站可能使用Cookie来：\r\n- 记住您的偏好设置\r\n- 分析网站流量和使用情况\r\n- 提供个性化的内容\r\n您可以通过浏览器设置控制Cookie的使用。\r\n\r\n6. 您的权利\r\n您有权：\r\n- 访问您的个人信息\r\n- 更正不准确的信息\r\n- 删除您的个人信息\r\n- 反对处理您的信息\r\n\r\n7. 政策更新\r\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\r\n\r\n8. 联系我们\r\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日');
 
 --
 -- 转储表的索引
@@ -1253,34 +1178,6 @@ ALTER TABLE `honeypot_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ip` (`ip_address`),
   ADD KEY `idx_time` (`triggered_at`);
-
---
--- 表的索引 `ifdian_auto_replies`
---
-ALTER TABLE `ifdian_auto_replies`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `idx_plan_id` (`plan_id`);
-
---
--- 表的索引 `ifdian_manual_sponsors`
---
-ALTER TABLE `ifdian_manual_sponsors`
-  ADD PRIMARY KEY (`id`);
-
---
--- 表的索引 `ifdian_plan_configs`
---
-ALTER TABLE `ifdian_plan_configs`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `idx_plan_id` (`plan_id`);
-
---
--- 表的索引 `ifdian_sponsors`
---
-ALTER TABLE `ifdian_sponsors`
-  ADD PRIMARY KEY (`user_id`),
-  ADD KEY `idx_amount` (`all_sum_amount`),
-  ADD KEY `idx_last_pay` (`last_pay_time`);
 
 --
 -- 表的索引 `ip_whitelist`
@@ -1560,24 +1457,6 @@ ALTER TABLE `home_links`
 -- 使用表AUTO_INCREMENT `honeypot_logs`
 --
 ALTER TABLE `honeypot_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- 使用表AUTO_INCREMENT `ifdian_auto_replies`
---
-ALTER TABLE `ifdian_auto_replies`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- 使用表AUTO_INCREMENT `ifdian_manual_sponsors`
---
-ALTER TABLE `ifdian_manual_sponsors`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- 使用表AUTO_INCREMENT `ifdian_plan_configs`
---
-ALTER TABLE `ifdian_plan_configs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --

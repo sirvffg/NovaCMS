@@ -1319,10 +1319,6 @@ if (isset($_GET['id'])) {
         </nav>
         
         <div class="container my-5 main-content">
-            <!-- 爱发电赞助栏 -->
-            <?php if (!empty($config['ifdian_show_sponsor']) && !empty($config['ifdian_username'])): ?>
-            <iframe src="/vendor/plugin/ifdian_donate.html" width="100%" height="80" frameborder="0" scrolling="no" style="border: none; display: block; margin-bottom: 1rem;"></iframe>
-            <?php endif; ?>
 
             <article class="blog-post" itemscope itemtype="http://schema.org/BlogPosting">
                 <meta itemprop="mainEntityOfPage" content="<?= (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/blog.php?id=' . $post['id'] ?>">

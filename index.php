@@ -338,13 +338,7 @@ $imageBedEnabled = !empty($config['image_bed_display_enabled']) && $config['imag
                             <i class="bi bi-chat-text me-1"></i>留言板
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/vendor/thanks.php">
-                            🎁 <span class="special-thanks-gradient">特别鸣谢</span>
-                        </a>
-                    </li>
 
-                    
                     <!-- 主题切换开关 (只在桌面端显示) -->
                     <li class="nav-item d-none d-lg-flex align-items-center">
                         <div class="theme-switch-wrapper ms-2">

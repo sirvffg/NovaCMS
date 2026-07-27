@@ -74,13 +74,6 @@
                         <i class="bi bi-shield-lock me-1"></i>隐私声明
                     </a>
                     <?php endif; ?>
-
-                    <!-- 爱发电赞助 -->
-                    <?php if (!empty($config['ifdian_username'])): ?>
-                    <a href="https://ifdian.net/a/<?= e($config['ifdian_username']) ?>" target="_blank" title="捐助此网站❤️" class="text-nowrap d-block d-md-inline" style="color: red !important;">
-                    <i class="bi bi-rss me-1"></i>捐助此网站❤️
-                    </a>
-                    <?php endif; ?>
                     
                 </div>
 

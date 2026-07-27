@@ -37,7 +37,6 @@ Nova_Backend_Menu::add_menu('QQ群管理',   'qq_groups',   '/admin/qq_groups.ph
 
 // 其他设置（含子菜单）
 Nova_Backend_Menu::add_menu('其他设置',   'settings',    '',                           '其', 130);
-Nova_Backend_Menu::add_submenu('settings', '赞助管理',   'ifdian',    '/admin/ifdian.php',      10);
 Nova_Backend_Menu::add_submenu('settings', '一言管理',   'hitokoto',  '/admin/hitokoto.php',    20);
 Nova_Backend_Menu::add_submenu('settings', '监控管理',   'monitors',  '/admin/monitors.php',    30);
 Nova_Backend_Menu::add_submenu('settings', '文件管理',   'files',     '/admin/files.php',       40);
