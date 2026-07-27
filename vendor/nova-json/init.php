@@ -257,7 +257,6 @@ $route_files = [
     // 站点路由
     'statuses/settings.php',  // 站点设置信息
     'statuses/shuoshuo.php',  // 说说
-    'statuses/monitor.php',   // 服务监控
     'statuses/guestbook.php', // 留言板
     'statuses/terms.php',     // 协议与政策
     'public/proxy.php',       // 代理请求（公网 + 内部）

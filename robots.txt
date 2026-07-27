@@ -3,7 +3,6 @@ Allow: /blog.php
 Allow: /assets/
 Allow: /license/
 Allow: /index.php
-Allow: /vendor/monitor.php
 Allow: /vendor/friend-links.php
 Allow: /vendor/gallery.php
 Allow: /vendor/shuoshuo.php

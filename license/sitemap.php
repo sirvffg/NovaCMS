@@ -55,14 +55,6 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
     </url>
     <?php endforeach; ?>
 
-    <!-- 服务监控 -->
-    <url>
-        <loc><?= $baseUrl ?>/vendor/monitor.php</loc>
-        <lastmod><?= date('Y-m-d') ?></lastmod>
-        <changefreq>always</changefreq>
-        <priority>0.8</priority>
-    </url>
-
     <!-- 友情链接列表页 -->
     <url>
         <loc><?= $baseUrl ?>/vendor/friend-links.php</loc>

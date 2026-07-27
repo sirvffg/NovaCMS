@@ -733,19 +733,7 @@ CREATE TABLE `rate_limits` (
 
 -- --------------------------------------------------------
 
---
--- 表的结构 `server_monitors`
---
 
-CREATE TABLE `server_monitors` (
-  `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL COMMENT '显示名称',
-  `url` varchar(255) NOT NULL COMMENT '监控URL',
-  `location` varchar(10) DEFAULT 'CN' COMMENT '地区代码 CN,US,HK等',
-  `type` varchar(20) DEFAULT 'Web' COMMENT '类型 Web,API等',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -1220,12 +1208,6 @@ ALTER TABLE `rate_limits`
   ADD KEY `idx_blocked_until` (`blocked_until`);
 
 --
--- 表的索引 `server_monitors`
---
-ALTER TABLE `server_monitors`
-  ADD PRIMARY KEY (`id`);
-
---
 -- 表的索引 `shuoshuo`
 --
 ALTER TABLE `shuoshuo`
@@ -1476,11 +1458,6 @@ ALTER TABLE `photo_albums`
 ALTER TABLE `rate_limits`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `server_monitors`
---
-ALTER TABLE `server_monitors`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用表AUTO_INCREMENT `shuoshuo`

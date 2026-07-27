@@ -49,10 +49,6 @@
  *   POST   /v1/statuses/gallery/photos          上传照片
  *   PUT    /v1/statuses/gallery/photos/{id}     更新照片信息
  *   DELETE /v1/statuses/gallery/photos/{id}     删除照片
- *   GET    /v1/statuses/monitor                 服务监控
- *   POST   /v1/statuses/monitor                 添加监控项
- *   GET    /v1/statuses/monitor/{id}            单个监控详情
- *   DELETE /v1/statuses/monitor/{id}            删除监控项
  *   GET    /v1/statuses/guestbook               留言列表（含回复）
  *   POST   /v1/statuses/guestbook               提交留言或回复（公开）
  *   PUT    /v1/statuses/guestbook/{id}/reply    管理员回复留言
