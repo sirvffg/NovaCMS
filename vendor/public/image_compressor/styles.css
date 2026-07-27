@@ -1,0 +1,636 @@
+/* ==========================================================================
+   1. 全局初始化与变量定义 (极致纯净极简配色)
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-main: #ffffff;
+    --bg-sub: #f9f9f9;
+    --border-base: #e5e5e5;
+    --border-dark: #111111;
+    
+    --text-main: #111111;
+    --text-sub: #666666;
+    --text-muted: #999999;
+    
+    --delay: 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+body {
+    font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ==========================================================================
+   2. 头部区域 (无渐变纯净白描风格，去除切换按钮结构)
+   ========================================================================== */
+.header {
+    background: var(--bg-main);
+    border-bottom: 1px solid var(--border-base);
+    padding: 2rem;
+    text-align: center;
+}
+
+.header-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
+    margin-bottom: 0.25rem;
+}
+
+.logo-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.subtitle {
+    font-size: 0.875rem;
+    color: var(--text-sub);
+}
+
+/* ==========================================================================
+   3. 主体版面布局
+   ========================================================================== */
+.main {
+    flex: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    width: 100%;
+}
+
+/* ==========================================================================
+   4. 上传区域 (细虚线线框)
+   ========================================================================== */
+.upload-section {
+    margin-bottom: 3rem;
+}
+
+.upload-area {
+    background: var(--bg-main);
+    border: 1px dashed var(--border-base);
+    padding: 4rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--delay), background-color var(--delay);
+}
+
+.upload-area:hover, .upload-area.dragover {
+    border-color: var(--border-dark);
+    background-color: var(--bg-sub);
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.upload-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--text-main);
+}
+
+.upload-content h3 {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.upload-content p {
+    color: var(--text-muted);
+    font-size: 0.815rem;
+}
+
+.upload-btn {
+    background: var(--border-dark);
+    color: var(--bg-main);
+    border: none;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity var(--delay);
+}
+
+.upload-btn:hover {
+    opacity: 0.85;
+}
+
+/* ==========================================================================
+   5. 参数控制面板 (几何扁平化行结构)
+   ========================================================================== */
+.compression-controls {
+    border-top: 1px solid var(--border-base);
+    padding-top: 2rem;
+    margin-bottom: 3rem;
+}
+
+.controls-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.controls-header h3 {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.preset-buttons {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.preset-btn {
+    background: transparent;
+    border: 1px solid var(--border-base);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.815rem;
+    cursor: pointer;
+    color: var(--text-sub);
+    transition: all var(--delay);
+}
+
+.preset-btn:hover, .preset-btn.active {
+    border-color: var(--border-dark);
+    color: var(--text-main);
+}
+
+.preset-btn.active {
+    background: var(--border-dark);
+    color: var(--bg-main);
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--bg-sub);
+}
+
+.control-group label {
+    width: 120px;
+    font-size: 0.875rem;
+    color: var(--text-main);
+}
+
+.slider-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.quality-slider {
+    flex: 1;
+    height: 2px;
+    background: var(--border-base);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.quality-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--border-dark);
+    cursor: pointer;
+}
+
+.quality-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    min-width: 2.5rem;
+    text-align: right;
+}
+
+.size-controls {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+}
+
+.size-controls .control-group {
+    flex: 1;
+}
+
+.size-input, .format-select {
+    width: 100%;
+    border: 1px solid var(--border-base);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+    background: var(--bg-main);
+    outline: none;
+}
+
+.size-input:focus, .format-select:focus {
+    border-color: var(--border-dark);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 2rem;
+}
+
+.compress-btn, .clear-btn {
+    flex: 1;
+    padding: 0.65rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    transition: all var(--delay);
+}
+
+.compress-btn {
+    background: var(--border-dark);
+    color: var(--bg-main);
+}
+
+.compress-btn:hover {
+    opacity: 0.85;
+}
+
+.compress-btn:disabled {
+    background: var(--border-base);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.clear-btn {
+    background: transparent;
+    border-color: var(--border-base);
+    color: var(--text-sub);
+}
+
+.clear-btn:hover {
+    border-color: var(--border-dark);
+    color: var(--text-main);
+}
+
+.btn-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* ==========================================================================
+   6. 进度条 (极其内敛的一像素细线)
+   ========================================================================== */
+.progress-section {
+    margin-bottom: 2rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 1px;
+    background: var(--border-base);
+    margin-bottom: 0.25rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--border-dark);
+    width: 0%;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: var(--text-sub);
+    text-align: right;
+}
+
+/* ==========================================================================
+   7. 图片列表与列表项布局 (核心修复)
+   ========================================================================== */
+.images-section {
+    margin-bottom: 3rem;
+}
+
+.images-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-dark);
+    padding-bottom: 0.5rem;
+}
+
+.images-header h3 {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.download-all-btn {
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.download-all-btn:hover {
+    opacity: 0.6;
+}
+
+/* 栅格：单列卡片平铺，避免空间拥挤 */
+.images-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.image-item {
+    border: 1px solid var(--border-base);
+    padding: 1.25rem;
+    background: var(--bg-main);
+}
+
+.image-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.image-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 80%;
+}
+
+/* 图片双栏对比区 */
+.image-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 针对原图/压缩图单独的包裹框 */
+.preview-container {
+    height: 120px;
+    background: var(--bg-sub);
+    border: 1px solid var(--border-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 约束预览图尺寸，彻底杜绝撑开变形 */
+.preview-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.preview-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background: var(--border-dark);
+    color: var(--bg-main);
+    font-size: 0.65rem;
+    padding: 0.15rem 0.35rem;
+}
+
+/* 信息属性排版：严丝合缝 */
+.image-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.815rem;
+    border-top: 1px dashed var(--border-base);
+    padding-top: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.info-label {
+    color: var(--text-sub);
+}
+
+.info-value {
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+/* 【全新重塑】单张图片下载按钮：硬朗、扁平且尺寸完美可控 */
+.image-download {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border-dark);
+    color: var(--border-dark);
+    padding: 0.5rem;
+    font-size: 0.815rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color var(--delay), color var(--delay);
+}
+
+.image-download:hover {
+    background: var(--border-dark);
+    color: var(--bg-main);
+}
+
+/* ==========================================================================
+   8. 历史模块清爽化
+   ========================================================================== */
+.history-section {
+    margin-bottom: 3rem;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.history-header h3 {
+    font-size: 0.875rem;
+}
+
+.clear-history-btn {
+    background: none;
+    border: none;
+    font-size: 0.815rem;
+    color: var(--text-sub);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border: 1px solid var(--border-base);
+}
+
+.history-thumbnail {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border: 1px solid var(--border-base);
+}
+
+.history-info {
+    flex: 1;
+    margin-left: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.815rem;
+}
+
+/* ==========================================================================
+   9. 页脚与对话框
+   ========================================================================== */
+.footer {
+    border-top: 1px solid var(--border-base);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.footer-links {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.footer-links a {
+    color: var(--text-sub);
+    text-decoration: none;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.96);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-main);
+    border: 1px solid var(--border-dark);
+    max-width: 500px;
+    width: 90%;
+    padding: 2rem;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-base);
+    padding-bottom: 0.5rem;
+}
+
+.modal-body {
+    font-size: 0.875rem;
+    color: var(--text-sub);
+}
+
+.modal-body ul {
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+}
+
+.modal-body kbd {
+    background: var(--bg-sub);
+    border: 1px solid var(--border-base);
+    padding: 0.1rem 0.3rem;
+    font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   10. 响应式适配
+   ========================================================================== */
+@media (min-width: 650px) {
+    .images-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 550px) {
+    .main {
+        padding: 1.5rem 1rem;
+    }
+    .control-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    .size-controls {
+        flex-direction: column;
+        gap: 0;
+    }
+    .image-preview {
+        grid-template-columns: 1fr;
+    }
+}

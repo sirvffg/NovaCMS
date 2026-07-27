@@ -1,0 +1,18 @@
+<?php
+// ========== 目录蜜罐 (Directory Honeypot) ==========
+// 诱饵文件：机器人喜欢扫描 .bak 和 wp-config.php
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/functions.php';
+ensureHoneypotTables();
+
+$ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+recordHoneypotTrigger($ip, $ua, 'directory_trap', 'admin/wp-config.php.bak');
+addBotBlacklist($ip, "Directory trap: admin/wp-config.php.bak | UA: " . substr($ua, 0, 200));
+
+http_response_code(404);
+?><!DOCTYPE html>
+<html><head><title>404 Not Found</title></head>
+<body><h1>Not Found</h1><p>The requested resource was not found on this server.</p></body>
+</html>

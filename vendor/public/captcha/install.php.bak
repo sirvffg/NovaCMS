@@ -1,0 +1,38 @@
+<?php
+/**
+ * 行为验证码 - 数据库安装脚本
+ * 运行此文件自动创建验证码所需的数据表
+ */
+
+require_once __DIR__ . '/../../config/database.php';
+
+$db = getDB();
+
+// 创建验证会话表
+$db->exec("CREATE TABLE IF NOT EXISTS `captcha_sessions` (
+    `token` varchar(128) NOT NULL COMMENT '验证令牌',
+    `salt` varchar(32) NOT NULL COMMENT 'POW盐值',
+    `difficulty` tinyint NOT NULL DEFAULT 5 COMMENT 'POW难度',
+    `status` enum('init','pow_verified','completed') NOT NULL DEFAULT 'init' COMMENT '会话状态',
+    `valid_x` smallint NOT NULL DEFAULT 0 COMMENT '正确X坐标',
+    `valid_y` smallint NOT NULL DEFAULT 0 COMMENT '正确Y坐标',
+    `valid_shape` varchar(20) NOT NULL DEFAULT '' COMMENT '正确形状',
+    `ip` varchar(45) NOT NULL DEFAULT '' COMMENT '请求IP',
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `expire_at` timestamp NOT NULL COMMENT '过期时间',
+    PRIMARY KEY (`token`),
+    KEY `idx_expire` (`expire_at`),
+    KEY `idx_ip` (`ip`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='验证码会话表'");
+
+// 创建业务令牌表（验证通过后的token）
+$db->exec("CREATE TABLE IF NOT EXISTS `captcha_tokens` (
+    `token` varchar(128) NOT NULL COMMENT '业务令牌',
+    `ip` varchar(45) NOT NULL DEFAULT '' COMMENT '验证时IP',
+    `verified_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '验证通过时间',
+    `expire_at` timestamp NOT NULL COMMENT '过期时间',
+    PRIMARY KEY (`token`),
+    KEY `idx_expire` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='验证码业务令牌表'");
+
+echo json_encode(['success' => true, 'message' => '验证码数据表创建成功']);

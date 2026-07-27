@@ -1,0 +1,119 @@
+/* 本地编辑器图标字体定义 */
+@font-face {
+  font-family: 'EditorIcons';
+  src: url('data:font/woff2;base64,') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+/* 定义常见的编辑器图标 */
+.editor-icon, .editor-icons {
+  font-family: 'EditorIcons', 'Bootstrap Icons' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 使用Bootstrap Icons作为备用方案 */
+.fa, .fas, .far, .fal, .fad, .fab, .fa-solid, .fa-regular, .fa-light, .fa-thin, .fa-brands {
+  font-family: "Bootstrap Icons" !important;
+  font-weight: normal;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+/* 替换常见的Font Awesome图标为Bootstrap Icons */
+.fa-bold::before { content: "\f589"; } /* bi-type-bold */
+.fa-italic::before { content: "\f58a"; } /* bi-type-italic */
+.fa-strikethrough::before { content: "\f65c"; } /* bi-type-strikethrough */
+.fa-heading::before { content: "\f5ef"; } /* bi-type-h1 */
+.fa-quote::before { content: "\f5c8"; } /* bi-quote */
+.fa-code::before { content: "\f5f3"; } /* bi-code */
+.fa-list-ul::before, .fa-unordered-list::before { content: "\f5e1"; } /* bi-list-ul */
+.fa-list-ol::before, .fa-ordered-list::before { content: "\f5e2"; } /* bi-list-ol */
+.fa-link::before { content: "\f5d5"; } /* bi-link */
+.fa-image::before { content: "\f5d1"; } /* bi-image */
+.fa-camera-video::before { content: "\f5cf"; } /* bi-camera-video */
+.fa-file::before { content: "\f4c3"; } /* bi-file */
+.fa-table::before { content: "\f5dd"; } /* bi-table */
+.fa-smile::before, .fa-emoji-smile::before { content: "\f58d"; } /* bi-emoji-smile */
+.fa-calculator::before { content: "\f5da"; } /* bi-calculator */
+.fa-minus::before, .fa-dash-lg::before { content: "\f5d3"; } /* bi-dash */
+.fa-undo::before, .fa-arrow-counterclockwise::before { content: "\f4a9"; } /* bi-arrow-counterclockwise */
+.fa-redo::before, .fa-arrow-clockwise::before { content: "\f4aa"; } /* bi-arrow-clockwise */
+.fa-eraser::before { content: "\f5e9"; } /* bi-eraser */
+.fa-eye::before { content: "\f5e6"; } /* bi-eye */
+.fa-columns::before, .fa-side-by-side::before { content: "\f5d6"; } /* bi-columns */
+.fa-expand::before, .fa-maximize::before { content: "\f5c8"; } /* bi-fullscreen */
+.fa-compress::before, .fa-minimize::before { content: "\f5c9"; } /* bi-fullscreen-exit */
+.fa-question-circle::before { content: "\f52a"; } /* bi-question-circle */
+.fa-book::before { content: "\f4d1"; } /* bi-book */
+.fa-list-alt::before { content: "\f5e8"; } /* bi-list-task */
+.fa-arrows-alt::before, .fa-arrows::before { content: "\f574"; } /* bi-arrows-fullscreen */
+.fa-terminal::before { content: "\f5e9"; } /* bi-terminal */
+.fa-keyboard::before { content: "\f5e9"; } /* bi-keyboard */
+.fa-i-cursor::before { content: "\f5e9"; } /* bi-cursor */
+.fa-text-height::before { content: "\f5e8"; } /* bi-type */
+.fa-paint-brush::before { content: "\f5d5"; } /* bi-palette */
+.fa-undo-alt::before { content: "\f4a9"; } /* bi-arrow-counterclockwise */
+.fa-redo-alt::before { content: "\f4aa"; } /* bi-arrow-clockwise */
+.fa-align-left::before { content: "\f5e4"; } /* bi-text-left */
+.fa-align-center::before { content: "\f5e3"; } /* bi-text-center */
+.fa-align-right::before { content: "\f5e5"; } /* bi-text-right */
+.fa-align-justify::before { content: "\f5e6"; } /* bi-justify */
+.fa-list-check::before { content: "\f5e0"; } /* bi-check2-square */
+.fa-indent::before { content: "\f5d9"; } /* bi-indent */
+.fa-outdent::before { content: "\f5da"; } /* bi-indent */
+.fa-superscript::before { content: "\f5e8"; } /* bi-type-h1 */
+.fa-subscript::before { content: "\f5e9"; } /* bi-type-h3 */
+
+/* 确保编辑器工具栏按钮图标正确显示 */
+.editor-toolbar button i {
+  font-family: "Bootstrap Icons" !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+/* EasyMDE特定图标 */
+.easymde-bold::before { content: "\f589"; font-family: "Bootstrap Icons" !important; }
+.easymde-italic::before { content: "\f58a"; font-family: "Bootstrap Icons" !important; }
+.easymde-strikethrough::before { content: "\f65c"; font-family: "Bootstrap Icons" !important; }
+.easymde-heading::before { content: "\f5ef"; font-family: "Bootstrap Icons" !important; }
+.easymde-quote::before { content: "\f5c8"; font-family: "Bootstrap Icons" !important; }
+.easymde-code::before { content: "\f5f3"; font-family: "Bootstrap Icons" !important; }
+.easymde-unordered-list::before { content: "\f5e1"; font-family: "Bootstrap Icons" !important; }
+.easymde-ordered-list::before { content: "\f5e2"; font-family: "Bootstrap Icons" !important; }
+.easymde-link::before { content: "\f5d5"; font-family: "Bootstrap Icons" !important; }
+.easymde-image::before { content: "\f5d1"; font-family: "Bootstrap Icons" !important; }
+.easymde-table::before { content: "\f5dd"; font-family: "Bootstrap Icons" !important; }
+.easymde-horizontal-rule::before { content: "\f5d3"; font-family: "Bootstrap Icons" !important; }
+.easymde-preview::before { content: "\f5e6"; font-family: "Bootstrap Icons" !important; }
+.easymde-side-by-side::before { content: "\f5d6"; font-family: "Bootstrap Icons" !important; }
+.easymde-fullscreen::before { content: "\f5c8"; font-family: "Bootstrap Icons" !important; }
+.easymde-guide::before { content: "\f4d1"; font-family: "Bootstrap Icons" !important; }
+
+/* 阻止Font Awesome网络请求 */
+@font-face {
+  font-family: "FontAwesome";
+  src: local("FontAwesome");
+  font-display: block;
+  unicode-range: U+0-FFFF;
+}
+
+@font-face {
+  font-family: "fontawesome-webfont";
+  src: local("FontAwesome");
+  font-display: block;
+  unicode-range: U+0-FFFF;
+}

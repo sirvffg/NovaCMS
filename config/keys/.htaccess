@@ -1,0 +1,10 @@
+# 禁止访问除 public.pem 外的所有文件
+<Files "*">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+<Files "public.pem">
+    Order Allow,Deny
+    Allow from all
+</Files>

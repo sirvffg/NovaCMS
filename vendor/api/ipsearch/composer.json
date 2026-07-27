@@ -1,0 +1,13 @@
+{
+    "name": "ipdb-worker/php",
+    "description": "混合IP查询 PHP版：国内用GeoCN，国外用纯真",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "ipip/db": "^1.0",
+        "maxmind-db/reader": "^1.0"
+    },
+    "autoload": {
+        "classmap": ["src/"]
+    }
+}

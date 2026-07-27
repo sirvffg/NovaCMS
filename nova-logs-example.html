@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Logs 示例</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+        .container { max-width: 720px; margin: 0 auto; }
+
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 20px; }
+        .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .card p.sub { color: #666; font-size: 14px; margin-bottom: 20px; }
+
+        .message { padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none; }
+        .message.error { display: block; background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+        .message.success { display: block; background: #e8f8e8; color: #27ae60; border: 1px solid #c6f5c6; }
+        .message.info { display: block; background: #e8f0fe; color: #2c6fdb; border: 1px solid #c6d9f5; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; transition: border-color .2s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #4f6ef7; box-shadow: 0 0 0 3px rgba(79,110,247,0.12); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s, opacity .2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: #4f6ef7; color: #fff; }
+        .btn-primary:hover { background: #3d5bd9; }
+        .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-danger-sm { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 5px 12px; font-size: 13px; }
+        .btn-danger-sm:hover { background: #fecaca; }
+        .btn-outline { background: #fff; color: #666; border: 1px solid #ddd; }
+        .btn-outline:hover { background: #f5f5f5; }
+        .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .response-box { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 12px; max-height: 300px; overflow: auto; white-space: pre-wrap; display: none; }
+        .response-box.show { display: block; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 8px; }
+        .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; margin: 0; }
+        .checkbox-group label { font-size: 14px; color: #666; margin: 0; cursor: pointer; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .user-badge { font-size: 13px; color: #666; display: flex; align-items: center; gap: 8px; }
+        .role-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .role-tag.admin { background: #fef3c7; color: #d97706; }
+        .role-tag.user { background: #dbeafe; color: #2563eb; }
+
+        .footer { text-align: center; font-size: 12px; color: #aaa; margin-top: 20px; padding-bottom: 20px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: #fff; border-radius: 12px; padding: 28px; width: 90%; max-width: 480px; margin: 20px; }
+
+        /* Timeline */
+        .timeline { padding-left: 44px; position: relative; }
+        .timeline::before { content: ''; position: absolute; top: 6px; bottom: 6px; left: 18px; width: 2px; background: #e5e7eb; border-radius: 1px; }
+
+        .log-entry { position: relative; margin-bottom: 18px; background: #f8f9fa; border-radius: 10px; padding: 16px 18px; border: 1px solid #eee; transition: box-shadow .2s; }
+        .log-entry:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .log-entry .dot { position: absolute; left: -34px; top: 18px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+
+        .log-entry .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+        .log-entry .meta .badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; color: #fff; }
+        .log-entry .meta .date { font-size: 12px; color: #999; }
+        .log-entry .meta .version { font-size: 11px; padding: 1px 8px; border-radius: 8px; background: #f3f4f6; color: #666; font-weight: 600; font-family: 'SF Mono', 'Consolas', monospace; }
+
+        .log-entry .title { font-size: 15px; font-weight: 600; color: #222; margin-bottom: 6px; }
+        .log-entry .content { font-size: 13px; color: #666; line-height: 1.6; white-space: pre-wrap; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #999; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="card" style="padding:16px 24px;">
+            <div class="top-bar">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <strong style="font-size:16px;">📋 建站日志</strong>
+                    <span id="logTotal" style="font-size:12px;color:#999;"></span>
+                </div>
+                <div class="user-badge">
+                    <span id="loginStatus"><button class="btn btn-outline btn-sm" onclick="showLogin()">登录</button></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log List -->
+        <div class="card">
+            <div id="msg3" class="message"></div>
+            <div id="logList"><div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div></div>
+            <div id="listResponse" class="response-box"></div>
+        </div>
+
+        <!-- Admin actions -->
+        <div id="adminBar" class="card" style="padding:16px 24px;display:none;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" onclick="showAddLog()">+ 添加日志</button>
+                <button class="btn btn-outline btn-sm" onclick="fetchLogs()">刷新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal" onclick="if(event.target===this)hideLogin()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:16px;">登录</h3>
+            <div id="msgLogin" class="message"></div>
+            <div class="form-group">
+                <label>用户名 / 邮箱</label>
+                <input type="text" id="username" placeholder="管理员或用户账号" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="password" placeholder="输入密码" autocomplete="current-password">
+            </div>
+            <div class="checkbox-group" style="margin-bottom:16px;">
+                <input type="checkbox" id="rememberMe" checked>
+                <label for="rememberMe">记住我</label>
+            </div>
+            <div id="verifyArea" style="display:none;">
+                <div class="form-group">
+                    <label>邮箱验证码（已发送至 <strong id="emailHint"></strong>）</label>
+                    <input type="text" id="code" placeholder="6 位数字" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btnLogin" onclick="handleLogin()" style="width:100%;justify-content:center;">登录</button>
+            <button class="btn btn-outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="hideLogin()">取消</button>
+            <div id="authResponse" class="response-box" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <!-- Add Log Modal -->
+    <div class="modal-overlay" id="addModal" onclick="if(event.target===this)hideAddLog()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:16px;">添加日志</h3>
+            <div id="msgAdd" class="message"></div>
+            <div class="form-group">
+                <label>版本号 <span style="color:#e74c3c;">*</span></label>
+                <input type="text" id="addVersion" placeholder="如: v3.2.0">
+            </div>
+            <div class="form-group">
+                <label>日期 <span style="color:#e74c3c;">*</span></label>
+                <input type="date" id="addDate">
+            </div>
+            <div class="form-group">
+                <label>标题 <span style="color:#e74c3c;">*</span></label>
+                <input type="text" id="addTitle" placeholder="日志标题">
+            </div>
+            <div class="form-group">
+                <label>类型</label>
+                <select id="addType">
+                    <option value="update">更新</option>
+                    <option value="release">发布</option>
+                    <option value="fix">修复</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>内容 <span style="color:#e74c3c;">*</span></label>
+                <textarea id="addContent" placeholder="详细描述更新内容..."></textarea>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-outline btn-sm" onclick="hideAddLog()">取消</button>
+                <button class="btn btn-primary btn-sm" id="btnAdd" onclick="handleAddLog()">添加</button>
+            </div>
+            <div id="addResponse" class="response-box"></div>
+        </div>
+    </div>
+
+    <div class="footer">Nova JSON API Demo · GET 公开，写入需管理员权限 · 自动 30s 刷新</div>
+
+    <script>
+        // ---------- State ----------
+        let sessionToken = '';
+        let userRole = '';
+        let userName = '';
+        let loginUsername = '';
+        let pollTimer = null;
+        const API_LOGS = '/nova-json/v1/statuses/logs';
+        const API_AUTH = '/nova-json/v1/auth';
+
+        // 日志类型配置
+        const TYPE_META = {
+            release: { color: '#22c55e', icon: '🚀', label: '发布' },
+            update:  { color: '#3b82f6', icon: '🔄', label: '更新' },
+            fix:     { color: '#ef4444', icon: '🔧', label: '修复' },
+        };
+
+        // ---------- UI ----------
+        function showMsg(id, t, c) { const e=document.getElementById(id); e.textContent=t; e.className='message '+c; }
+        function hideMsg(id) { document.getElementById(id).className='message'; }
+        function showResponse(id, d) { const e=document.getElementById(id); e.textContent=JSON.stringify(d,null,2); e.classList.add('show'); }
+        function hideResponse(id) { document.getElementById(id).classList.remove('show'); }
+        function escapeHtml(s) { if(typeof s!=='string')return s; var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+        function setLoading(bid, l) { const b=document.getElementById(bid); b.disabled=l; b.innerHTML=l?'<span class="spinner"></span>处理中...':b.dataset.text; }
+
+        // ---------- Login Modal ----------
+        function showLogin() { document.getElementById('loginModal').classList.add('show'); hideMsg('msgLogin'); hideResponse('authResponse'); document.getElementById('verifyArea').style.display='none'; document.getElementById('btnLogin').dataset.text='登录'; document.getElementById('btnLogin').innerHTML='登录'; }
+        function hideLogin() { document.getElementById('loginModal').classList.remove('show'); }
+
+        // ---------- Update UI by Role ----------
+        function updateUI() {
+            const s=document.getElementById('loginStatus');
+            const a=document.getElementById('adminBar');
+            if (sessionToken && userRole) {
+                const r=userRole==='admin'?'<span class="role-tag admin">管理员</span>':'<span class="role-tag user">用户</span>';
+                s.innerHTML=r+' '+escapeHtml(userName)+' <button class="btn btn-outline" style="padding:3px 10px;font-size:12px;color:#dc2626;" onclick="handleLogout()">退出</button>';
+                a.style.display=userRole==='admin'?'block':'none';
+            } else {
+                s.innerHTML='<button class="btn btn-outline btn-sm" onclick="showLogin()">登录</button>';
+                a.style.display='none';
+            }
+        }
+
+        // ---------- Login ----------
+        async function handleLogin() {
+            const u=document.getElementById('username').value.trim(), p=document.getElementById('password').value;
+            if(!u||!p){showMsg('msgLogin','请输入账号和密码','error');return;}
+            const va=document.getElementById('verifyArea'), c=document.getElementById('code').value.trim();
+            hideMsg('msgLogin'); setLoading('btnLogin',true);
+            try {
+                if(va.style.display==='block'&&c){
+                    const r=await fetch(API_AUTH+'/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:loginUsername,code:c,remember_me:document.getElementById('rememberMe').checked})});
+                    const d=await r.json(); showResponse('authResponse',d);
+                    if(d.code!=='rest_ok'){showMsg('msgLogin',d.message||'验证失败','error');setLoading('btnLogin',false);return;}
+                    sessionToken=d.data.token;userRole=(d.data.user?d.data.user.role:null)||'user';userName=(d.data.user?d.data.user.username:null)||u;
+                    if(document.getElementById('rememberMe').checked)localStorage.setItem('nova_token',sessionToken);else localStorage.removeItem('nova_token');
+                    hideLogin();updateUI();
+                } else {
+                    const r=await fetch(API_AUTH+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+                    const d=await r.json(); showResponse('authResponse',d);
+                    if(d.code!=='rest_ok'){showMsg('msgLogin',d.message||'登录失败','error');setLoading('btnLogin',false);return;}
+                    if(d.data.requires_verification){
+                        loginUsername=u;document.getElementById('emailHint').textContent=d.data.email_hint;
+                        va.style.display='block';document.getElementById('code').focus();
+                        document.getElementById('btnLogin').dataset.text='验证';document.getElementById('btnLogin').innerHTML='验证';
+                        setLoading('btnLogin',false);return;
+                    }
+                    sessionToken=d.data.token;userRole=(d.data.user?d.data.user.role:null)||'user';userName=(d.data.user?d.data.user.username:null)||u;
+                    if(document.getElementById('rememberMe').checked)localStorage.setItem('nova_token',sessionToken);else localStorage.removeItem('nova_token');
+                    hideLogin();updateUI();
+                }
+            } catch(e){showMsg('msgLogin','网络错误: '+e.message,'error');}
+            setLoading('btnLogin',false);
+        }
+
+        async function handleLogout(){
+            try{await fetch(API_AUTH+'/logout',{method:'POST',headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}});}catch(_){}
+            localStorage.removeItem('nova_token');sessionToken='';userRole='';userName='';updateUI();
+        }
+
+        // ---------- Fetch Logs ----------
+        async function fetchLogs() {
+            const listEl=document.getElementById('logList');
+            listEl.innerHTML='<div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div>';
+            hideResponse('listResponse');
+
+            try {
+                const res=await fetch(API_LOGS,{headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}});
+                const d=await res.json(); showResponse('listResponse',d);
+                if(d.code!=='rest_ok'){listEl.innerHTML='<div class="empty-state"><span class="icon">⚠️</span><p>'+(d.message||'获取失败')+'</p></div>';return;}
+
+                const items=d.data.items||[];
+                document.getElementById('logTotal').textContent='共 '+items.length+' 条';
+
+                if(items.length===0){
+                    listEl.innerHTML='<div class="empty-state"><span class="icon">📋</span><p>暂无日志</p></div>';
+                    return;
+                }
+
+                let html='<div class="timeline">';
+                items.forEach(function(it){
+                    const meta=TYPE_META[it.type]||TYPE_META.update;
+                    const dateDisplay=it.date.substring(0,10).replace(/-/g,'/');
+                    const delBtn=(userRole==='admin')
+                        ?' <button class="btn btn-danger-sm" style="padding:2px 8px;font-size:11px;float:right;" onclick="deleteLog('+it.id+')">删除</button>'
+                        :'';
+                    html+=
+                        '<div class="log-entry">'+
+                            '<div class="dot" style="background:'+meta.color+';">'+meta.icon+'</div>'+
+                            '<div class="meta">'+
+                                '<span class="badge" style="background:'+meta.color+';">'+meta.icon+' '+meta.label+'</span>'+
+                                '<span class="date">'+escapeHtml(dateDisplay)+'</span>'+
+                                '<span class="version">'+escapeHtml(it.version)+'</span>'+
+                            '</div>'+
+                            '<div class="title">'+escapeHtml(it.title)+delBtn+'</div>'+
+                            '<div class="content">'+escapeHtml(it.content)+'</div>'+
+                        '</div>';
+                });
+                html+='</div>';
+                listEl.innerHTML=html;
+            } catch(e){
+                document.getElementById('logList').innerHTML='<div class="empty-state"><span class="icon">⚠️</span><p>网络错误: '+escapeHtml(e.message)+'</p></div>';
+            }
+        }
+
+        // ---------- Add Log ----------
+        function showAddLog(){
+            document.getElementById('addModal').classList.add('show');
+            document.getElementById('addVersion').value='';
+            document.getElementById('addDate').value=new Date().toISOString().substring(0,10);
+            document.getElementById('addTitle').value='';
+            document.getElementById('addContent').value='';
+            document.getElementById('addType').value='update';
+            hideMsg('msgAdd');hideResponse('addResponse');
+        }
+        function hideAddLog(){document.getElementById('addModal').classList.remove('show');}
+
+        async function handleAddLog(){
+            const version=document.getElementById('addVersion').value.trim();
+            const date=document.getElementById('addDate').value;
+            const title=document.getElementById('addTitle').value.trim();
+            const content=document.getElementById('addContent').value.trim();
+            const type=document.getElementById('addType').value;
+
+            if(!version){showMsg('msgAdd','版本号不能为空','error');return;}
+            if(!date){showMsg('msgAdd','日期不能为空','error');return;}
+            if(!title){showMsg('msgAdd','标题不能为空','error');return;}
+            if(!content){showMsg('msgAdd','内容不能为空','error');return;}
+
+            hideMsg('msgAdd');hideResponse('addResponse');setLoading('btnAdd',true);
+            try{
+                const res=await fetch(API_LOGS,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionToken},body:JSON.stringify({version,date,title,content,type})});
+                const d=await res.json();showResponse('addResponse',d);
+                if(d.code==='rest_ok'){showMsg('msgAdd','✅ 已添加: '+escapeHtml(title),'success');hideAddLog();fetchLogs();}else{showMsg('msgAdd','❌ '+(d.message||'添加失败'),'error');}
+            }catch(e){showMsg('msgAdd','网络错误: '+e.message,'error');}
+            setLoading('btnAdd',false);
+        }
+
+        // ---------- Delete Log ----------
+        async function deleteLog(id){
+            if(!confirm('确定删除此日志吗？ID 会重排。')) return;
+            try{
+                const res=await fetch(API_LOGS+'/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+sessionToken}});
+                const d=await res.json();showResponse('listResponse',d);
+                if(d.code==='rest_ok'){fetchLogs();}else{alert(d.message||'删除失败');}
+            }catch(e){alert('网络错误: '+e.message);}
+        }
+
+        // ---------- Init ----------
+        (function init(){
+            document.querySelectorAll('.btn').forEach(b=>{if(!b.dataset.text)b.dataset.text=b.innerHTML;});
+            document.getElementById('password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+            document.getElementById('code').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+
+            const token=localStorage.getItem('nova_token');
+            if(token){
+                (async function(){
+                    try{
+                        const r=await fetch(API_AUTH+'/me',{headers:{'Authorization':'Bearer '+token}});
+                        const d=await r.json();
+                        if(d.code==='rest_ok'){sessionToken=token;userRole=(d.data.user?d.data.user.role:null)||'user';userName=(d.data.user?d.data.user.username:null)||'';updateUI();}
+                    }catch(_){}
+                    fetchLogs();
+                })();
+            } else { fetchLogs(); }
+
+            pollTimer=setInterval(fetchLogs,30000);
+        })();
+    </script>
+</body>
+</html>

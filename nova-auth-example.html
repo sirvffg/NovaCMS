@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Auth 示例</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); width: 100%; max-width: 420px; padding: 32px; }
+        .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .card p.sub { color: #666; font-size: 14px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #333; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; transition: border-color .2s; }
+        .form-group input:focus { outline: none; border-color: #4f6ef7; box-shadow: 0 0 0 3px rgba(79,110,247,0.12); }
+        .btn { width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s, opacity .2s; }
+        .btn-primary { background: #4f6ef7; color: #fff; }
+        .btn-primary:hover { background: #3d5bd9; }
+        .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-danger { background: #e74c3c; color: #fff; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-outline { background: #fff; color: #666; border: 1px solid #ddd; }
+        .btn-outline:hover { background: #f5f5f5; }
+        .btn-success { background: #27ae60; color: #fff; }
+        .btn-success:hover { background: #219a52; }
+        .btn-sm { padding: 6px 14px; font-size: 13px; width: auto; }
+        .message { padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none; }
+        .message.error { display: block; background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+        .message.success { display: block; background: #e8f8e8; color: #27ae60; border: 1px solid #c6f5c6; }
+        .message.info { display: block; background: #e8f0fe; color: #2c6fdb; border: 1px solid #c6d9f5; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .token-box { background: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 12px; font-size: 13px; word-break: break-all; margin-bottom: 16px; }
+        .token-box label { font-size: 12px; color: #999; display: block; margin-bottom: 4px; }
+        .token-box code { color: #333; }
+        .user-info { background: #f0f7ff; border: 1px solid #d0e3ff; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .user-info .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+        .user-info .row .l { color: #666; }
+        .user-info .row .r { font-weight: 500; }
+        .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #aaa; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .mode-switch { text-align: center; margin-top: 16px; font-size: 14px; color: #666; }
+        .mode-switch a { color: #4f6ef7; cursor: pointer; text-decoration: none; font-weight: 500; }
+        .mode-switch a:hover { text-decoration: underline; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+        .checkbox-group label { font-size: 14px; color: #666; margin: 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔐 Nova Auth</h1>
+        <p class="sub">两步登录/注册示例 · /nova-json/v1/auth</p>
+
+        <div id="message" class="message"></div>
+
+        <!-- Step 1: 登录表单 -->
+        <div id="step1" class="step active">
+            <div class="form-group">
+                <label for="username">用户名 / 邮箱</label>
+                <input type="text" id="username" placeholder="xxx 或 xxx@qq.com" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" placeholder="输入密码" autocomplete="current-password">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="rememberMe" checked>
+                <label for="rememberMe">记住我（30天有效）</label>
+            </div>
+            <button class="btn btn-primary" id="btnLogin" onclick="handleLogin()">登录</button>
+            <div class="mode-switch">
+                还没有账号？<a onclick="switchMode()">去注册</a>
+            </div>
+        </div>
+
+        <!-- Step 2: 登录验证码 -->
+        <div id="step2" class="step">
+            <p style="font-size:14px;color:#666;margin-bottom:16px;">
+                验证码已发送至 <strong id="emailHint"></strong>
+            </p>
+            <div class="form-group">
+                <label for="code">邮箱验证码</label>
+                <input type="text" id="code" placeholder="6 位数字验证码" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
+            </div>
+            <button class="btn btn-primary" id="btnVerify" onclick="handleVerify()">验证并登录</button>
+            <button class="btn btn-outline" style="margin-top:8px;" onclick="backToLogin()">返回</button>
+        </div>
+
+        <!-- Step 3: 注册表单 -->
+        <div id="step3" class="step">
+            <h3 style="font-size:18px;font-weight:600;margin-bottom:20px;">📝 注册新账号</h3>
+            <div class="form-group">
+                <label for="regUsername">用户名</label>
+                <input type="text" id="regUsername" placeholder="2-20位，支持中文、字母、数字" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="regEmail">邮箱</label>
+                <input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="regPassword">密码</label>
+                <input type="password" id="regPassword" placeholder="至少 6 位" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="regConfirm">确认密码</label>
+                <input type="password" id="regConfirm" placeholder="再次输入密码" autocomplete="new-password">
+            </div>
+            <button class="btn btn-success" id="btnRegister" onclick="handleRegister()">发送验证码</button>
+            <div class="mode-switch">
+                已有账号？<a onclick="switchMode()">去登录</a>
+            </div>
+        </div>
+
+        <!-- Step 4: 注册验证码 -->
+        <div id="step4" class="step">
+            <p style="font-size:14px;color:#666;margin-bottom:16px;">
+                注册验证码已发送至 <strong id="regEmailHint"></strong>
+            </p>
+            <div class="form-group">
+                <label for="regCode">邮箱验证码</label>
+                <input type="text" id="regCode" placeholder="6 位数字验证码" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
+            </div>
+            <button class="btn btn-success" id="btnRegVerify" onclick="handleRegVerify()">验证并注册</button>
+            <button class="btn btn-outline" style="margin-top:8px;" onclick="backToRegister()">返回</button>
+        </div>
+
+        <!-- Step 5: 已登录 -->
+        <div id="step5" class="step">
+            <div class="user-info" id="userInfo"></div>
+            <div class="token-box">
+                <label>Bearer Token</label>
+                <code id="tokenDisplay"></code>
+            </div>
+            <button class="btn btn-danger" onclick="handleLogout()">退出登录</button>
+            <button class="btn btn-outline" style="margin-top:8px;" onclick="fetchMe()">刷新用户信息</button>
+        </div>
+
+        <div class="footer">Nova JSON API Demo</div>
+    </div>
+
+    <script>
+        // ---------- 状态 ----------
+        let loginUsername = '';
+        let loginRememberMe = true;
+        let sessionToken = '';
+        let regUsername = '';
+        let regEmail = '';
+        let regPassword = '';
+        const API_BASE = '/nova-json/v1/auth';
+
+        // ---------- UI 工具 ----------
+        function showMsg(text, type) {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = 'message ' + type;
+        }
+        function hideMsg() {
+            document.getElementById('message').className = 'message';
+        }
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            btn.disabled = loading;
+            btn.innerHTML = loading ? '<span class="spinner"></span>处理中...' : btn.dataset.text;
+        }
+        function goStep(n) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById('step' + n).classList.add('active');
+            hideMsg();
+        }
+
+        // ---------- 登录/注册模式切换 ----------
+        function switchMode() {
+            const step1 = document.getElementById('step1');
+            const step3 = document.getElementById('step3');
+            if (step1.classList.contains('active')) {
+                goStep(3);
+            } else {
+                goStep(1);
+            }
+            hideMsg();
+        }
+
+        // ---------- Step 1: 登录 ----------
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMsg('请输入用户名/邮箱和密码', 'error');
+                return;
+            }
+
+            loginRememberMe = document.getElementById('rememberMe').checked;
+
+            hideMsg();
+            setLoading('btnLogin', true);
+
+            try {
+                const res = await fetch(API_BASE + '/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (data.code !== 'rest_ok') {
+                    showMsg(data.message || '登录失败', 'error');
+                    setLoading('btnLogin', false);
+                    return;
+                }
+
+                if (data.data.requires_verification) {
+                    loginUsername = username;
+                    document.getElementById('emailHint').textContent = data.data.email_hint;
+                    goStep(2);
+                    document.getElementById('code').focus();
+                } else {
+                    onLoginSuccess(data.data);
+                }
+            } catch (err) {
+                showMsg('网络错误: ' + err.message, 'error');
+            }
+
+            setLoading('btnLogin', false);
+        }
+
+        // ---------- Step 2: 登录验证码 ----------
+        async function handleVerify() {
+            const code = document.getElementById('code').value.trim();
+
+            if (!code || code.length !== 6) {
+                showMsg('请输入 6 位验证码', 'error');
+                return;
+            }
+
+            hideMsg();
+            setLoading('btnVerify', true);
+
+            try {
+                const res = await fetch(API_BASE + '/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: loginUsername, code, remember_me: loginRememberMe })
+                });
+                const data = await res.json();
+
+                if (data.code !== 'rest_ok') {
+                    showMsg(data.message || '验证失败', 'error');
+                    setLoading('btnVerify', false);
+                    return;
+                }
+
+                onLoginSuccess(data.data);
+            } catch (err) {
+                showMsg('网络错误: ' + err.message, 'error');
+            }
+
+            setLoading('btnVerify', false);
+        }
+
+        // ---------- Step 3: 注册 ----------
+        async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirm').value;
+
+            if (!username || !email || !password || !confirm) {
+                showMsg('请填写所有字段', 'error');
+                return;
+            }
+
+            if (password !== confirm) {
+                showMsg('两次密码输入不一致', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMsg('密码长度不能少于 6 位', 'error');
+                return;
+            }
+
+            hideMsg();
+            setLoading('btnRegister', true);
+
+            try {
+                const res = await fetch(API_BASE + '/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await res.json();
+
+                if (data.code !== 'rest_ok') {
+                    showMsg(data.message || '注册失败', 'error');
+                    setLoading('btnRegister', false);
+                    return;
+                }
+
+                regUsername = username;
+                regEmail = email;
+                regPassword = password;
+                document.getElementById('regEmailHint').textContent = data.data.email_hint;
+                goStep(4);
+                document.getElementById('regCode').focus();
+                showMsg('验证码已发送，请查收', 'info');
+            } catch (err) {
+                showMsg('网络错误: ' + err.message, 'error');
+            }
+
+            setLoading('btnRegister', false);
+        }
+
+        // ---------- Step 4: 注册验证码 ----------
+        async function handleRegVerify() {
+            const code = document.getElementById('regCode').value.trim();
+
+            if (!code || code.length !== 6) {
+                showMsg('请输入 6 位验证码', 'error');
+                return;
+            }
+
+            hideMsg();
+            setLoading('btnRegVerify', true);
+
+            try {
+                const res = await fetch(API_BASE + '/register-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: regUsername, email: regEmail, code, password: regPassword })
+                });
+                const data = await res.json();
+
+                if (data.code !== 'rest_ok') {
+                    showMsg(data.message || '注册失败', 'error');
+                    setLoading('btnRegVerify', false);
+                    return;
+                }
+
+                showMsg('🎉 注册成功！请切换到登录页面登录', 'success');
+                // 3 秒后返回登录页, 并预填账号
+                setTimeout(() => {
+                    document.getElementById('username').value = regUsername;
+                    document.getElementById('password').value = regPassword;
+                    regUsername = '';
+                    regEmail = '';
+                    regPassword = '';
+                    goStep(1);
+                }, 3000);
+            } catch (err) {
+                showMsg('网络错误: ' + err.message, 'error');
+            }
+
+            setLoading('btnRegVerify', false);
+        }
+
+        // ---------- 登录成功 ----------
+        function onLoginSuccess(data) {
+            const token = data.token;
+            const user = data.user;
+            sessionToken = token;
+            loginUsername = user.username;
+
+            if (loginRememberMe) {
+                localStorage.setItem('nova_token', token);
+                localStorage.setItem('nova_user', JSON.stringify(user));
+            } else {
+                localStorage.removeItem('nova_token');
+                localStorage.removeItem('nova_user');
+            }
+
+            renderUser(user);
+            document.getElementById('tokenDisplay').textContent = token;
+            goStep(5);
+            showMsg((loginRememberMe ? '登录成功（已记住设备）' : '登录成功（关闭浏览器后需重新登录）'), 'success');
+        }
+
+        // ---------- 渲染用户信息 ----------
+        function renderUser(user) {
+            var infoEl = document.getElementById('userInfo');
+            infoEl.innerHTML = '';
+            var fields = [
+                { label: 'ID', value: user.id },
+                { label: '用户名', value: user.username },
+                { label: '邮箱', value: user.email || '-' },
+                { label: '角色', value: user.role }
+            ];
+            fields.forEach(function(f) {
+                var row = document.createElement('div');
+                row.className = 'row';
+                var l = document.createElement('span');
+                l.className = 'l';
+                l.textContent = f.label;
+                var r = document.createElement('span');
+                r.className = 'r';
+                r.textContent = f.value;
+                row.appendChild(l);
+                row.appendChild(r);
+                infoEl.appendChild(row);
+            });
+        }
+
+        // ---------- 获取当前用户 ----------
+        async function fetchMe() {
+            const token = localStorage.getItem('nova_token') || sessionToken;
+            if (!token) {
+                showMsg('未登录', 'error');
+                return;
+            }
+
+            hideMsg();
+            try {
+                const res = await fetch(API_BASE + '/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+
+                if (data.code !== 'rest_ok') {
+                    showMsg(data.message || '获取失败', 'error');
+                    if (res.status === 401) {
+                        logout();
+                    }
+                    return;
+                }
+
+                renderUser(data.data.user);
+                showMsg('用户信息已刷新', 'info');
+            } catch (err) {
+                showMsg('网络错误: ' + err.message, 'error');
+            }
+        }
+
+        // ---------- 退出 ----------
+        async function handleLogout() {
+            const token = localStorage.getItem('nova_token') || sessionToken;
+
+            try {
+                await fetch(API_BASE + '/logout', {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+                });
+            } catch (_) {}
+
+            logout();
+        }
+
+        function logout() {
+            localStorage.removeItem('nova_token');
+            localStorage.removeItem('nova_user');
+            sessionToken = '';
+            loginUsername = '';
+            goStep(1);
+            showMsg('已退出登录', 'info');
+        }
+
+        function backToLogin() {
+            goStep(1);
+        }
+
+        function backToRegister() {
+            goStep(3);
+        }
+
+        // ---------- 初始化 ----------
+        (function init() {
+            const token = localStorage.getItem('nova_token');
+            const userStr = localStorage.getItem('nova_user');
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    loginRememberMe = true;
+                    loginUsername = user.username;
+                    sessionToken = token;
+                    renderUser(user);
+                    document.getElementById('tokenDisplay').textContent = token;
+                    goStep(5);
+                    fetchMe();
+                } catch (_) {
+                    logout();
+                }
+            }
+
+            // 回车触发
+            document.getElementById('password').addEventListener('keydown', e => {
+                if (e.key === 'Enter') handleLogin();
+            });
+            document.getElementById('code').addEventListener('keydown', e => {
+                if (e.key === 'Enter') handleVerify();
+            });
+            document.getElementById('regConfirm').addEventListener('keydown', e => {
+                if (e.key === 'Enter') handleRegister();
+            });
+            document.getElementById('regCode').addEventListener('keydown', e => {
+                if (e.key === 'Enter') handleRegVerify();
+            });
+
+            // 保存原始按钮文字
+            document.querySelectorAll('.btn').forEach(b => {
+                b.dataset.text = b.innerHTML;
+            });
+        })();
+    </script>
+</body>
+</html>

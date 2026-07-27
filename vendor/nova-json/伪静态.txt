@@ -1,0 +1,3 @@
+location /nova-json/ {
+    rewrite ^/nova-json(.*)$ /vendor/nova-json/index.php?route=$1&$args last;
+}

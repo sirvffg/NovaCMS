@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片压缩工具 - 简单高效的图片压缩服务</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="专业的图片压缩工具，支持批量处理、多种格式、智能压缩">
+    <meta name="keywords" content="图片压缩,批量处理,PNG,JPG,WebP,图片优化">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z" fill="currentColor"/>
+                    </svg>
+                    图片压缩工具
+                </h1>
+                <p class="subtitle">简单、高效、无损的图片压缩服务</p>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor"/>
+                        </svg>
+                        <h3>拖拽图片到这里或点击上传</h3>
+                        <p>支持 PNG、JPG、JPEG、WebP 格式，最大 10MB，支持批量上传</p>
+                        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg,image/webp" multiple hidden>
+                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                            选择图片
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compression-controls" id="compressionControls" style="display: none;">
+                <div class="controls-header">
+                    <h3>压缩设置</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn active" data-preset="balanced">平衡</button>
+                        <button class="preset-btn" data-preset="quality">高质量</button>
+                        <button class="preset-btn" data-preset="size">小文件</button>
+                        <button class="preset-btn" data-preset="web">网页</button>
+                        <button class="preset-btn" data-preset="social">社交媒体</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="qualitySlider">压缩质量</label>
+                    <div class="slider-container">
+                        <input type="range" id="qualitySlider" min="10" max="100" value="80" class="quality-slider">
+                        <span class="quality-value" id="qualityValue">80%</span>
+                    </div>
+                </div>
+                
+                <div class="size-controls">
+                    <div class="control-group">
+                        <label for="maxWidth">最大宽度 (像素)</label>
+                        <input type="number" id="maxWidth" placeholder="保持原尺寸" class="size-input">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="maxHeight">最大高度 (像素)</label>
+                        <input type="number" id="maxHeight" placeholder="保持原尺寸" class="size-input">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="outputFormat">输出格式</label>
+                    <select id="outputFormat" class="format-select">
+                        <option value="original">保持原格式</option>
+                        <option value="jpeg">JPEG</option>
+                        <option value="png">PNG</option>
+                        <option value="webp">WebP</option>
+                    </select>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="compress-btn" id="compressBtn">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9ZM19 9H14V4H5V21H19V9Z" fill="currentColor"/>
+                        </svg>
+                        开始压缩
+                    </button>
+                    <button class="clear-btn" id="clearBtn">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        清空
+                    </button>
+                </div>
+            </div>
+
+            <div class="progress-section" id="progressSection" style="display: none;">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">压缩中... 0%</div>
+                </div>
+            </div>
+
+            <div class="images-section" id="imagesSection" style="display: none;">
+                <div class="images-header">
+                    <h3>图片列表</h3>
+                    <div class="images-actions">
+                        <button class="download-all-btn" id="downloadAllBtn">
+                            下载全部
+                        </button>
+                    </div>
+                </div>
+                <div class="images-grid" id="imagesGrid"></div>
+            </div>
+
+            <div class="history-section" id="historySection" style="display: none;">
+                <div class="history-header">
+                    <h3>压缩历史</h3>
+                    <button class="clear-history-btn" id="clearHistoryBtn">清空历史</button>
+                </div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 图片压缩工具. 所有图片处理均在本地完成，保护您的隐私安全。</p>
+            <div class="footer-links">
+                <a href="#" id="showHistoryBtn">压缩历史</a>
+                <a href="#" id="showHelpBtn">使用帮助</a>
+            </div>
+        </footer>
+    </div>
+
+    <div class="modal" id="helpModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>使用帮助</h3>
+                <button class="modal-close" id="closeHelpModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>功能说明</h4>
+                <ul>
+                    <li><strong>批量上传：</strong>支持同时选择多张图片进行压缩</li>
+                    <li><strong>预设方案：</strong>提供多种预设压缩方案，一键应用</li>
+                    <li><strong>格式转换：</strong>支持将图片转换为不同格式</li>
+                    <li><strong>压缩历史：</strong>自动保存压缩记录，方便重复使用</li>
+                </ul>
+                
+                <h4>快捷键</h4>
+                <ul>
+                    <li><kbd>Ctrl</kbd> + <kbd>Z</kbd> - 撤销操作</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>S</kbd> - 快速保存</li>
+                    <li><kbd>Delete</kbd> - 删除选中图片</li>
+                </ul>
+
+                <h4>建议</h4>
+                <ul>
+                    <li>选择网页 压缩质量20 图片保留原尺寸 更好</li>
+                </ul>                
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

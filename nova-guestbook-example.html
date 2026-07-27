@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Guestbook 示例</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+        .container { max-width: 720px; margin: 0 auto; }
+
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 20px; }
+        .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .card p.sub { color: #666; font-size: 14px; margin-bottom: 20px; }
+
+        .message { padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none; }
+        .message.error { display: block; background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+        .message.success { display: block; background: #e8f8e8; color: #27ae60; border: 1px solid #c6f5c6; }
+        .message.info { display: block; background: #e8f0fe; color: #2c6fdb; border: 1px solid #c6d9f5; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #333; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; transition: border-color .2s; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #4f6ef7; box-shadow: 0 0 0 3px rgba(79,110,247,0.12); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s, opacity .2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: #4f6ef7; color: #fff; }
+        .btn-primary:hover { background: #3d5bd9; }
+        .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-danger-sm { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 5px 12px; font-size: 13px; }
+        .btn-danger-sm:hover { background: #fecaca; }
+        .btn-outline { background: #fff; color: #666; border: 1px solid #ddd; }
+        .btn-outline:hover { background: #f5f5f5; }
+        .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .response-box { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 12px; max-height: 300px; overflow: auto; white-space: pre-wrap; display: none; }
+        .response-box.show { display: block; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 8px; }
+        .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; margin: 0; }
+        .checkbox-group label { font-size: 14px; color: #666; margin: 0; cursor: pointer; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .user-badge { font-size: 13px; color: #666; display: flex; align-items: center; gap: 8px; }
+        .role-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .role-tag.admin { background: #fef3c7; color: #d97706; }
+        .role-tag.user { background: #dbeafe; color: #2563eb; }
+
+        .footer { text-align: center; font-size: 12px; color: #aaa; margin-top: 20px; padding-bottom: 20px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: #fff; border-radius: 12px; padding: 28px; width: 90%; max-width: 480px; margin: 20px; }
+
+        /* Message List */
+        .msg-card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; transition: box-shadow .2s; }
+        .msg-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+        .msg-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .msg-user { display: flex; align-items: center; gap: 10px; }
+        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: #eef2ff; color: #4f6ef7; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+        .msg-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .msg-nickname { font-weight: 600; font-size: 14px; color: #333; }
+        .msg-time { font-size: 12px; color: #999; margin-left: 8px; }
+        .msg-badge { display: inline-block; background: #eef2ff; color: #4f6ef7; font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; }
+
+        .msg-content { font-size: 14px; color: #444; line-height: 1.6; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+
+        /* Reply Box */
+        .reply-box { background: #f8f9fa; border-left: 3px solid #4f6ef7; border-radius: 6px; padding: 12px 16px; margin-bottom: 10px; }
+        .reply-box .label { font-size: 12px; font-weight: 600; color: #4f6ef7; margin-bottom: 4px; }
+        .reply-box .text { font-size: 13px; color: #555; line-height: 1.5; white-space: pre-wrap; }
+        .reply-box .time { font-size: 11px; color: #999; text-align: right; margin-top: 4px; }
+
+        /* User Replies */
+        .user-replies { padding-left: 50px; margin-top: 6px; }
+        .user-reply { display: flex; gap: 8px; padding: 10px 0; border-top: 1px dashed #eee; }
+        .user-reply:first-child { border-top: none; }
+        .ur-avatar { width: 32px; height: 32px; border-radius: 50%; background: #f3f4f6; color: #666; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex-shrink: 0; }
+        .ur-body { flex: 1; min-width: 0; }
+        .ur-meta { font-size: 12px; margin-bottom: 3px; }
+        .ur-meta .name { font-weight: 600; color: #4f6ef7; }
+        .ur-meta .time { color: #999; margin-left: 6px; }
+        .ur-content { font-size: 13px; color: #555; line-height: 1.5; white-space: pre-wrap; }
+
+        .msg-actions { display: flex; gap: 6px; align-items: center; }
+
+        /* Submit Form Row */
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .form-row .form-group { flex: 1; min-width: 160px; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #999; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+
+        /* Pagination */
+        .page-nav { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 20px; }
+        .page-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid #ddd; background: #fff; color: #666; cursor: pointer; transition: all .2s; text-decoration: none; }
+        .page-btn:hover { border-color: #4f6ef7; color: #4f6ef7; }
+        .page-btn.active { background: #4f6ef7; color: #fff; border-color: #4f6ef7; }
+        .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="card" style="padding:16px 24px;">
+            <div class="top-bar">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <strong style="font-size:16px;">💬 留言板</strong>
+                    <span id="msgCount" style="font-size:12px;color:#999;"></span>
+                </div>
+                <div class="user-badge">
+                    <span id="loginStatus"><button class="btn btn-outline btn-sm" onclick="showLogin()">登录</button></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Form -->
+        <div class="card">
+            <h3 style="font-size:16px;margin-bottom:16px;">✏️ 留下你的足迹</h3>
+            <div id="msgForm" class="message"></div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>昵称 <span style="color:#e74c3c;">*</span></label>
+                    <input type="text" id="gbNickname" placeholder="怎么称呼？">
+                </div>
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="gbEmail" placeholder="用于头像显示（可选）">
+                </div>
+                <div class="form-group">
+                    <label>网站</label>
+                    <input type="url" id="gbWebsite" placeholder="http://...（可选）">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>内容 <span style="color:#e74c3c;">*</span></label>
+                <textarea id="gbContent" placeholder="写点什么吧..."></textarea>
+            </div>
+            <div style="text-align:right;">
+                <button class="btn btn-primary btn-sm" id="btnSubmit" onclick="handleSubmit()">发表留言</button>
+            </div>
+            <div id="submitResponse" class="response-box"></div>
+        </div>
+
+        <!-- Message List -->
+        <div class="card" style="padding:20px 0;">
+            <div id="msgList"><div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div></div>
+            <div id="listResponse" class="response-box" style="margin:0 20px;"></div>
+            <div id="pagination" class="page-nav" style="margin:16px 20px 0;"></div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal" onclick="if(event.target===this)hideLogin()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:16px;">登录</h3>
+            <div id="msgLogin" class="message"></div>
+            <div class="form-group">
+                <label>用户名 / 邮箱</label>
+                <input type="text" id="username" placeholder="管理员或用户账号" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="password" placeholder="输入密码" autocomplete="current-password">
+            </div>
+            <div class="checkbox-group" style="margin-bottom:16px;">
+                <input type="checkbox" id="rememberMe" checked>
+                <label for="rememberMe">记住我</label>
+            </div>
+            <div id="verifyArea" style="display:none;">
+                <div class="form-group">
+                    <label>邮箱验证码（已发送至 <strong id="emailHint"></strong>）</label>
+                    <input type="text" id="code" placeholder="6 位数字" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btnLogin" onclick="handleLogin()" style="width:100%;justify-content:center;">登录</button>
+            <button class="btn btn-outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="hideLogin()">取消</button>
+            <div id="authResponse" class="response-box" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <!-- Admin Reply Modal -->
+    <div class="modal-overlay" id="replyModal" onclick="if(event.target===this)hideReplyModal()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:16px;">管理员回复</h3>
+            <div id="msgReply" class="message"></div>
+            <input type="hidden" id="replyId">
+            <div class="form-group">
+                <label>回复内容</label>
+                <textarea id="replyContent" rows="4" placeholder="输入回复内容..."></textarea>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-outline btn-sm" onclick="hideReplyModal()">取消</button>
+                <button class="btn btn-primary btn-sm" id="btnReply" onclick="handleReply()">回复</button>
+            </div>
+            <div id="replyResponse" class="response-box"></div>
+        </div>
+    </div>
+
+    <div class="footer">Nova JSON API Demo · 留言公开提交，管理员可回复/删除 · 自动 30s 刷新</div>
+
+    <script>
+        // ---------- State ----------
+        let sessionToken = '';
+        let userRole = '';
+        let userName = '';
+        let loginUsername = '';
+        let pollTimer = null;
+        let currentPage = 1;
+        const API_GB = '/nova-json/v1/statuses/guestbook';
+        const API_AUTH = '/nova-json/v1/auth';
+
+        // ---------- UI ----------
+        function showMsg(id, t, c) { const e=document.getElementById(id); e.textContent=t; e.className='message '+c; }
+        function hideMsg(id) { document.getElementById(id).className='message'; }
+        function showResponse(id, d) { const e=document.getElementById(id); e.textContent=JSON.stringify(d,null,2); e.classList.add('show'); }
+        function hideResponse(id) { document.getElementById(id).classList.remove('show'); }
+        function escapeHtml(s) { if(typeof s!=='string')return s; var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+        function setLoading(bid, l) { const b=document.getElementById(bid); b.disabled=l; b.innerHTML=l?'<span class="spinner"></span>处理中...':b.dataset.text; }
+
+        // ---------- Login ----------
+        function showLogin() { document.getElementById('loginModal').classList.add('show'); hideMsg('msgLogin'); hideResponse('authResponse'); document.getElementById('verifyArea').style.display='none'; document.getElementById('btnLogin').dataset.text='登录'; document.getElementById('btnLogin').innerHTML='登录'; }
+        function hideLogin() { document.getElementById('loginModal').classList.remove('show'); }
+
+        function updateUI() {
+            const s=document.getElementById('loginStatus');
+            if (sessionToken && userRole) {
+                const r=userRole==='admin'?'<span class="role-tag admin">管理员</span>':'<span class="role-tag user">用户</span>';
+                s.innerHTML=r+' '+escapeHtml(userName)+' <button class="btn btn-outline" style="padding:3px 10px;font-size:12px;color:#dc2626;" onclick="handleLogout()">退出</button>';
+            } else {
+                s.innerHTML='<button class="btn btn-outline btn-sm" onclick="showLogin()">登录</button>';
+            }
+        }
+
+        async function handleLogin() {
+            const u=document.getElementById('username').value.trim(), p=document.getElementById('password').value;
+            if(!u||!p){showMsg('msgLogin','请输入账号和密码','error');return;}
+            const va=document.getElementById('verifyArea'), c=document.getElementById('code').value.trim();
+            hideMsg('msgLogin'); setLoading('btnLogin',true);
+            try {
+                if(va.style.display==='block'&&c){
+                    const r=await fetch(API_AUTH+'/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:loginUsername,code:c,remember_me:document.getElementById('rememberMe').checked})});
+                    const d=await r.json(); showResponse('authResponse',d);
+                    if(d.code!=='rest_ok'){showMsg('msgLogin',d.message||'验证失败','error');setLoading('btnLogin',false);return;}
+                    sessionToken=d.data.token;userRole=(d.data.user?d.data.user.role:null)||'user';userName=(d.data.user?d.data.user.username:null)||u;
+                    if(document.getElementById('rememberMe').checked)localStorage.setItem('nova_token',sessionToken);else localStorage.removeItem('nova_token');
+                    hideLogin();updateUI();
+                } else {
+                    const r=await fetch(API_AUTH+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+                    const d=await r.json(); showResponse('authResponse',d);
+                    if(d.code!=='rest_ok'){showMsg('msgLogin',d.message||'登录失败','error');setLoading('btnLogin',false);return;}
+                    if(d.data.requires_verification){
+                        loginUsername=u;document.getElementById('emailHint').textContent=d.data.email_hint;
+                        va.style.display='block';document.getElementById('code').focus();
+                        document.getElementById('btnLogin').dataset.text='验证';document.getElementById('btnLogin').innerHTML='验证';
+                        setLoading('btnLogin',false);return;
+                    }
+                    sessionToken=d.data.token;userRole=(d.data.user?d.data.user.role:null)||'user';userName=(d.data.user?d.data.user.username:null)||u;
+                    if(document.getElementById('rememberMe').checked)localStorage.setItem('nova_token',sessionToken);else localStorage.removeItem('nova_token');
+                    hideLogin();updateUI();
+                }
+            } catch(e){showMsg('msgLogin','网络错误: '+e.message,'error');}
+            setLoading('btnLogin',false);
+        }
+
+        async function handleLogout(){
+            try{await fetch(API_AUTH+'/logout',{method:'POST',headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}});}catch(_){}
+            localStorage.removeItem('nova_token');sessionToken='';userRole='';userName='';updateUI();
+        }
+
+        // ---------- Fetch Messages ----------
+        async function fetchMessages(page) {
+            page = page || currentPage || 1;
+            currentPage = page;
+            const listEl=document.getElementById('msgList');
+            listEl.innerHTML='<div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div>';
+            hideResponse('listResponse');
+
+            try {
+                const url = API_GB + '?page=' + page + '&per_page=5';
+                const res=await fetch(url, {headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}});
+                const d=await res.json(); showResponse('listResponse',d);
+                if(d.code!=='rest_ok'){listEl.innerHTML='<div class="empty-state"><span class="icon">⚠️</span><p>'+(d.message||'获取失败')+'</p></div>';return;}
+
+                const dt=d.data;
+                const items=dt.items||[];
+                document.getElementById('msgCount').textContent='共 '+dt.total+' 条';
+
+                if(items.length===0){
+                    listEl.innerHTML='<div class="empty-state" style="padding:30px 20px;"><span class="icon">💬</span><p>还没有人留言，来抢个沙发吧！</p></div>';
+                    document.getElementById('pagination').innerHTML='';
+                    return;
+                }
+
+                let html='<div style="padding:0 20px;">';
+                items.forEach(function(msg){
+                    // Avatar
+                    var avatarHtml = '<div class="msg-avatar">'+escapeHtml(msg.nickname.charAt(0).toUpperCase())+'</div>';
+
+                    // Actions
+                    var actionsHtml = '';
+                    if (userRole==='admin') {
+                        actionsHtml =
+                            '<button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px;" onclick="showReplyModal('+msg.id+')">回复</button>'+
+                            ' <button class="btn btn-danger-sm" style="padding:3px 8px;font-size:11px;" onclick="deleteMessage('+msg.id+')">删除</button>';
+                    }
+
+                    // Reply content
+                    var replyHtml = '';
+                    if (msg.reply_content) {
+                        replyHtml = '<div class="reply-box"><div class="label">👨‍💻 博主回复</div><div class="text">'+escapeHtml(msg.reply_content)+'</div><div class="time">'+(msg.reply_time||'')+'</div></div>';
+                    }
+
+                    // User replies
+                    var repliesHtml = '';
+                    if (msg.replies && msg.replies.length > 0) {
+                        repliesHtml = '<div class="user-replies">';
+                        msg.replies.forEach(function(rp){
+                            var ra = '<div class="ur-avatar">'+escapeHtml(rp.nickname.charAt(0).toUpperCase())+'</div>';
+                            repliesHtml +=
+                                '<div class="user-reply">'+
+                                    ra+
+                                    '<div class="ur-body">'+
+                                        '<div class="ur-meta"><span class="name">'+escapeHtml(rp.nickname)+'</span><span class="time">'+escapeHtml(rp.created_at)+'</span></div>'+
+                                        '<div class="ur-content">'+escapeHtml(rp.content)+'</div>'+
+                                    '</div>'+
+                                '</div>';
+                        });
+                        repliesHtml += '</div>';
+                    }
+
+                    html+=
+                        '<div class="msg-card">'+
+                            '<div class="msg-header">'+
+                                '<div class="msg-user">'+
+                                    avatarHtml+
+                                    '<div><span class="msg-nickname">'+escapeHtml(msg.nickname)+'</span>'+
+                                    (msg.email ? '<span class="msg-badge">'+escapeHtml(msg.email)+'</span>' : '')+
+                                    '<span class="msg-time">'+escapeHtml(msg.created_at)+'</span></div>'+
+                                '</div>'+
+                                '<div class="msg-actions">'+actionsHtml+'</div>'+
+                            '</div>'+
+                            '<div class="msg-content">'+escapeHtml(msg.content)+'</div>'+
+                            replyHtml+
+                            repliesHtml+
+                        '</div>';
+                });
+                html+='</div>';
+                listEl.innerHTML=html;
+
+                // Pagination
+                var totalPages = Math.ceil(dt.total / dt.per_page);
+                var phtml = '';
+                if (totalPages > 1) {
+                    phtml += '<button class="page-btn" onclick="fetchMessages('+(page-1)+')" '+(page<=1?'disabled':'')+'>‹</button>';
+                    for (var i=1; i<=totalPages; i++) {
+                        phtml += '<button class="page-btn'+(i===page?' active':'')+'" onclick="fetchMessages('+i+')">'+i+'</button>';
+                    }
+                    phtml += '<button class="page-btn" onclick="fetchMessages('+(page+1)+')" '+(page>=totalPages?'disabled':'')+'>›</button>';
+                }
+                document.getElementById('pagination').innerHTML=phtml;
+            } catch(e){
+                document.getElementById('msgList').innerHTML='<div class="empty-state"><span class="icon">⚠️</span><p>网络错误: '+escapeHtml(e.message)+'</p></div>';
+            }
+        }
+
+        // ---------- Submit ----------
+        async function handleSubmit() {
+            const nickname=document.getElementById('gbNickname').value.trim();
+            const email=document.getElementById('gbEmail').value.trim();
+            const website=document.getElementById('gbWebsite').value.trim();
+            const content=document.getElementById('gbContent').value.trim();
+
+            if(!nickname){showMsg('msgForm','昵称不能为空','error');return;}
+            if(!content){showMsg('msgForm','内容不能为空','error');return;}
+
+            hideMsg('msgForm');hideResponse('submitResponse');setLoading('btnSubmit',true);
+            try{
+                const res=await fetch(API_GB,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nickname,email,website,content,parent_id:0})});
+                const d=await res.json();showResponse('submitResponse',d);
+                if(d.code==='rest_ok'){
+                    document.getElementById('gbContent').value='';
+                    showMsg('msgForm','✅ '+d.message,'success');
+                    fetchMessages(1);
+                } else {
+                    showMsg('msgForm','❌ '+(d.message||'提交失败'),'error');
+                }
+            }catch(e){showMsg('msgForm','网络错误: '+e.message,'error');}
+            setLoading('btnSubmit',false);
+        }
+
+        // ---------- Admin Reply ----------
+        function showReplyModal(id) {
+            document.getElementById('replyModal').classList.add('show');
+            document.getElementById('replyId').value=id;
+            document.getElementById('replyContent').value='';
+            hideMsg('msgReply');hideResponse('replyResponse');
+        }
+        function hideReplyModal() { document.getElementById('replyModal').classList.remove('show'); }
+
+        async function handleReply() {
+            const id=document.getElementById('replyId').value;
+            const replyContent=document.getElementById('replyContent').value.trim();
+            if(!replyContent){showMsg('msgReply','回复内容不能为空','error');return;}
+            hideMsg('msgReply');hideResponse('replyResponse');setLoading('btnReply',true);
+            try{
+                const res=await fetch(API_GB+'/'+id+'/reply',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionToken},body:JSON.stringify({reply_content:replyContent})});
+                const d=await res.json();showResponse('replyResponse',d);
+                if(d.code==='rest_ok'){showMsg('msgReply','✅ 回复成功','success');hideReplyModal();fetchMessages(currentPage);}else{showMsg('msgReply','❌ '+(d.message||'回复失败'),'error');}
+            }catch(e){showMsg('msgReply','网络错误: '+e.message,'error');}
+            setLoading('btnReply',false);
+        }
+
+        // ---------- Delete ----------
+        async function deleteMessage(id) {
+            if(!confirm('确定要删除此留言及其所有回复吗？')) return;
+            try{
+                const res=await fetch(API_GB+'/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+sessionToken}});
+                const d=await res.json();showResponse('listResponse',d);
+                if(d.code==='rest_ok'){fetchMessages(currentPage);}else{alert(d.message||'删除失败');}
+            }catch(e){alert('网络错误: '+e.message);}
+        }
+
+        // ---------- Init ----------
+        (function init(){
+            document.querySelectorAll('.btn').forEach(b=>{if(!b.dataset.text)b.dataset.text=b.innerHTML;});
+            document.getElementById('password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+            document.getElementById('code').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+
+            const token=localStorage.getItem('nova_token');
+            if(token){
+                (async function(){
+                    try{
+                        const r=await fetch(API_AUTH+'/me',{headers:{'Authorization':'Bearer '+token}});
+                        const d=await r.json();
+                        if(d.code==='rest_ok'){sessionToken=token;userRole=(d.data.user?d.data.user.role:null)||'user';userName=(d.data.user?d.data.user.username:null)||'';updateUI();}
+                    }catch(_){}
+                    fetchMessages(1);
+                })();
+            } else { fetchMessages(1); }
+
+            pollTimer=setInterval(function(){fetchMessages(currentPage);},30000);
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+# Nginx 错误页面配置说明
+# 将以下配置添加到您的 server 块中
+
+# 方法 1：直接指向 vendor/public/error 目录（推荐）
+error_page 404 /vendor/public/error/404.html;
+error_page 403 /vendor/public/error/403.html;
+error_page 500 502 503 504 /vendor/public/error/500.html;
+
+# 防止直接访问错误页面（只允许内部重定向）
+location ~ ^/vendor/public/error/\d{3}\.html$ {
+    internal;
+}
+
+# ============================================
+
+# 方法 2：创建软链接到网站根目录（可选）
+# 在服务器上执行：
+# ln -s /www/wwwroot/lygalaxy.cn/vendor/public/error/404.html /www/wwwroot/lygalaxy.cn/404.html
+# ln -s /www/wwwroot/lygalaxy.cn/vendor/public/error/403.html /www/wwwroot/lygalaxy.cn/403.html
+# ln -s /www/wwwroot/lygalaxy.cn/vendor/public/error/500.html /www/wwwroot/lygalaxy.cn/500.html
+
+# 然后配置：
+# error_page 404 /404.html;
+# error_page 403 /403.html;
+# error_page 500 502 503 504 /500.html;
+
+# location ~ ^/(404|403|500)\.html$ {
+#     internal;
+# }
+
+# ============================================
+
+# 方法 3：复制文件到根目录（最简单）
+# 将 vendor/public/error/ 下的文件复制到网站根目录
+# cp vendor/public/error/*.html .
+
+# 然后配置：
+# error_page 404 /404.html;
+# error_page 403 /403.html;
+# error_page 500 502 503 504 /500.html;
+
+# ============================================
+
+# 完整的宝塔面板配置示例：
+
+server
+{
+    listen 80;
+    listen 443 ssl http2;
+    server_name lygalaxy.cn;
+    root /www/wwwroot/lygalaxy.cn;
+    index index.php index.html;
+
+    # SSL 配置...
+    
+    # 错误页面配置
+    error_page 404 /vendor/public/error/404.html;
+    error_page 403 /vendor/public/error/403.html;
+    error_page 500 /vendor/public/error/500.html;
+    error_page 502 /vendor/public/error/502.html;
+    error_page 503 /vendor/public/error/503.html;
+    error_page 504 /vendor/public/error/500.html;
+
+    # 限制错误页面只能内部访问
+    location ~ ^/vendor/public/error/\d{3}\.html$ {
+        internal;
+    }
+
+    # PHP 配置...
+    include enable-php-82.conf;
+    
+    # 其他配置...
+}

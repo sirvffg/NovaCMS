@@ -1,0 +1,5 @@
+# 禁止访问所有文件
+<Files "*">
+    Order Deny,Allow
+    Deny from all
+</Files>

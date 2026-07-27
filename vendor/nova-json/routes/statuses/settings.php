@@ -1,0 +1,105 @@
+<?php
+/**
+ * Settings 路由
+ * 命名空间: v1
+ */
+
+register_rest_route('v1', '/statuses/settings', [
+    'methods'  => 'GET',
+    'callback' => 'nova_get_settings',
+]);
+
+function nova_get_settings($request) {
+    $db = getDB();
+
+    $stmt = $db->query("SELECT * FROM website_config LIMIT 1");
+    $config = $stmt->fetch();
+
+    if (!$config) {
+        return [
+            'code'    => 'settings_not_found',
+            'message' => '站点配置不存在',
+            'data'    => ['status' => 404],
+        ];
+    }
+
+    $fields = [
+        // ── 基础信息 ──
+        'website_name',             // 站点名称
+        'website_author',           // 站长
+        'website_intro',            // 站点简介
+        'website_description',      // 站点描述(SEO)
+        'website_detail',           // 站点详情
+        'robot_description',        // 搜索引擎描述
+        'logo',                     // Logo 地址
+        'favicon',                  // 网站图标
+        'website_start_time',       // 网站开办时间
+        // ── 背景设置 ──
+        'home_bg_image',            // 自定义背景图
+        'home_bg_video',            // 自定义背景视频
+        'use_bing_bg',              // 是否使用Bing每日背景
+        'bing_api',                 // Bing API 地址
+        // ── 联系方式 ──
+        'contact_email',            // 联系邮箱
+        'contact_qq',               // QQ号
+        'social_wechat',            // 微信号
+        'social_github',            // GitHub
+        'social_douyin',            // 抖音号
+        'social_kuaishou',          // 快手号
+        'social_bilibili',          // B站号
+        'social_xiaohongshu',       // 小红书号
+        'social_whatsapp',          // WhatsApp
+        'social_x',                 // X (Twitter)
+        'social_discord',           // Discord
+        'social_youtube',           // YouTube
+        // ── 音乐 ──
+        'music_enabled',            // 是否启用音乐
+        'music_playlist_id',        // 歌单ID
+        // ── 公告 ──
+        'website_announcement',              // 公告内容
+        'website_announcement_date',         // 公告发布日期
+        'website_announcement_popup',        // 是否弹窗展示公告
+        'website_announcement_enable',       // 是否启用公告
+        // ── 页脚 ──
+        'footer_extra',             // 页脚附加信息(HTML)
+    ];
+
+    $item = [];
+    foreach ($fields as $f) {
+        if (array_key_exists($f, $config)) {
+            $item[$f] = $config[$f];
+        }
+    }
+
+    // 读取备案信息
+    $recordConfigPath = dirname(__DIR__, 4) . '/config/RecordNumber.config';
+    $beianConfig = [];
+    if (file_exists($recordConfigPath)) {
+        $beianConfig = parse_ini_file($recordConfigPath);
+    }
+    // ── 备案信息 ──
+    $item['icp_record'] = $beianConfig['ICP_RECORD'] ?? '';
+    $item['public_security_record'] = $beianConfig['PUBLIC_SECURITY_RECORD'] ?? '';
+
+    // ── 主页小站链接 ──
+    try {
+        $links = $db->query("SELECT * FROM home_links WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
+        $item['home_links'] = $links ?: [];
+    } catch (Exception $e) {
+        $item['home_links'] = [];
+    }
+
+    // ── 个人项目 ──
+    try {
+        $projects = $db->query("SELECT * FROM my_projects WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
+        $item['my_projects'] = $projects ?: [];
+    } catch (Exception $e) {
+        $item['my_projects'] = [];
+    }
+
+    return [
+        'code'    => 'rest_ok',
+        'message' => '获取成功',
+        'data'    => ['status' => 200, 'item' => $item],
+    ];
+}

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QQ 群信息解析器</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            text-align: center;
+            color: #12b7f5;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .input-group {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #dcdfe6;
+            border-radius: 8px 0 0 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #12b7f5;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #12b7f5;
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0c9cce;
+        }
+        button:disabled {
+            background-color: #a0cfff;
+            cursor: not-allowed;
+        }
+        .result-card {
+            display: none;
+            border: 1px solid #ebeef5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            background-color: #fcfcfc;
+        }
+        .group-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .group-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin-right: 16px;
+            object-fit: cover;
+        }
+        .group-title {
+            flex: 1;
+        }
+        .group-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+        }
+        .group-code {
+            color: #909399;
+            font-size: 14px;
+            margin: 0;
+        }
+        .info-item {
+            display: flex;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .info-label {
+            width: 80px;
+            color: #606266;
+            font-weight: 500;
+        }
+        .info-value {
+            flex: 1;
+            color: #303133;
+            min-width: 0; /* 允许内部元素换行 */
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #ecf5ff;
+            color: #409eff;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        .stat-tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f4f4f5;
+            color: #909399;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .asset-item {
+            display: inline-flex;
+            align-items: center;
+            background-color: #fdf6ec;
+            color: #e6a23c;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #faecd8;
+        }
+        .asset-item img {
+            width: 14px;
+            height: 14px;
+            margin-right: 4px;
+        }
+        .error-message {
+            display: none;
+            color: #f56c6c;
+            background-color: #fef0f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #12b7f5;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>QQ 群信息解析器</h1>
+    
+    <div class="input-group">
+        <input type="text" id="urlInput" placeholder="请输入 QQ 群分享链接 (如: https://qm.qq.com/q/...)" autocomplete="off">
+        <button id="parseBtn" onclick="parseLink()">解析</button>
+    </div>
+
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p style="color: #909399; font-size: 14px; margin-top: 10px;">正在努力解析中...</p>
+    </div>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <div class="result-card" id="resultCard">
+        <div class="group-header">
+            <img id="resAvatar" class="group-avatar" src="" alt="群头像">
+            <div class="group-title">
+                <h2 id="resName" class="group-name">群名称</h2>
+                <p id="resCode" class="group-code">群号: </p>
+            </div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">群人数:</div>
+            <div id="resMemberCount" class="info-value"></div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">建群时间:</div>
+            <div id="resCreateTime" class="info-value"></div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">群介绍:</div>
+            <div id="resDescription" class="info-value"></div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">群标签:</div>
+            <div id="resTags" class="info-value"></div>
+        </div>
+
+        <div class="info-item">
+            <div class="info-label">群活跃:</div>
+            <div id="resActivity" class="info-value"></div>
+        </div>
+
+        <div class="info-item">
+            <div class="info-label">成员分布:</div>
+            <div id="resMemberTags" class="info-value"></div>
+        </div>
+
+        <div class="info-item">
+            <div class="info-label">群资产:</div>
+            <div id="resAssetInfo" class="info-value"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function parseLink() {
+        const urlInput = document.getElementById('urlInput');
+        const parseBtn = document.getElementById('parseBtn');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultCard = document.getElementById('resultCard');
+        
+        const url = urlInput.value.trim();
+        
+        if (!url) {
+            showError('请输入有效的群分享链接');
+            return;
+        }
+        
+        if (!url.startsWith('http')) {
+            showError('链接格式不正确，必须以 http 或 https 开头');
+            return;
+        }
+
+        // 重置 UI 状态
+        errorMessage.style.display = 'none';
+        resultCard.style.display = 'none';
+        loader.style.display = 'block';
+        parseBtn.disabled = true;
+
+        try {
+            // 注意：浏览器端直接 fetch https://qm.qq.com 会存在跨域 (CORS) 问题
+            // 我们需要调用我们自己写的后端 API 服务来代理请求
+            // 如果使用 PHP，请将下方的请求地址修改为您的 api.php 的实际 URL，例如: './api.php?url='
+            const response = await fetch(`./api.php?url=${encodeURIComponent(url)}`);
+            const data = await response.json();
+            
+            if (data.success && data.info) {
+                renderResult(data.info);
+            } else {
+                showError(data.error || '解析失败，未能提取到群信息');
+            }
+        } catch (error) {
+            showError('网络请求失败：' + error.message + '。请确保后端服务已启动。');
+        } finally {
+            loader.style.display = 'none';
+            parseBtn.disabled = false;
+        }
+    }
+
+    function renderResult(info) {
+        document.getElementById('resAvatar').src = info.avatar || 'https://via.placeholder.com/64';
+        document.getElementById('resName').textContent = info.name || '未知群名';
+        document.getElementById('resCode').textContent = `群号: ${info.groupCode || '未知'}`;
+        document.getElementById('resMemberCount').textContent = `${info.memberCount || 0} 人`;
+        document.getElementById('resCreateTime').textContent = info.createTime || '未知';
+        document.getElementById('resDescription').textContent = info.description || '无';
+        
+        const tagsContainer = document.getElementById('resTags');
+        tagsContainer.innerHTML = '';
+        if (info.tags && info.tags.length > 0) {
+            info.tags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = 'tag';
+                span.textContent = tag;
+                tagsContainer.appendChild(span);
+            });
+        } else {
+            tagsContainer.textContent = '无';
+        }
+        
+        // 渲染群活跃 (Activity)
+        const activityContainer = document.getElementById('resActivity');
+        activityContainer.innerHTML = '';
+        if (info.activity && info.activity.length > 0) {
+            info.activity.forEach(act => {
+                const span = document.createElement('span');
+                span.className = 'stat-tag';
+                span.textContent = act.desc;
+                activityContainer.appendChild(span);
+            });
+        } else {
+            activityContainer.textContent = '暂无数据';
+        }
+
+        // 渲染成员分布 (MemberTags)
+        const memberTagsContainer = document.getElementById('resMemberTags');
+        memberTagsContainer.innerHTML = '';
+        if (info.memberTags && info.memberTags.length > 0) {
+            info.memberTags.forEach(mtag => {
+                const span = document.createElement('span');
+                span.className = 'stat-tag';
+                if (mtag.color) {
+                    span.style.color = mtag.color;
+                    span.style.backgroundColor = mtag.color + '1a'; // 10% 透明度
+                }
+                const subText = mtag.subtitle && mtag.subtitle[0] ? mtag.subtitle[0].item : '';
+                span.textContent = `${mtag.title}${mtag.unit || ''} ${subText}`.trim();
+                memberTagsContainer.appendChild(span);
+            });
+        } else {
+            memberTagsContainer.textContent = '暂无数据';
+        }
+
+        // 渲染群资产 (AssetInfo)
+        const assetContainer = document.getElementById('resAssetInfo');
+        assetContainer.innerHTML = '';
+        if (info.assetInfo && info.assetInfo.length > 0) {
+            info.assetInfo.forEach(asset => {
+                const span = document.createElement('span');
+                span.className = 'asset-item';
+                
+                let html = '';
+                if (asset.icon) {
+                    html += `<img src="${asset.icon}" alt="icon">`;
+                }
+                html += `${asset.title}: ${asset.count || 0} ${asset.unit || ''}`;
+                span.innerHTML = html;
+                assetContainer.appendChild(span);
+            });
+        } else {
+            assetContainer.textContent = '暂无数据';
+        }
+
+        document.getElementById('resultCard').style.display = 'block';
+    }
+
+    function showError(msg) {
+        const errorEl = document.getElementById('errorMessage');
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+    }
+    
+    // 支持回车键触发
+    document.getElementById('urlInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            parseLink();
+        }
+    });
+
+    // 页面加载完成时检查 URL 参数
+    window.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryUrl = urlParams.get('url');
+        const format = urlParams.get('format');
+        
+        if (queryUrl) {
+            // 如果用户希望直接返回 JSON 格式
+            if (format === 'json') {
+                // 跳转到 PHP API 接口以直接输出纯 JSON
+                window.location.replace(`./api.php?url=${encodeURIComponent(queryUrl)}`);
+                return;
+            }
+
+            const urlInput = document.getElementById('urlInput');
+            urlInput.value = decodeURIComponent(queryUrl);
+            // 自动触发解析
+            parseLink();
+        }
+    });
+</script>
+
+</body>
+</html>

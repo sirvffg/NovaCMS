@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Users API 测试</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #222639;
+  --border: #2a2d3a;
+  --text: #e4e6ed;
+  --text-muted: #8b8fa3;
+  --accent: #6c8aff;
+  --accent-hover: #8ba4ff;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --radius: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.header h1 { font-size: 18px; font-weight: 700; }
+.header h1 span { color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.login-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--border);
+  color: var(--text-muted);
+}
+.login-badge.logged-in { background: rgba(52,211,153,.15); color: var(--success); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-success { background: var(--success); color: #000; }
+.btn-warning { background: var(--warning); color: #000; }
+.btn-danger { background: var(--danger); color: #fff; }
+.main { padding: 24px 32px; max-width: 1200px; margin: 0 auto; }
+.section { margin-bottom: 32px; }
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title .badge {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.badge-get { background: rgba(108,138,255,.15); color: var(--accent); }
+.badge-post { background: rgba(52,211,153,.15); color: var(--success); }
+.badge-put { background: rgba(251,191,36,.15); color: var(--warning); }
+.badge-delete { background: rgba(248,113,113,.15); color: var(--danger); }
+.badge-auth { background: rgba(168,130,255,.15); color: #a882ff; }
+.endpoint-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.card h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+.card h3 .method-tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.form-group { margin-bottom: 8px; }
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 3px;
+  color: var(--text-muted);
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .2s;
+  font-family: inherit;
+}
+.form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-group textarea { resize: vertical; min-height: 50px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px; }
+.form-row { display: flex; gap: 8px; }
+.form-row .form-group { flex: 1; }
+.form-actions { display: flex; gap: 6px; margin-top: 8px; }
+.response-box {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  display: none;
+}
+.response-box.success { border-color: rgba(52,211,153,.3); }
+.response-box.error { border-color: rgba(248,113,113,.3); }
+.response-box.show { display: block; }
+.status-msg {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: none;
+}
+.status-msg.show { display: block; }
+.status-msg.success { background: rgba(52,211,153,.1); color: var(--success); border: 1px solid rgba(52,211,153,.2); }
+.status-msg.error { background: rgba(248,113,113,.1); color: var(--danger); border: 1px solid rgba(248,113,113,.2); }
+.status-msg.info { background: rgba(108,138,255,.1); color: var(--accent); border: 1px solid rgba(108,138,255,.2); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  width: 420px;
+  max-width: 90vw;
+}
+.modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.auth-step { display: none; }
+.auth-step.active { display: block; }
+.modal .form-group { margin-bottom: 12px; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 200;
+  display: none;
+  animation: slideIn .3s ease;
+  max-width: 400px;
+}
+.toast.success { background: rgba(52,211,153,.9); color: #000; }
+.toast.error { background: rgba(248,113,113,.9); color: #fff; }
+.toast.info { background: rgba(108,138,255,.9); color: #fff; }
+.toast.show { display: block; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+@media (max-width: 768px) {
+  .header { padding: 14px 16px; }
+  .main { padding: 16px; }
+  .endpoint-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>Nova</span> Users API 测试</h1>
+  <div class="header-right">
+    <span class="login-badge" id="loginBadge">未登录</span>
+    <button class="btn btn-primary btn-sm" id="loginBtn" onclick="openLogin()">登录</button>
+    <button class="btn btn-outline btn-sm" id="logoutBtn" style="display:none" onclick="doApiLogout()">登出</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ========== 认证 Auth ========== -->
+  <div class="section">
+    <div class="section-title">
+      认证 Auth
+      <span class="badge badge-auth">需登录</span>
+    </div>
+    <div class="endpoint-grid">
+      <!-- Me -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(108,138,255,.15);color:var(--accent)">GET</span> /v1/auth/me</h3>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-sm" onclick="apiMe()">查询</button>
+        </div>
+        <div class="response-box" id="resMe"></div>
+      </div>
+
+      <!-- Devices -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(108,138,255,.15);color:var(--accent)">GET</span> /v1/auth/devices</h3>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-sm" onclick="apiDevices()">查询</button>
+        </div>
+        <div class="response-box" id="resDevices"></div>
+      </div>
+
+      <!-- Device Logout -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(248,113,113,.15);color:var(--danger)">POST</span> /v1/auth/devices/logout</h3>
+        <div class="form-group">
+          <label>device_token（前8位即可，粘贴后自动匹配）</label>
+          <input type="text" id="deviceLogoutToken" placeholder="如 a1b2c3d4" oninput="autoResolveDeviceToken(this.value)">
+          <input type="hidden" id="deviceLogoutFullToken">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-danger btn-sm" onclick="apiDeviceLogout()">登出该设备</button>
+        </div>
+        <div class="status-msg" id="msgDeviceLogout"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 用户管理 ========== -->
+  <div class="section">
+    <div class="section-title">
+      用户管理 Users
+      <span class="badge badge-auth">需登录</span>
+    </div>
+    <div class="endpoint-grid">
+      <!-- User List -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(108,138,255,.15);color:var(--accent)">GET</span> /v1/users</h3>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-sm" onclick="apiUserList()">查询</button>
+        </div>
+        <div class="response-box" id="resUserList"></div>
+      </div>
+
+      <!-- Get User by ID -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(108,138,255,.15);color:var(--accent)">GET</span> /v1/users/{id}</h3>
+        <div class="form-group">
+          <label>用户 ID</label>
+          <input type="number" id="userId" value="1">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-sm" onclick="apiGetUser()">查询</button>
+        </div>
+        <div class="response-box" id="resGetUser"></div>
+      </div>
+
+      <!-- Get Current User -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(108,138,255,.15);color:var(--accent)">GET</span> /v1/users/me</h3>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-sm" onclick="apiGetMe()">查询</button>
+        </div>
+        <div class="response-box" id="resGetMe"></div>
+      </div>
+
+      <!-- Create User -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(52,211,153,.15);color:var(--success)">POST</span> /v1/users <span style="color:var(--text-muted);font-weight:400;font-size:11px">管理员</span></h3>
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="createUsername" placeholder="newuser">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="text" id="createPassword" placeholder="password123">
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="createEmail" placeholder="user@example.com">
+        </div>
+        <div class="form-group">
+          <label>角色</label>
+          <select id="createRole"><option value="user">user</option><option value="admin">admin</option></select>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-success btn-sm" onclick="apiCreateUser()">创建</button>
+        </div>
+        <div class="response-box" id="resCreateUser"></div>
+      </div>
+
+      <!-- Update Current User -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(251,191,36,.15);color:var(--warning)">PUT</span> /v1/users/me</h3>
+        <div class="form-group">
+          <label>新邮箱</label>
+          <input type="email" id="updateMeEmail" placeholder="new@example.com">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>新密码</label>
+            <input type="text" id="updateMePassword" placeholder="留空不改">
+          </div>
+          <div class="form-group">
+            <label>旧密码</label>
+            <input type="text" id="updateMeOldPassword" placeholder="改密码必填">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-warning btn-sm" onclick="apiUpdateMe()">更新</button>
+        </div>
+        <div class="response-box" id="resUpdateMe"></div>
+      </div>
+
+      <!-- Update User by ID -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(251,191,36,.15);color:var(--warning)">PUT</span> /v1/users/{id} <span style="color:var(--text-muted);font-weight:400;font-size:11px">管理员</span></h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>用户 ID</label>
+            <input type="number" id="updateUserId" value="1">
+          </div>
+          <div class="form-group">
+            <label>新角色</label>
+            <select id="updateUserRole"><option value="">不修改</option><option value="admin">admin</option><option value="user">user</option></select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-warning btn-sm" onclick="apiUpdateUser()">更新</button>
+        </div>
+        <div class="response-box" id="resUpdateUser"></div>
+      </div>
+
+      <!-- Delete User -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(248,113,113,.15);color:var(--danger)">DELETE</span> /v1/users/{id} <span style="color:var(--text-muted);font-weight:400;font-size:11px">管理员</span></h3>
+        <div class="form-group">
+          <label>用户 ID</label>
+          <input type="number" id="deleteUserId">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-danger btn-sm" onclick="apiDeleteUser()">删除</button>
+        </div>
+        <div class="response-box" id="resDeleteUser"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 忘记密码 ========== -->
+  <div class="section">
+    <div class="section-title">
+      忘记密码 Password
+      <span class="badge badge-post">无需登录</span>
+    </div>
+    <div class="endpoint-grid">
+      <!-- Forgot Password -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(52,211,153,.15);color:var(--success)">POST</span> /v1/auth/forgot-password</h3>
+        <div class="form-group">
+          <label>用户名或邮箱</label>
+          <input type="text" id="forgotUsername" placeholder="输入账号" value="Galaxy">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-success btn-sm" onclick="apiForgotPassword()">发送验证码</button>
+        </div>
+        <div class="status-msg" id="msgForgotPassword"></div>
+      </div>
+
+      <!-- Reset Password -->
+      <div class="card">
+        <h3><span class="method-tag" style="background:rgba(52,211,153,.15);color:var(--success)">POST</span> /v1/auth/reset-password</h3>
+        <div class="form-group">
+          <label>用户名或邮箱</label>
+          <input type="text" id="resetUsername" placeholder="输入账号">
+        </div>
+        <div class="form-group">
+          <label>验证码</label>
+          <input type="text" id="resetCode" placeholder="6位验证码">
+        </div>
+        <div class="form-group">
+          <label>新密码</label>
+          <input type="text" id="resetPassword" placeholder="新密码（至少6位）">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-success btn-sm" onclick="apiResetPassword()">重置密码</button>
+        </div>
+        <div class="status-msg" id="msgResetPassword"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Login Modal ===== -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <div class="auth-step active" id="step1">
+      <h2>登录</h2>
+      <div class="form-group">
+        <label>用户名 / 邮箱</label>
+        <input type="text" id="loginUsername" placeholder="用户名或邮箱">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="loginPassword" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeLogin()">取消</button>
+        <button class="btn btn-primary" onclick="doLogin()">登录</button>
+      </div>
+      <div class="status-msg" id="loginMsg"></div>
+    </div>
+    <div class="auth-step" id="step2">
+      <h2>邮箱验证</h2>
+      <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px">验证码已发送到 <strong id="emailHint"></strong></p>
+      <div class="form-group">
+        <label>验证码</label>
+        <input type="text" id="verifyCode" placeholder="6位验证码" maxlength="6" onkeydown="if(event.key==='Enter')doVerify()">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeLogin()">取消</button>
+        <button class="btn btn-primary" onclick="doVerify()">验证</button>
+      </div>
+      <div class="status-msg" id="verifyMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/nova-json/v1';
+let authToken = localStorage.getItem('nova_token') || '';
+let currentUser = null;
+let deviceList = [];
+
+function isLoggedIn() { return !!authToken; }
+function updateAuthUI() {
+  const badge = document.getElementById('loginBadge');
+  document.getElementById('loginBtn').style.display = isLoggedIn() ? 'none' : '';
+  document.getElementById('logoutBtn').style.display = isLoggedIn() ? '' : 'none';
+  if (isLoggedIn()) {
+    badge.textContent = '已登录: ' + (currentUser ? currentUser.username : '...');
+    badge.className = 'login-badge logged-in';
+  } else {
+    badge.textContent = '未登录';
+    badge.className = 'login-badge';
+    authToken = '';
+    localStorage.removeItem('nova_token');
+  }
+}
+
+function fetchApi(url, method, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  return fetch(API_BASE + url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function showRes(el, data) {
+  const box = document.getElementById(el);
+  const str = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  box.textContent = str;
+  box.className = 'response-box show';
+  if (data && data.code === 'rest_ok') box.classList.add('success');
+  else if (data && data.code !== undefined) box.classList.add('error');
+}
+
+function showMsg(el, text, type) {
+  const m = document.getElementById(el);
+  m.textContent = text;
+  m.className = 'status-msg ' + type + ' show';
+  clearTimeout(m._hide);
+  m._hide = setTimeout(() => m.classList.remove('show'), 5000);
+}
+
+// ── Login ──
+function openLogin() {
+  document.getElementById('loginModal').classList.add('open');
+  document.getElementById('step1').classList.add('active');
+  document.getElementById('step2').classList.remove('active');
+  document.getElementById('loginMsg').className = 'status-msg';
+  document.getElementById('verifyMsg').className = 'status-msg';
+}
+function closeLogin() { document.getElementById('loginModal').classList.remove('open'); }
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim() || 'Galaxy';
+  const password = document.getElementById('loginPassword').value.trim() || 'Galaxy1314,';
+  if (!username || !password) { showMsg('loginMsg', '请填写用户名和密码', 'error'); return; }
+  showMsg('loginMsg', '登录中...', 'info');
+  try {
+    const res = await fetchApi('/auth/login', 'POST', { username, password });
+    const data = await res.json();
+    if (data.code === 'rest_ok') {
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+      document.getElementById('emailHint').textContent = data.data.email_hint || '***';
+    } else {
+      showMsg('loginMsg', data.message || '登录失败', 'error');
+    }
+  } catch(e) { showMsg('loginMsg', '网络错误: ' + e.message, 'error'); }
+}
+
+async function doVerify() {
+  const code = document.getElementById('verifyCode').value.trim();
+  const username = document.getElementById('loginUsername').value.trim();
+  if (!code) { showMsg('verifyMsg', '请输入验证码', 'error'); return; }
+  try {
+    const res = await fetchApi('/auth/verify', 'POST', { username, code });
+    const data = await res.json();
+    if (data.code === 'rest_ok') {
+      authToken = data.data.token;
+      currentUser = data.data.user;
+      localStorage.setItem('nova_token', authToken);
+      updateAuthUI();
+      closeLogin();
+      showToast('登录成功: ' + currentUser.username, 'success');
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('verifyCode').value = '';
+    } else {
+      showMsg('verifyMsg', data.message || '验证失败', 'error');
+    }
+  } catch(e) { showMsg('verifyMsg', '网络错误: ' + e.message, 'error'); }
+}
+
+// ── Auth API ──
+async function apiMe() {
+  try {
+    const res = await fetchApi('/auth/me', 'GET');
+    const data = await res.json();
+    showRes('resMe', data);
+    if (data.code === 'rest_ok' && data.data.user) {
+      currentUser = data.data.user;
+      updateAuthUI();
+    }
+  } catch(e) { showRes('resMe', '网络错误: ' + e.message); }
+}
+
+async function apiDevices() {
+  try {
+    const res = await fetchApi('/auth/devices', 'GET');
+    const data = await res.json();
+    showRes('resDevices', data);
+    if (data.code === 'rest_ok') deviceList = data.data.items || [];
+  } catch(e) { showRes('resDevices', '网络错误: ' + e.message); }
+}
+
+function autoResolveDeviceToken(prefix) {
+  if (!prefix || prefix.length < 4) return;
+  const match = deviceList.find(d => d.device_token && d.device_token.startsWith(prefix));
+  if (match) {
+    document.getElementById('deviceLogoutFullToken').value = match.device_token;
+    document.getElementById('deviceLogoutToken').style.borderColor = 'var(--success)';
+  } else {
+    document.getElementById('deviceLogoutFullToken').value = '';
+    document.getElementById('deviceLogoutToken').style.borderColor = '';
+  }
+}
+
+async function apiDeviceLogout() {
+  const deviceToken = document.getElementById('deviceLogoutFullToken').value;
+  if (!deviceToken) { showMsg('msgDeviceLogout', '设备 token 不匹配，请先查询设备列表', 'error'); return; }
+  try {
+    const res = await fetchApi('/auth/devices/logout', 'POST', { device_token: deviceToken });
+    const data = await res.json();
+    if (data.code === 'rest_ok') {
+      showMsg('msgDeviceLogout', '设备已登出', 'success');
+      document.getElementById('deviceLogoutToken').value = '';
+      document.getElementById('deviceLogoutToken').style.borderColor = '';
+      document.getElementById('deviceLogoutFullToken').value = '';
+      apiDevices();
+    } else {
+      showMsg('msgDeviceLogout', data.message, 'error');
+    }
+  } catch(e) { showMsg('msgDeviceLogout', '网络错误: ' + e.message, 'error'); }
+}
+
+async function doApiLogout() {
+  try {
+    await fetchApi('/auth/logout', 'POST');
+  } catch(e) {}
+  authToken = '';
+  currentUser = null;
+  localStorage.removeItem('nova_token');
+  updateAuthUI();
+  showToast('已登出', 'info');
+}
+
+// ── Users API ──
+async function apiUserList() {
+  try {
+    const res = await fetchApi('/users', 'GET');
+    const data = await res.json();
+    showRes('resUserList', data);
+  } catch(e) { showRes('resUserList', '网络错误: ' + e.message); }
+}
+
+async function apiGetUser() {
+  const id = document.getElementById('userId').value;
+  try {
+    const res = await fetchApi('/users/' + id, 'GET');
+    const data = await res.json();
+    showRes('resGetUser', data);
+  } catch(e) { showRes('resGetUser', '网络错误: ' + e.message); }
+}
+
+async function apiGetMe() {
+  try {
+    const res = await fetchApi('/users/me', 'GET');
+    const data = await res.json();
+    showRes('resGetMe', data);
+  } catch(e) { showRes('resGetMe', '网络错误: ' + e.message); }
+}
+
+async function apiCreateUser() {
+  const body = {};
+  const u = document.getElementById('createUsername').value.trim();
+  const p = document.getElementById('createPassword').value.trim();
+  if (!u || !p) { showMsg('resCreateUser', '用户名和密码必填', 'error'); return; }
+  body.username = u;
+  body.password = p;
+  const e = document.getElementById('createEmail').value.trim();
+  if (e) body.email = e;
+  body.role = document.getElementById('createRole').value;
+  try {
+    const res = await fetchApi('/users', 'POST', body);
+    const data = await res.json();
+    showRes('resCreateUser', data);
+    if (data.code === 'rest_ok') showToast('用户已创建: ' + body.username, 'success');
+  } catch(e) { showRes('resCreateUser', '网络错误: ' + e.message); }
+}
+
+async function apiUpdateMe() {
+  const body = {};
+  const email = document.getElementById('updateMeEmail').value.trim();
+  const pw = document.getElementById('updateMePassword').value.trim();
+  const old = document.getElementById('updateMeOldPassword').value.trim();
+  if (email) body.email = email;
+  if (pw) { body.password = pw; body.old_password = old || undefined; }
+  if (Object.keys(body).length === 0) { showMsg('resUpdateMe', '请填写要更新的字段', 'error'); return; }
+  try {
+    const res = await fetchApi('/users/me', 'PUT', body);
+    const data = await res.json();
+    showRes('resUpdateMe', data);
+    if (data.code === 'rest_ok') showToast('用户信息已更新', 'success');
+  } catch(e) { showRes('resUpdateMe', '网络错误: ' + e.message); }
+}
+
+async function apiUpdateUser() {
+  const id = document.getElementById('updateUserId').value;
+  if (!id) { showMsg('resUpdateUser', '请输入用户 ID', 'error'); return; }
+  const body = {};
+  const role = document.getElementById('updateUserRole').value;
+  if (role) body.role = role;
+  if (Object.keys(body).length === 0) { showMsg('resUpdateUser', '请选择要更新的字段', 'error'); return; }
+  try {
+    const res = await fetchApi('/users/' + id, 'PUT', body);
+    const data = await res.json();
+    showRes('resUpdateUser', data);
+    if (data.code === 'rest_ok') showToast('用户 ' + id + ' 已更新', 'success');
+  } catch(e) { showRes('resUpdateUser', '网络错误: ' + e.message); }
+}
+
+async function apiDeleteUser() {
+  const id = document.getElementById('deleteUserId').value;
+  if (!id) { showMsg('resDeleteUser', '请输入用户 ID', 'error'); return; }
+  if (!confirm('确认删除用户 #' + id + ' ？')) return;
+  try {
+    const res = await fetchApi('/users/' + id, 'DELETE');
+    const data = await res.json();
+    showRes('resDeleteUser', data);
+    if (data.code === 'rest_ok') showToast('用户已删除', 'success');
+  } catch(e) { showRes('resDeleteUser', '网络错误: ' + e.message); }
+}
+
+// ── Forgot / Reset Password ──
+async function apiForgotPassword() {
+  const username = document.getElementById('forgotUsername').value.trim();
+  if (!username) { showMsg('msgForgotPassword', '请输入用户名或邮箱', 'error'); return; }
+  try {
+    const res = await fetchApi('/auth/forgot-password', 'POST', { username });
+    const data = await res.json();
+    showMsg('msgForgotPassword', data.message || data.code, data.code === 'rest_ok' ? 'success' : 'error');
+    if (data.code === 'rest_ok') {
+      document.getElementById('resetUsername').value = username;
+    }
+  } catch(e) { showMsg('msgForgotPassword', '网络错误: ' + e.message, 'error'); }
+}
+
+async function apiResetPassword() {
+  const username = document.getElementById('resetUsername').value.trim();
+  const code = document.getElementById('resetCode').value.trim();
+  const password = document.getElementById('resetPassword').value.trim();
+  if (!username || !code || !password) { showMsg('msgResetPassword', '请填完所有字段', 'error'); return; }
+  if (password.length < 6) { showMsg('msgResetPassword', '密码至少6位', 'error'); return; }
+  try {
+    const res = await fetchApi('/auth/reset-password', 'POST', { username, code, password });
+    const data = await res.json();
+    if (data.code === 'rest_ok') {
+      showMsg('msgResetPassword', '密码已重置，请重新登录', 'success');
+      document.getElementById('resetCode').value = '';
+      document.getElementById('resetPassword').value = '';
+      setTimeout(doApiLogout, 1500);
+    } else {
+      showMsg('msgResetPassword', data.message, 'error');
+    }
+  } catch(e) { showMsg('msgResetPassword', '网络错误: ' + e.message, 'error'); }
+}
+
+// ── Init ──
+if (authToken) {
+  document.getElementById('loginUsername').value = 'Galaxy';
+  apiMe();
+}
+updateAuthUI();
+</script>
+</body>
+</html>

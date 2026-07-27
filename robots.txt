@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /blog.php
+Allow: /assets/
+Allow: /license/
+Allow: /index.php
+Allow: /vendor/monitor.php
+Allow: /vendor/friend-links.php
+Allow: /vendor/gallery.php
+Allow: /vendor/shuoshuo.php
+Allow: /vendor/guestbook.php
+
+Disallow: /admin/
+Disallow: /config/
+Disallow: /vendor/
+# Sitemap
+Sitemap: https://lygalaxy.cn/license/sitemap.php

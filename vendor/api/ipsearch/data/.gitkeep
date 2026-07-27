@@ -1,0 +1,5 @@
+请将以下数据库文件放入此目录：
+  - qqwry.ipdb    (纯真 IP 数据库)
+  - GeoCN.mmdb    (GeoCN 国内高精度数据库)
+  - full.txt      (行政区划全名数据)
+  - short.txt     (行政区划简称数据)

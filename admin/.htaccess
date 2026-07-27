@@ -1,0 +1,11 @@
+# 增加POST请求大小限制，支持长内容提交
+php_value post_max_size 50M
+php_value upload_max_filesize 50M
+php_value max_input_time 300
+php_value max_execution_time 300
+php_value memory_limit 256M
+
+# 关闭错误显示（生产环境），错误记录到日志
+php_flag display_errors Off
+php_value log_errors On
+php_value error_reporting E_ALL

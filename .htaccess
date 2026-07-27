@@ -1,0 +1,58 @@
+# 增加POST请求大小限制，支持长内容提交
+php_value post_max_size 50M
+php_value upload_max_filesize 50M
+php_value max_input_time 300
+php_value max_execution_time 300
+php_value memory_limit 256M
+
+# 关闭错误显示（生产环境），错误记录到日志
+php_flag display_errors Off
+php_value log_errors On
+php_value error_reporting E_ALL
+
+# 启用浏览器缓存 - CSS/JS/字体文件缓存1年
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # 字体文件缓存1年
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    
+    # CSS/JS缓存1年
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    
+    # 图片缓存1年
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>
+
+# 设置Cache-Control头
+<IfModule mod_headers.c>
+    # 字体文件
+    <FilesMatch "\.(woff2|woff|ttf)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # CSS/JS文件
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # 图片文件
+    <FilesMatch "\.(webp|jpg|jpeg|png|gif|svg|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# RSS Feed - /rss.xml → license/rss.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^rss\.xml$ license/rss.php [L]
+</IfModule>

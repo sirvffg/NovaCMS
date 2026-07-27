@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Gallery 示例</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+        .container { max-width: 720px; margin: 0 auto; }
+
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 20px; }
+        .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .card p.sub { color: #666; font-size: 14px; margin-bottom: 20px; }
+
+        .message { padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none; }
+        .message.error { display: block; background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+        .message.success { display: block; background: #e8f8e8; color: #27ae60; border: 1px solid #c6f5c6; }
+        .message.info { display: block; background: #e8f0fe; color: #2c6fdb; border: 1px solid #c6d9f5; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #333; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; transition: border-color .2s; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #4f6ef7; box-shadow: 0 0 0 3px rgba(79,110,247,0.12); }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s, opacity .2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: #4f6ef7; color: #fff; }
+        .btn-primary:hover { background: #3d5bd9; }
+        .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-danger-sm { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 5px 12px; font-size: 13px; }
+        .btn-danger-sm:hover { background: #fecaca; }
+        .btn-outline { background: #fff; color: #666; border: 1px solid #ddd; }
+        .btn-outline:hover { background: #f5f5f5; }
+        .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 8px; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; }
+        .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; margin: 0; }
+        .checkbox-group label { font-size: 14px; color: #666; margin: 0; cursor: pointer; }
+
+        .response-box { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 14px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 12px; max-height: 300px; overflow: auto; white-space: pre-wrap; display: none; }
+        .response-box.show { display: block; }
+
+        .footer { text-align: center; font-size: 12px; color: #aaa; margin-top: 20px; padding-bottom: 20px; }
+
+        .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+        .album-card { border: 1px solid #eee; border-radius: 10px; overflow: hidden; cursor: pointer; transition: box-shadow .2s, transform .2s; }
+        .album-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .album-card .cover { width: 100%; height: 120px; object-fit: cover; background: #f5f5f5; display: block; }
+        .album-card .info { padding: 12px; }
+        .album-card .info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .album-card .info p { font-size: 12px; color: #999; margin: 0; }
+
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+        .photo-item { border: 1px solid #eee; border-radius: 8px; overflow: hidden; position: relative; }
+        .photo-item img { width: 100%; height: 150px; object-fit: cover; display: block; cursor: pointer; }
+        .photo-item .photo-actions { position: absolute; top: 6px; right: 6px; }
+
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666; margin-bottom: 16px; }
+        .breadcrumb a { color: #4f6ef7; text-decoration: none; cursor: pointer; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #999; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .user-badge { font-size: 13px; color: #666; display: flex; align-items: center; gap: 8px; }
+        .role-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .role-tag.admin { background: #fef3c7; color: #d97706; }
+        .role-tag.user { background: #dbeafe; color: #2563eb; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: #fff; border-radius: 12px; padding: 28px; width: 90%; max-width: 420px; margin: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="card" style="padding:16px 24px;">
+            <div class="top-bar">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <strong style="font-size:16px;">📸 相册</strong>
+                    <span id="albumTotal" style="font-size:13px;color:#999;"></span>
+                </div>
+                <div class="user-badge">
+                    <span id="loginStatus"><button class="btn btn-outline btn-sm" onclick="showLogin()">登录</button></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin actions -->
+        <div id="adminBar" class="card" style="padding:16px 24px;display:none;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" onclick="showCreateAlbum()">+ 新建相册</button>
+                <button class="btn btn-outline btn-sm" onclick="fetchAlbums()">刷新</button>
+            </div>
+        </div>
+
+        <!-- Album List -->
+        <div class="card">
+            <div id="msg3" class="message"></div>
+            <div id="albumList"><div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div></div>
+            <div id="albumResponse" class="response-box"></div>
+        </div>
+
+        <!-- Album Detail -->
+        <div id="albumDetail" style="display:none;">
+            <div class="card">
+                <div class="breadcrumb">
+                    <a onclick="backToAlbums()">← 相册列表</a>
+                    <span>/</span>
+                    <span id="detailName"></span>
+                </div>
+                <div id="msgDetail" class="message"></div>
+                <div id="detailContent">
+                    <p id="detailDesc" style="color:#666;font-size:14px;margin-bottom:16px;"></p>
+                    <div id="photoGrid" class="photo-grid"></div>
+                </div>
+                <div id="detailResponse" class="response-box"></div>
+            </div>
+
+            <!-- Upload (admin only) -->
+            <div id="uploadCard" class="card" style="display:none;">
+                <div class="section-title">⬆️ 上传照片</div>
+                <div id="msgUpload" class="message"></div>
+                <div class="form-group">
+                    <label>选择图片</label>
+                    <input type="file" id="uploadFile" accept="image/jpeg,image/png,image/gif,image/webp">
+                </div>
+                <div class="form-group">
+                    <label>或网络图片链接</label>
+                    <input type="url" id="uploadUrl" placeholder="http://...">
+                </div>
+                <div class="form-group">
+                    <label>标题（选填）</label>
+                    <input type="text" id="uploadTitle" placeholder="照片标题">
+                </div>
+                <button class="btn btn-primary btn-sm" id="btnUpload" onclick="handleUpload()">上传</button>
+                <div id="uploadResponse" class="response-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal" onclick="if(event.target===this)hideLogin()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:16px;">登录</h3>
+            <div id="msgLogin" class="message"></div>
+            <div class="form-group">
+                <label>用户名 / 邮箱</label>
+                <input type="text" id="username" placeholder="管理员或用户账号" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="password" placeholder="输入密码" autocomplete="current-password">
+            </div>
+            <div class="checkbox-group" style="margin-bottom:16px;">
+                <input type="checkbox" id="rememberMe" checked>
+                <label for="rememberMe">记住我</label>
+            </div>
+            <div id="verifyArea" style="display:none;">
+                <div class="form-group">
+                    <label>邮箱验证码（已发送至 <strong id="emailHint"></strong>）</label>
+                    <input type="text" id="code" placeholder="6 位数字" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btnLogin" onclick="handleLogin()" style="width:100%;justify-content:center;">登录</button>
+            <button class="btn btn-outline" style="margin-top:8px;width:100%;justify-content:center;" onclick="hideLogin()">取消</button>
+            <div id="authResponse" class="response-box" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <!-- Create Album Modal -->
+    <div class="modal-overlay" id="createModal" onclick="if(event.target===this)closeCreateAlbum()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:16px;">新建相册</h3>
+            <div id="msgCreate" class="message"></div>
+            <div class="form-group">
+                <label>相册名称 <span style="color:#e74c3c;">*</span></label>
+                <input type="text" id="newAlbumName" placeholder="输入相册名称">
+            </div>
+            <div class="form-group">
+                <label>描述</label>
+                <textarea id="newAlbumDesc" placeholder="相册描述（选填）" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>封面图</label>
+                <input type="file" id="newAlbumCover" accept="image/jpeg,image/png,image/gif,image/webp">
+            </div>
+            <div class="form-group">
+                <label>排序</label>
+                <input type="number" id="newAlbumSort" value="0">
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-outline btn-sm" onclick="closeCreateAlbum()">取消</button>
+                <button class="btn btn-primary btn-sm" id="btnCreateAlbum" onclick="handleCreateAlbum()">创建</button>
+            </div>
+            <div id="createResponse" class="response-box"></div>
+        </div>
+    </div>
+
+    <div class="footer">Nova JSON API Demo · GET 公开，写入需管理员权限</div>
+
+    <script>
+        // ---------- State ----------
+        let sessionToken = '';
+        let userRole = '';      // ''=未登录, 'admin', 'user'
+        let userName = '';
+        let loginUsername = '';
+        let currentAlbumId = 0;
+        const API_ALBUMS = '/nova-json/v1/statuses/gallery/albums';
+        const API_PHOTOS = '/nova-json/v1/statuses/gallery/photos';
+        const API_AUTH = '/nova-json/v1/auth';
+
+        // ---------- UI ----------
+        function showMsg(id, text, type) { const el=document.getElementById(id); el.textContent=text; el.className='message '+type; }
+        function hideMsg(id) { document.getElementById(id).className='message'; }
+        function showResponse(id, d) { const el=document.getElementById(id); el.textContent=JSON.stringify(d,null,2); el.classList.add('show'); }
+        function hideResponse(id) { document.getElementById(id).classList.remove('show'); }
+        function escapeHtml(s) { if(typeof s!=='string')return s; var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+        function setLoading(bid, l) { const b=document.getElementById(bid); b.disabled=l; b.innerHTML=l?'<span class="spinner"></span>处理中...':b.dataset.text; }
+
+        // ---------- Login Modal ----------
+        function showLogin() {
+            document.getElementById('loginModal').classList.add('show');
+            hideMsg('msgLogin'); hideResponse('authResponse');
+            document.getElementById('verifyArea').style.display = 'none';
+            document.getElementById('btnLogin').dataset.text = '登录';
+            document.getElementById('btnLogin').innerHTML = '登录';
+        }
+        function hideLogin() { document.getElementById('loginModal').classList.remove('show'); }
+
+        // ---------- Update UI by Role ----------
+        function updateUI() {
+            const statusEl = document.getElementById('loginStatus');
+            const adminBar = document.getElementById('adminBar');
+            const uploadCard = document.getElementById('uploadCard');
+
+            if (sessionToken && userRole) {
+                const roleLabel = userRole === 'admin' ? '<span class="role-tag admin">管理员</span>' : '<span class="role-tag user">用户</span>';
+                statusEl.innerHTML = roleLabel+' '+escapeHtml(userName)+' <button class="btn btn-outline" style="padding:3px 10px;font-size:12px;color:#dc2626;" onclick="handleLogout()">退出</button>';
+
+                adminBar.style.display = userRole === 'admin' ? 'block' : 'none';
+                // 如果在相册详情页，控制上传区显示
+                if (document.getElementById('albumDetail').style.display !== 'none') {
+                    uploadCard.style.display = userRole === 'admin' ? 'block' : 'none';
+                }
+            } else {
+                statusEl.innerHTML = '<button class="btn btn-outline btn-sm" onclick="showLogin()">登录</button>';
+                adminBar.style.display = 'none';
+                uploadCard.style.display = 'none';
+            }
+            // 重新渲染详情页（控制删除按钮）
+            if (window._lastPhotos !== undefined) renderPhotos(window._lastPhotos);
+        }
+
+        // ---------- Login ----------
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            if (!username||!password) { showMsg('msgLogin','请输入账号和密码','error'); return; }
+            const verifyArea = document.getElementById('verifyArea');
+            const code = document.getElementById('code').value.trim();
+            hideMsg('msgLogin');
+            setLoading('btnLogin', true);
+            try {
+                if (verifyArea.style.display === 'block' && code) {
+                    const res = await fetch(API_AUTH+'/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:loginUsername, code, remember_me:document.getElementById('rememberMe').checked}) });
+                    const data = await res.json();
+                    showResponse('authResponse', data);
+                    if (data.code !== 'rest_ok') { showMsg('msgLogin',data.message||'验证失败','error'); setLoading('btnLogin',false); return; }
+                    sessionToken = data.data.token;
+                    userRole = (data.data.user ? data.data.user.role : null) || 'user';
+                    userName = (data.data.user ? data.data.user.username : null) || username;
+                    if (document.getElementById('rememberMe').checked) localStorage.setItem('nova_token', sessionToken);
+                    else localStorage.removeItem('nova_token');
+                    hideLogin();
+                    updateUI();
+                } else {
+                    const res = await fetch(API_AUTH+'/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username, password}) });
+                    const data = await res.json();
+                    showResponse('authResponse', data);
+                    if (data.code !== 'rest_ok') { showMsg('msgLogin',data.message||'登录失败','error'); setLoading('btnLogin',false); return; }
+                    if (data.data.requires_verification) {
+                        loginUsername = username;
+                        document.getElementById('emailHint').textContent = data.data.email_hint;
+                        verifyArea.style.display = 'block';
+                        document.getElementById('code').focus();
+                        document.getElementById('btnLogin').dataset.text = '验证';
+                        document.getElementById('btnLogin').innerHTML = '验证';
+                        setLoading('btnLogin', false);
+                        return;
+                    }
+                    sessionToken = data.data.token;
+                    userRole = (data.data.user ? data.data.user.role : null) || 'user';
+                    userName = (data.data.user ? data.data.user.username : null) || username;
+                    if (document.getElementById('rememberMe').checked) localStorage.setItem('nova_token', sessionToken);
+                    else localStorage.removeItem('nova_token');
+                    hideLogin();
+                    updateUI();
+                }
+            } catch(err) { showMsg('msgLogin','网络错误: '+err.message,'error'); }
+            setLoading('btnLogin', false);
+        }
+
+        async function handleLogout() {
+            try { await fetch(API_AUTH+'/logout', { method:'POST', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{} }); } catch(_) {}
+            localStorage.removeItem('nova_token');
+            sessionToken = ''; userRole = ''; userName = '';
+            updateUI();
+        }
+
+        // ---------- Albums ----------
+        async function fetchAlbums() {
+            const listEl = document.getElementById('albumList');
+            listEl.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div>';
+            document.getElementById('albumDetail').style.display = 'none';
+            hideMsg('msg3'); hideResponse('albumResponse');
+            try {
+                const res = await fetch(API_ALBUMS, { headers: sessionToken?{'Authorization':'Bearer '+sessionToken}:{} });
+                const data = await res.json();
+                showResponse('albumResponse', data);
+                if (data.code !== 'rest_ok') { listEl.innerHTML='<div class="empty-state"><span class="icon">⚠️</span><p>'+(data.message||'获取失败')+'</p></div>'; return; }
+                const items = data.data.items || [];
+                document.getElementById('albumTotal').textContent = '共 '+items.length+' 个相册';
+                if (items.length === 0) { listEl.innerHTML='<div class="empty-state"><span class="icon">📷</span><p>暂无相册</p></div>'; return; }
+                let html = '<div class="album-grid">';
+                items.forEach(function(a) {
+                    const cover = a.cover_image || '';
+                    html += '<div class="album-card" onclick="viewAlbum('+a.id+')">' +
+                        '<div class="cover" style="background:#f0f0f0;'+(cover?'background-image:url('+escapeHtml(cover)+');background-size:cover;background-position:center;':'')+'"></div>' +
+                        '<div class="info"><h4>'+escapeHtml(a.name)+'</h4><p>'+a.photo_count+' 张照片</p></div></div>';
+                });
+                html += '</div>';
+                listEl.innerHTML = html;
+            } catch(err) { listEl.innerHTML='<div class="empty-state"><span class="icon">⚠️</span><p>网络错误: '+escapeHtml(err.message)+'</p></div>'; }
+        }
+
+        // ---------- Album Detail ----------
+        function renderPhotos(photos) {
+            const gridEl = document.getElementById('photoGrid');
+            if (!photos || photos.length === 0) { gridEl.innerHTML='<div class="empty-state" style="padding:20px;"><span class="icon" style="font-size:32px;">🖼️</span><p>暂无照片</p></div>'; return; }
+            let html = '';
+            photos.forEach(function(p) {
+                const delBtn = (userRole === 'admin')
+                    ? '<button class="btn btn-danger-sm" style="padding:2px 8px;font-size:11px;" onclick="deletePhoto('+p.id+')">删除</button>'
+                    : '';
+                html += '<div class="photo-item" id="photo-'+p.id+'">' +
+                    '<img src="'+escapeHtml(p.url)+'" onclick="window.open(this.src)" alt="'+escapeHtml(p.title||'')+'">' +
+                    (p.title?'<div style="padding:6px 8px;font-size:12px;color:#666;">'+escapeHtml(p.title)+'</div>':'') +
+                    (delBtn ? '<div class="photo-actions">'+delBtn+'</div>' : '') +
+                    '</div>';
+            });
+            gridEl.innerHTML = html;
+        }
+
+        async function viewAlbum(id) {
+            currentAlbumId = id;
+            document.getElementById('albumDetail').style.display = 'block';
+            document.getElementById('detailContent').style.display = 'none';
+            hideMsg('msgDetail'); hideResponse('detailResponse');
+            document.getElementById('detailName').textContent = '加载中...';
+            const uploadCard = document.getElementById('uploadCard');
+            uploadCard.style.display = userRole === 'admin' ? 'block' : 'none';
+
+            try {
+                const res = await fetch(API_ALBUMS+'/'+id, { headers: sessionToken?{'Authorization':'Bearer '+sessionToken}:{} });
+                const data = await res.json();
+                showResponse('detailResponse', data);
+                if (data.code !== 'rest_ok') { showMsg('msgDetail',data.message||'获取失败','error'); return; }
+                const album = data.data.album;
+                const photos = data.data.photos || [];
+                document.getElementById('detailName').textContent = escapeHtml(album.name);
+                document.getElementById('detailDesc').textContent = (album.description||'无描述')+' · '+data.data.total+' 张照片';
+                document.getElementById('detailContent').style.display = 'block';
+                window._lastPhotos = photos;
+                renderPhotos(photos);
+            } catch(err) { showMsg('msgDetail','网络错误: '+err.message,'error'); }
+        }
+
+        function backToAlbums() { document.getElementById('albumDetail').style.display='none'; currentAlbumId=0; }
+
+        // ---------- Create Album ----------
+        function showCreateAlbum() { document.getElementById('createModal').classList.add('show'); document.getElementById('newAlbumName').value=''; document.getElementById('newAlbumDesc').value=''; document.getElementById('newAlbumSort').value='0'; document.getElementById('newAlbumCover').value=''; hideMsg('msgCreate'); hideResponse('createResponse'); }
+        function closeCreateAlbum() { document.getElementById('createModal').classList.remove('show'); }
+        async function handleCreateAlbum() {
+            const name = document.getElementById('newAlbumName').value.trim();
+            if (!name) { showMsg('msgCreate','相册名称不能为空','error'); return; }
+            hideMsg('msgCreate'); hideResponse('createResponse'); setLoading('btnCreateAlbum',true);
+            try {
+                const fd = new FormData(); fd.append('name',name); fd.append('description',document.getElementById('newAlbumDesc').value.trim()); fd.append('sort_order',document.getElementById('newAlbumSort').value);
+                const cf = document.getElementById('newAlbumCover'); if(cf.files.length>0) fd.append('cover_image', cf.files[0]);
+                const res = await fetch(API_ALBUMS, { method:'POST', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}, body:fd });
+                const data = await res.json(); showResponse('createResponse',data);
+                if (data.code==='rest_ok') { showMsg('msgCreate','✅ 相册已创建','success'); closeCreateAlbum(); fetchAlbums(); } else { showMsg('msgCreate','❌ '+(data.message||'创建失败'),'error'); }
+            } catch(err) { showMsg('msgCreate','网络错误: '+err.message,'error'); }
+            setLoading('btnCreateAlbum',false);
+        }
+
+        // ---------- Upload / Delete Photo ----------
+        async function handleUpload() {
+            if (!currentAlbumId) { showMsg('msgUpload','请先选择一个相册','error'); return; }
+            const fi=document.getElementById('uploadFile'), ui=document.getElementById('uploadUrl').value.trim(), ti=document.getElementById('uploadTitle').value.trim();
+            if (fi.files.length===0&&!ui) { showMsg('msgUpload','请选择图片或输入图片链接','error'); return; }
+            hideMsg('msgUpload'); hideResponse('uploadResponse'); setLoading('btnUpload',true);
+            try {
+                const fd = new FormData(); fd.append('album_id',currentAlbumId); if(ti) fd.append('title',ti);
+                if(fi.files.length>0) fd.append('image',fi.files[0]); else fd.append('url',ui);
+                const res = await fetch(API_PHOTOS, { method:'POST', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}, body:fd });
+                const data = await res.json(); showResponse('uploadResponse',data);
+                if (data.code==='rest_ok') { showMsg('msgUpload','✅ 上传成功','success'); document.getElementById('uploadFile').value=''; document.getElementById('uploadUrl').value=''; document.getElementById('uploadTitle').value=''; viewAlbum(currentAlbumId); }
+                else { showMsg('msgUpload','❌ '+(data.message||'上传失败'),'error'); }
+            } catch(err) { showMsg('msgUpload','网络错误: '+err.message,'error'); }
+            setLoading('btnUpload',false);
+        }
+
+        async function deletePhoto(id) {
+            if (!confirm('确定删除这张照片吗？')) return;
+            hideMsg('msgDetail');
+            try {
+                const res = await fetch(API_PHOTOS+'/'+id, { method:'DELETE', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{} });
+                const data = await res.json(); showResponse('detailResponse',data);
+                if (data.code==='rest_ok') { showMsg('msgDetail','✅ 照片已删除','success'); viewAlbum(currentAlbumId); } else { showMsg('msgDetail','❌ '+(data.message||'删除失败'),'error'); }
+            } catch(err) { showMsg('msgDetail','网络错误: '+err.message,'error'); }
+        }
+
+        // ---------- Init ----------
+        (function init() {
+            document.querySelectorAll('.btn').forEach(b=>{if(!b.dataset.text)b.dataset.text=b.innerHTML;});
+            document.getElementById('password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+            document.getElementById('code').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin();});
+
+            const token = localStorage.getItem('nova_token');
+            if (token) {
+                (async function() {
+                    try {
+                        const res = await fetch(API_AUTH+'/me', { headers:{'Authorization':'Bearer '+token} });
+                        const data = await res.json();
+                        if (data.code === 'rest_ok') {
+                            sessionToken = token;
+                            userRole = (data.data.user ? data.data.user.role : null) || 'user';
+                            userName = (data.data.user ? data.data.user.username : null) || '';
+                            updateUI();
+                        }
+                    } catch(_) {}
+                    fetchAlbums();
+                })();
+            } else {
+                fetchAlbums();
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# 允许访问上传的文件
+Options -Indexes
+
+# 允许图片
+<FilesMatch "\.(jpg|jpeg|png|gif|svg|webp)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# 允许音频
+<FilesMatch "\.(mp3|wav|m4a|ogg|flac|aac)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# 允许歌词文件
+<FilesMatch "\.(lrc|txt)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# 允许视频
+<FilesMatch "\.(mp4|webm|ogg|mov|avi)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# 允许文档和其他文件
+<FilesMatch "\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar|7z|json|csv)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
