@@ -1,21 +1,21 @@
 <?php
 /**
- * Nova JSON API: Nova_Admin_Menu
+ * Nova JSON API: Nova_Backend_Menu
  *
  * 后台菜单管理类，类似 WP 的 add_menu_page / add_submenu_page。
  * 插件和主题可通过此类注册侧边栏菜单项，无需手动修改 header.php。
  *
  * 用法：
- *   Nova_Admin_Menu::add_menu('插件中心', 'my-plugin', '/admin/my-plugin.php', '插', 30);
- *   Nova_Admin_Menu::add_submenu('my-plugin', '设置', 'my-plugin-settings', '/admin/my-plugin-settings.php');
+ *   Nova_Backend_Menu::add_menu('插件中心', 'my-plugin', '/admin/my-plugin.php', '插', 30);
+ *   Nova_Backend_Menu::add_submenu('my-plugin', '设置', 'my-plugin-settings', '/admin/my-plugin-settings.php');
  *
  *   // 在 header.php 中输出菜单：
- *   Nova_Admin_Menu::render();
+ *   Nova_Backend_Menu::render();
  */
 
 defined('NOVA_API') or exit('禁止直接访问');
 
-class Nova_Admin_Menu {
+class Nova_Backend_Menu {
 
     /** @var array[] 已注册的顶级菜单 */
     protected static $menus = [];
@@ -26,6 +26,9 @@ class Nova_Admin_Menu {
     /** @var bool 是否已排序 */
     protected static $sorted = false;
 
+    /** @var string 当前高亮色 */
+    protected static $activeColor = '#0d6efd';
+
     /**
      * 注册顶级菜单
      *
@@ -34,7 +37,7 @@ class Nova_Admin_Menu {
      * @param string $url         链接地址（支持 /admin/xxx.php 或外部 URL）
      * @param string $icon        图标（Bootstrap Icons 类名，或单个中文字符）
      * @param int    $position    排序位置（越小越靠前，默认 50）
-     * @param array  $options     额外选项：['target' => '_blank', 'badge' => 'New']
+     * @param array  $options     额外选项：['target' => '_blank', 'badge' => 'New', 'badge_type' => 'danger']
      * @return string 菜单 ID
      */
     public static function add_menu($title, $id, $url, $icon = '', $position = 50, $options = []) {
@@ -130,33 +133,37 @@ class Nova_Admin_Menu {
         $currentUrl = self::getCurrentUrl();
         $currentPage = self::getCurrentPage();
 
-        // 精确匹配当前 URL
-        if ($currentUrl === $url) {
-            return true;
-        }
+        if ($currentUrl === $url) return true;
 
-        // 匹配文件名
         $urlPage = basename(parse_url($url, PHP_URL_PATH));
-        if ($urlPage && $urlPage === $currentPage) {
-            return true;
-        }
+        if ($urlPage && $urlPage === $currentPage) return true;
 
         return false;
     }
 
     /**
-     * 判断是否有子菜单处于激活状态（用于展开父菜单）
+     * 判断是否有子菜单处于激活状态
      */
     protected static function hasActiveSubmenu($parent_id) {
-        if (!isset(self::$submenus[$parent_id])) {
-            return false;
-        }
+        if (!isset(self::$submenus[$parent_id])) return false;
         foreach (self::$submenus[$parent_id] as $item) {
-            if (self::isActive($item['url'])) {
-                return true;
-            }
+            if (self::isActive($item['url'])) return true;
         }
         return false;
+    }
+
+    /**
+     * 判断菜单是否有权限显示
+     * @param array $menu
+     * @return bool
+     */
+    protected static function canShow($menu) {
+        if (isset($menu['options']['capability'])) {
+            $cap = $menu['options']['capability'];
+            // 如果有自定义权限检查钩子，插件可自行注册
+            return (bool)Nova_Hooks::apply_filter('nova_backend_menu_capability', true, $cap);
+        }
+        return true;
     }
 
     /**
@@ -192,7 +199,6 @@ class Nova_Admin_Menu {
 
     /**
      * 渲染侧边栏菜单 HTML
-     * 用于 admin/includes/header.php 中替换硬编码菜单
      *
      * @param bool $echo 是否直接输出
      * @return string|null
@@ -203,10 +209,11 @@ class Nova_Admin_Menu {
         $html = '';
 
         foreach (self::$menus as $menu_id => $menu) {
+            if (!self::canShow($menu)) continue;
+
             $hasSubmenu = isset(self::$submenus[$menu_id]) && !empty(self::$submenus[$menu_id]);
 
             if ($hasSubmenu) {
-                // 带子菜单的父级
                 $submenuOpen = self::hasActiveSubmenu($menu_id);
                 $activeClass = $submenuOpen ? ' open' : '';
                 $html .= '<li>';
@@ -218,8 +225,13 @@ class Nova_Admin_Menu {
                 $html .= '<ul class="submenu">';
 
                 foreach (self::$submenus[$menu_id] as $sub) {
+                    if (!self::canShow($sub)) continue;
                     $active = self::isActive($sub['url']) ? ' active' : '';
-                    $badge = !empty($sub['options']['badge']) ? ' <span class="badge">' . e($sub['options']['badge']) . '</span>' : '';
+                    $badge = '';
+                    if (!empty($sub['options']['badge'])) {
+                        $bt = !empty($sub['options']['badge_type']) ? ' badge-' . $sub['options']['badge_type'] : '';
+                        $badge = ' <span class="badge' . $bt . '">' . e($sub['options']['badge']) . '</span>';
+                    }
                     $html .= '<li><a href="' . e($sub['url']) . '" class="' . $active . '">';
                     $html .= '<span class="menu-text">' . e($sub['title']) . $badge . '</span>';
                     $html .= '</a></li>';
@@ -228,10 +240,13 @@ class Nova_Admin_Menu {
                 $html .= '</ul>';
                 $html .= '</li>';
             } else {
-                // 无子菜单的直接菜单项
                 $active = self::isActive($menu['url']) ? ' active' : '';
                 $target = !empty($menu['options']['target']) ? ' target="' . e($menu['options']['target']) . '"' : '';
-                $badge = !empty($menu['options']['badge']) ? ' <span class="badge">' . e($menu['options']['badge']) . '</span>' : '';
+                $badge = '';
+                if (!empty($menu['options']['badge'])) {
+                    $bt = !empty($menu['options']['badge_type']) ? ' badge-' . $menu['options']['badge_type'] : '';
+                    $badge = ' <span class="badge' . $bt . '">' . e($menu['options']['badge']) . '</span>';
+                }
 
                 $html .= '<li>';
                 $html .= '<a href="' . e($menu['url']) . '" class="' . $active . '"' . $target . '>';
@@ -251,7 +266,7 @@ class Nova_Admin_Menu {
     }
 
     /**
-     * 重置所有菜单（用于测试）
+     * 重置所有菜单
      */
     public static function reset() {
         self::$menus = [];

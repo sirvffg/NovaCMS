@@ -18,12 +18,37 @@ if (!isset($config) || empty($config)) {
 
 $page_title = isset($page_title) ? e($page_title) . ' - ' . e($config['website_name'] ?? '后台管理') : e($config['website_name'] ?? '后台管理');
 
-// Determine if current page is in the "其他设置" submenu
-$submenu_pages = [
-    'ifdian.php', 'hitokoto.php', 'monitors.php', 'files.php',
-    'email_test.php', 'seo_tools.php', 'view_logs.php', 'opensource.php'
-];
-$submenu_open = in_array(basename($_SERVER['PHP_SELF']), $submenu_pages);
+// =============================================
+// 动态注册后台侧边栏菜单
+// =============================================
+require_once __DIR__ . '/../../vendor/nova-json/class/backend/class-backend-menu.php';
+
+Nova_Backend_Menu::add_menu('仪表盘',     'dashboard',   '/admin/index.php',           '仪', 10);
+Nova_Backend_Menu::add_menu('网站配置',   'config',      '/admin/config.php',          '网', 20);
+Nova_Backend_Menu::add_menu('博客管理',   'posts',       '/admin/posts.php',           '博', 30);
+Nova_Backend_Menu::add_menu('隐私与付费记录', 'privacy', '/admin/privacy_access.php',  '隐', 40);
+Nova_Backend_Menu::add_menu('用户管理',   'admins',      '/admin/admins.php',          '用', 50);
+Nova_Backend_Menu::add_menu('友情链接',   'links',       '/admin/links.php',           '友', 60);
+Nova_Backend_Menu::add_menu('访问统计',   'stats',       '/admin/stats.php',           '访', 70);
+Nova_Backend_Menu::add_menu('留言管理',   'guestbook',   '/admin/guestbook.php',       '留', 80);
+Nova_Backend_Menu::add_menu('说说管理',   'shuoshuo',    '/admin/shuoshuo.php',        '说', 90);
+Nova_Backend_Menu::add_menu('相册管理',   'gallery',     '/admin/gallery.php',         '相', 100);
+Nova_Backend_Menu::add_menu('QQ群管理',   'qq_groups',   '/admin/qq_groups.php',       'Q',  110);
+Nova_Backend_Menu::add_menu('建站日志',   'logs',        '/admin/logs.php',            '建', 120);
+
+// 其他设置（含子菜单）
+Nova_Backend_Menu::add_menu('其他设置',   'settings',    '',                           '其', 130);
+Nova_Backend_Menu::add_submenu('settings', '赞助管理',   'ifdian',    '/admin/ifdian.php',      10);
+Nova_Backend_Menu::add_submenu('settings', '一言管理',   'hitokoto',  '/admin/hitokoto.php',    20);
+Nova_Backend_Menu::add_submenu('settings', '监控管理',   'monitors',  '/admin/monitors.php',    30);
+Nova_Backend_Menu::add_submenu('settings', '文件管理',   'files',     '/admin/files.php',       40);
+Nova_Backend_Menu::add_submenu('settings', '邮件测试',   'email_test','/admin/email_test.php',   50);
+Nova_Backend_Menu::add_submenu('settings', 'SEO 工具集', 'seo_tools', '/admin/seo_tools.php',    60);
+Nova_Backend_Menu::add_submenu('settings', '系统日志查看','view_logs', '/admin/view_logs.php',    70);
+Nova_Backend_Menu::add_submenu('settings', '开源版本管理','opensource', '/admin/opensource.php',   80);
+
+// 外部链接
+Nova_Backend_Menu::add_menu('查看网站',   'view-site',   '/',                           '查', 140, ['target' => '_blank']);
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -315,35 +340,7 @@ $submenu_open = in_array(basename($_SERVER['PHP_SELF']), $submenu_pages);
             <span class="logo-text"><?= e($config['website_name'] ?? '后台管理') ?></span>
         </div>
         <ul class="sidebar-menu">
-            <li><a href="/admin/index.php" class="<?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>"><span class="menu-icon">仪</span><span class="menu-text">仪表盘</span></a></li>
-            <li><a href="/admin/config.php" class="<?= basename($_SERVER['PHP_SELF']) == 'config.php' ? 'active' : '' ?>"><span class="menu-icon">网</span><span class="menu-text">网站配置</span></a></li>
-            <li><a href="/admin/posts.php" class="<?= basename($_SERVER['PHP_SELF']) == 'posts.php' ? 'active' : '' ?>"><span class="menu-icon">博</span><span class="menu-text">博客管理</span></a></li>
-            <li><a href="/admin/privacy_access.php" class="<?= basename($_SERVER['PHP_SELF']) == 'privacy_access.php' ? 'active' : '' ?>"><span class="menu-icon">隐</span><span class="menu-text">隐私与付费记录</span></a></li>
-            <li><a href="/admin/admins.php" class="<?= basename($_SERVER['PHP_SELF']) == 'admins.php' ? 'active' : '' ?>"><span class="menu-icon">用</span><span class="menu-text">用户管理</span></a></li>
-            <li><a href="/admin/links.php" class="<?= basename($_SERVER['PHP_SELF']) == 'links.php' ? 'active' : '' ?>"><span class="menu-icon">友</span><span class="menu-text">友情链接</span></a></li>
-            <li><a href="/admin/stats.php" class="<?= basename($_SERVER['PHP_SELF']) == 'stats.php' ? 'active' : '' ?>"><span class="menu-icon">访</span><span class="menu-text">访问统计</span></a></li>
-            <li><a href="/admin/guestbook.php" class="<?= basename($_SERVER['PHP_SELF']) == 'guestbook.php' ? 'active' : '' ?>"><span class="menu-icon">留</span><span class="menu-text">留言管理</span></a></li>
-            <li><a href="/admin/shuoshuo.php" class="<?= basename($_SERVER['PHP_SELF']) == 'shuoshuo.php' ? 'active' : '' ?>"><span class="menu-icon">说</span><span class="menu-text">说说管理</span></a></li>
-            <li><a href="/admin/gallery.php" class="<?= basename($_SERVER['PHP_SELF']) == 'gallery.php' ? 'active' : '' ?>"><span class="menu-icon">相</span><span class="menu-text">相册管理</span></a></li>
-            <li><a href="/admin/qq_groups.php" class="<?= basename($_SERVER['PHP_SELF']) == 'qq_groups.php' ? 'active' : '' ?>"><span class="menu-icon">Q</span><span class="menu-text">QQ群管理</span></a></li>
-            <li><a href="/admin/logs.php" class="<?= basename($_SERVER['PHP_SELF']) == 'logs.php' ? 'active' : '' ?>"><span class="menu-icon">建</span><span class="menu-text">建站日志</span></a></li>
-            <li>
-                <a class="submenu-toggle<?= $submenu_open ? ' open' : '' ?>" onclick="toggleSubmenu(this)">
-                    <span class="menu-icon">其</span><span class="menu-text">其他设置</span>
-                    <span class="submenu-arrow">▶</span>
-                </a>
-                <ul class="submenu">
-                    <li><a href="/admin/ifdian.php" class="<?= basename($_SERVER['PHP_SELF']) == 'ifdian.php' ? 'active' : '' ?>"><span class="menu-icon">赞</span><span class="menu-text">赞助管理</span></a></li>
-                    <li><a href="/admin/hitokoto.php" class="<?= basename($_SERVER['PHP_SELF']) == 'hitokoto.php' ? 'active' : '' ?>"><span class="menu-icon">一</span><span class="menu-text">一言管理</span></a></li>
-                    <li><a href="/admin/monitors.php" class="<?= basename($_SERVER['PHP_SELF']) == 'monitors.php' ? 'active' : '' ?>"><span class="menu-icon">监</span><span class="menu-text">监控管理</span></a></li>
-                    <li><a href="/admin/files.php" class="<?= basename($_SERVER['PHP_SELF']) == 'files.php' ? 'active' : '' ?>"><span class="menu-icon">文</span><span class="menu-text">文件管理</span></a></li>
-                    <li><a href="/admin/email_test.php" class="<?= basename($_SERVER['PHP_SELF']) == 'email_test.php' ? 'active' : '' ?>"><span class="menu-icon">邮</span><span class="menu-text">邮件测试</span></a></li>
-                    <li><a href="/admin/seo_tools.php" class="<?= basename($_SERVER['PHP_SELF']) == 'seo_tools.php' ? 'active' : '' ?>"><span class="menu-icon">S</span><span class="menu-text">SEO 工具集</span></a></li>
-                    <li><a href="/admin/view_logs.php" class="<?= basename($_SERVER['PHP_SELF']) == 'view_logs.php' ? 'active' : '' ?>"><span class="menu-icon">系</span><span class="menu-text">系统日志查看</span></a></li>
-                    <li><a href="/admin/opensource.php" class="<?= basename($_SERVER['PHP_SELF']) == 'opensource.php' ? 'active' : '' ?>"><span class="menu-icon">开</span><span class="menu-text">开源版本管理</span></a></li>
-                </ul>
-            </li>
-            <li><a href="/" target="_blank"><span class="menu-icon">查</span><span class="menu-text">查看网站</span></a></li>
+            <?php Nova_Backend_Menu::render(); ?>
         </ul>
     </aside>
 
@@ -356,7 +353,7 @@ $submenu_open = in_array(basename($_SERVER['PHP_SELF']), $submenu_pages);
                 </svg>
             </button>
             <div class="top-links">
-                <span class="user-info">欢迎，<?= htmlspecialchars($_SESSION['admin_username'] ?? 'admin') ?></span>
+                <span class="user-info">欢迎 <?= htmlspecialchars($_SESSION['admin_username'] ?? 'admin') ?></span>
                 <a href="/" target="_blank">查看首页</a>
                 <a href="/admin/logout.php" class="logout">退出登录</a>
             </div>
@@ -364,5 +361,5 @@ $submenu_open = in_array(basename($_SERVER['PHP_SELF']), $submenu_pages);
         <div class="content-body">
             <div id="loading-overlay">
                 <div class="loading-spinner"></div>
-                <span>处理中...</span>
+                <span>处理中..</span>
             </div>
