@@ -15,12 +15,13 @@ class BehaviorAuth {
         this.token = ''; this.salt = ''; this.difficulty = 0;
         this.bgBase64 = ''; this.blockBase64 = ''; this.blockY = 0;
 
-        this.isDragging = false; this.startX = 0; this.currentX = 0; this.maxX = 0; this.trackScale = 1;
+        this.isDragging = false; this.startX = 0; this.currentX = 0; this.maxX = 0;
         this.startTime = 0; this.trajectory = []; this.pauseThreshold = 80;
         this.isVerified = false;
 
         // 图像尺寸参数（与后端一致）
         this.puzzleImageWidth = 300;
+        this.puzzleImageHeight = 150;
         this.blockSize = 44;
 
         // 回调
@@ -201,16 +202,38 @@ class BehaviorAuth {
         this.puzzleContainer.style.display = 'block';
         this.sliderTrack.style.display = 'block';
         this.setStatus('', '请完成验证');
-        this.maxX = 300 - 40; // trackWidth - btnWidth，固定常量避免缩放问题
+        this.syncPuzzleGeometry(0);
+    }
+
+    getResponsiveGeometry() {
+        const trackWidth = this.sliderTrack.clientWidth;
+        const sliderButtonWidth = this.sliderBtn.offsetWidth;
+        const puzzleWidth = this.puzzleContainer.clientWidth;
+        const puzzleHeight = this.puzzleContainer.clientHeight;
+
+        return {
+            sliderMaxX: Math.max(1, trackWidth - sliderButtonWidth),
+            imageMaxX: this.puzzleImageWidth - this.blockSize,
+            imageScaleX: puzzleWidth / this.puzzleImageWidth,
+            imageScaleY: puzzleHeight / this.puzzleImageHeight
+        };
+    }
+
+    syncPuzzleGeometry(imageOffsetX = 0) {
+        const geometry = this.getResponsiveGeometry();
+        this.maxX = geometry.sliderMaxX;
+        this.puzzleBlock.style.width = (this.blockSize * geometry.imageScaleX) + 'px';
+        this.puzzleBlock.style.height = (this.blockSize * geometry.imageScaleY) + 'px';
+        this.puzzleBlock.style.top = (this.blockY * geometry.imageScaleY) + 'px';
+        this.puzzleBlock.style.left = (imageOffsetX * geometry.imageScaleX) + 'px';
+        return geometry;
     }
 
     onDragStart(clientX, clientY) {
         if (!this.blockBase64 || this.isDragging || this.isVerified) return;
         this.isDragging = true;
         this.startX = clientX;
-        // 记录拖动开始时滑块轨道的缩放比，用于校正窗口缩放导致的鼠标偏移
-        const trackRect = this.sliderTrack.getBoundingClientRect();
-        this.trackScale = trackRect.width / 300; // 300 是轨道设计宽度
+        this.syncPuzzleGeometry(0);
         this.startTime = Date.now();
         this.trajectory = [];
         this.recordMousePosition(clientX, clientY);
@@ -219,17 +242,15 @@ class BehaviorAuth {
     onDragMove(clientX, clientY) {
         if (!this.isDragging) return;
 
-        // 校正缩放：鼠标偏移 / 缩放比 = 实际在轨道上的偏移
-        const deltaX = (clientX - this.startX) / this.trackScale;
+        const deltaX = clientX - this.startX;
         this.currentX = Math.max(0, Math.min(deltaX, this.maxX));
 
         this.sliderBtn.style.left = this.currentX + 'px';
 
-        // 滑块偏移 → 图像坐标的比例换算（使用固定常量，避免窗口缩放导致 offsetWidth 不准）
-        const sliderMaxX = 300 - 40; // trackWidth - btnWidth
-        const imageMaxX = this.puzzleImageWidth - this.blockSize; // 300 - 44 = 256
-        const imageX = this.currentX / sliderMaxX * imageMaxX;
-        this.puzzleBlock.style.left = imageX + 'px';
+        // 先映射回后端的 300px 图像坐标，再按当前显示宽度定位拼图块。
+        const geometry = this.getResponsiveGeometry();
+        const imageX = this.currentX / geometry.sliderMaxX * geometry.imageMaxX;
+        this.puzzleBlock.style.left = (imageX * geometry.imageScaleX) + 'px';
 
         this.recordMousePosition(clientX, clientY);
     }
@@ -252,11 +273,9 @@ class BehaviorAuth {
         const behaviorData = this.analyzeBehavior();
         const encryptedData = await this.encryptBehaviorData(behaviorData, this.token);
 
-        // 用固定常量换算到图像坐标，避免窗口缩放导致 offsetWidth 不准
-        // 滑块偏移 / 滑块最大偏移 = 图像偏移 / 图像最大偏移
-        const sliderMaxX = 300 - 40; // trackWidth - btnWidth
-        const imageMaxX = this.puzzleImageWidth - this.blockSize; // 300 - 44 = 256
-        const imageOffsetX = Math.round(this.currentX / sliderMaxX * imageMaxX);
+        // 将实际渲染宽度上的滑动距离换算回后端使用的 300px 图像坐标。
+        const geometry = this.getResponsiveGeometry();
+        const imageOffsetX = Math.round(this.currentX / geometry.sliderMaxX * geometry.imageMaxX);
 
         try {
             const result = await this.api('verify-final', {

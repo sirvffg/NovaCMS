@@ -339,6 +339,15 @@ if ($need_email_verify) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($config['website_name']) ?> - 用户登录</title>
+    <script>
+        (function () {
+            try {
+                document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+            } catch (error) {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+            }
+        })();
+    </script>
     
     <?php 
     if (!empty($config['favicon'])): 
@@ -703,43 +712,73 @@ if ($need_email_verify) {
             }
         }
     </style>
+    <link href="/assets/css/account.css?v=20260727-2" rel="stylesheet">
 </head>
-<body>
-    <a href="<?= htmlspecialchars($redirect_url) ?>" class="back-link">
-        <i class="bi bi-arrow-left"></i>
-        <span>返回</span>
-    </a>
+<body class="account-auth-page">
+    <div class="account-auth-toolbar" aria-label="页面工具">
+        <a href="<?= htmlspecialchars($redirect_url) ?>" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>返回</span>
+        </a>
+        <button type="button" class="account-icon-button" data-account-theme-toggle aria-label="切换显示模式">
+            <i class="bi bi-moon-stars" aria-hidden="true"></i>
+        </button>
+    </div>
 
     <div class="auth-wrapper">
         <div class="auth-sidebar">
             <div class="auth-sidebar-content">
                 <div class="brand-logo">
-                    <i class="bi bi-box-seam"></i>
-                    <?= e($config['website_name']) ?>
+                    <span class="brand-mark"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <span><?= e($config['website_name']) ?></span>
                 </div>
                 <div class="welcome-text">
-                    <h2>欢迎回来</h2>
-                    <p>PERSONAL BLOG SYSTEM</p>
-                    <p>记录思想，分享生活</p>
+                    <span class="account-eyebrow">Welcome back</span>
+                    <h2>回到你的内容空间</h2>
+                    <p>安全登录后继续阅读、评论，并在个人中心管理账户与在线设备。</p>
                 </div>
+                <ul class="auth-feature-list" aria-label="账户能力">
+                    <li class="auth-feature-item">
+                        <span class="auth-feature-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
+                        <span>新环境邮箱验证</span>
+                    </li>
+                    <li class="auth-feature-item">
+                        <span class="auth-feature-icon"><i class="bi bi-laptop" aria-hidden="true"></i></span>
+                        <span>多设备会话管理</span>
+                    </li>
+                    <li class="auth-feature-item">
+                        <span class="auth-feature-icon"><i class="bi bi-lock" aria-hidden="true"></i></span>
+                        <span>安全会话保护</span>
+                    </li>
+                </ul>
             </div>
-            <div class="auth-sidebar-content text-center mt-4">
-                <small style="opacity: 0.7;">&copy; <?= date('Y') ?> <?= e($config['website_name']) ?>. All rights reserved.</small>
+            <div class="auth-sidebar-content auth-sidebar-footer">
+                <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+                <span class="auth-security-pill"><i class="bi bi-shield-lock" aria-hidden="true"></i> 安全连接</span>
             </div>
         </div>
 
         <div class="auth-main">
+            <div class="auth-main-inner">
             <!-- 步骤指示器 -->
-            <div class="step-indicator">
-                <div class="step-dot <?= $need_email_verify ? 'done' : 'active' ?>" id="stepDot1"></div>
-                <div class="step-dot <?= $need_email_verify ? 'active' : '' ?>" id="stepDot2"></div>
+            <div class="auth-progress" aria-label="登录进度">
+                <div class="auth-progress-item <?= $need_email_verify ? 'done' : 'active' ?>" id="stepDot1">
+                    <span class="auth-progress-number"><span>1</span></span>
+                    <div><small>Step 01</small><strong>账号验证</strong></div>
+                </div>
+                <div class="auth-progress-line" aria-hidden="true"></div>
+                <div class="auth-progress-item <?= $need_email_verify ? 'active' : '' ?>" id="stepDot2">
+                    <span class="auth-progress-number"><span>2</span></span>
+                    <div><small>Step 02</small><strong>安全验证</strong></div>
+                </div>
             </div>
 
             <!-- 第一步：账号密码登录 -->
             <div class="verify-step <?= $need_email_verify ? '' : 'active' ?>" id="step1">
                 <div class="mb-4">
-                    <h1 class="auth-title">账号登录</h1>
-                    <p class="auth-subtitle">请输入您的账号信息以继续访问</p>
+                    <span class="account-eyebrow">Account sign in</span>
+                    <h1 class="auth-title">欢迎回来</h1>
+                    <p class="auth-subtitle">使用用户名或邮箱登录，继续访问你的账户。</p>
                 </div>
 
                 <?php if ($login_error && !$need_email_verify): ?>
@@ -759,38 +798,52 @@ if ($need_email_verify) {
                     <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($redirect_url) ?>">
                     <input type="hidden" name="captcha_token" id="loginCaptchaToken" value="">
                     
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="username" name="username" 
-                               placeholder="用户名/邮箱" 
-                               value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
-                        <label for="username">用户名 / 邮箱</label>
+                    <div class="account-form-group">
+                        <label class="account-form-label" for="username">用户名或邮箱</label>
+                        <div class="account-input-wrap">
+                            <i class="bi bi-person account-input-icon" aria-hidden="true"></i>
+                            <input type="text" class="form-control account-input" id="username" name="username"
+                                   placeholder="请输入用户名或邮箱"
+                                   value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
+                                   autocomplete="username" autocapitalize="none" spellcheck="false" required
+                                   <?= !$need_email_verify ? 'autofocus' : '' ?>>
+                        </div>
                     </div>
 
-                    <div class="form-floating mb-3">
-                        <input type="password" class="form-control" id="password" name="password" 
-                               placeholder="密码" required>
-                        <label for="password">密码</label>
+                    <div class="account-form-group">
+                        <label class="account-form-label" for="password">密码</label>
+                        <div class="account-input-wrap">
+                            <i class="bi bi-lock account-input-icon" aria-hidden="true"></i>
+                            <input type="password" class="form-control account-input" id="password" name="password"
+                                   placeholder="请输入登录密码" autocomplete="current-password"
+                                   data-caps-lock-hint="loginCapsLockHint" required>
+                            <button type="button" class="account-password-toggle" data-password-toggle="password"
+                                    aria-label="显示密码" aria-pressed="false">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="account-field-hint warning" id="loginCapsLockHint" hidden>
+                            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> 大写锁定已开启
+                        </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="account-form-options">
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="remember" name="remember" value="1">
-                            <label class="form-check-label text-secondary" for="remember">
-                                记住我
-                            </label>
+                            <label class="form-check-label" for="remember">记住此设备</label>
                         </div>
-                        <a href="/vendor/forgot_password.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="text-decoration-none" style="color: var(--primary-color);">
+                        <a href="/vendor/forgot_password.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="account-link">
                             忘记密码？
                         </a>
                     </div>
 
-                    <button type="button" class="btn btn-primary w-100 mb-4" id="btnLogin">
-                        登录系统
+                    <button type="submit" class="btn account-btn-primary w-100 mb-4" id="btnLogin">
+                        <span>登录账户</span><i class="bi bi-arrow-right" aria-hidden="true"></i>
                     </button>
 
                     <div class="text-center">
-                        <span class="text-secondary">还没有账号？</span>
-                        <a href="/vendor/register.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="text-decoration-none fw-bold" style="color: var(--primary-color);">
+                        <span style="color: var(--account-muted);">还没有账号？</span>
+                        <a href="/vendor/register.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="account-link">
                             立即注册
                         </a>
                     </div>
@@ -804,7 +857,7 @@ if ($need_email_verify) {
                         <i class="bi bi-shield-check"></i>
                     </div>
                     <h1 class="auth-title">安全验证</h1>
-                    <p class="auth-subtitle">检测到您在新设备/新网络环境登录，请完成邮箱验证</p>
+                    <p class="auth-subtitle">检测到新的设备或网络环境，请验证邮箱以保护账户。</p>
                 </div>
 
                 <div class="alert alert-info mb-4" role="alert">
@@ -826,29 +879,41 @@ if ($need_email_verify) {
                     <?= csrfField() ?>
                     <input type="hidden" name="action" value="verify_code">
                     <input type="hidden" name="verify_user_id" value="<?= htmlspecialchars($verify_user_id) ?>">
+                    <input type="hidden" name="remember" value="<?= !empty($_POST['remember']) ? '1' : '0' ?>">
+                    <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($redirect_url) ?>">
 
                     <div class="code-input-group mb-3">
-                        <div class="form-floating">
-                            <input type="text" class="form-control" id="verify_code" name="verify_code" 
-                                   placeholder="验证码" maxlength="6" pattern="[0-9]{6}" required autocomplete="off"
-                                   value="<?= htmlspecialchars($_POST['verify_code'] ?? '') ?>">
-                            <label for="verify_code">邮箱验证码</label>
+                        <div class="account-form-group mb-0">
+                            <label class="account-form-label" for="verify_code">邮箱验证码</label>
+                            <div class="account-input-wrap">
+                                <i class="bi bi-123 account-input-icon" aria-hidden="true"></i>
+                                <input type="text" class="form-control account-input" id="verify_code" name="verify_code"
+                                       placeholder="6 位数字验证码" maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
+                                       autocomplete="one-time-code" required
+                                       value="<?= htmlspecialchars($_POST['verify_code'] ?? '') ?>"
+                                       <?= $need_email_verify ? 'autofocus' : '' ?>>
+                            </div>
                         </div>
-                        <button type="button" class="btn btn-outline-primary" id="btnSendCode" onclick="sendLoginCode()">
+                        <button type="button" class="account-code-button" id="btnSendCode" onclick="sendLoginCode()">
                             发送验证码
                         </button>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                    <button type="submit" class="btn account-btn-primary w-100 mb-3">
                         <i class="bi bi-check-lg me-1"></i>验证并登录
                     </button>
 
                     <div class="text-center">
-                        <a href="/vendor/login.php" class="text-decoration-none" style="color: var(--primary-color);">
+                        <a href="/vendor/login.php" class="account-link">
                             <i class="bi bi-arrow-left me-1"></i>返回重新登录
                         </a>
                     </div>
                 </form>
+            </div>
+            <div class="auth-footnote">
+                <i class="bi bi-lock" aria-hidden="true"></i>
+                登录信息仅用于账户身份验证
+            </div>
             </div>
         </div>
     </div>
@@ -865,13 +930,16 @@ if ($need_email_verify) {
     </div>
     
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
-    <script src="/vendor/public/captcha/BehaviorAuth.js"></script>
+    <script src="/assets/js/account-ui.js?v=20260727-1"></script>
+    <script src="/vendor/public/captcha/BehaviorAuth.js?v=20260727-2"></script>
     <script>
     // 登录人机验证
     let loginCaptcha = null;
+    const traditionalForm = document.getElementById('formTraditional');
 
-    document.getElementById('btnLogin')?.addEventListener('click', function() {
-        const form = document.getElementById('formTraditional');
+    traditionalForm?.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const form = traditionalForm;
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
 
@@ -955,31 +1023,11 @@ if ($need_email_verify) {
     }
 
     function showToast(msg, type) {
-        // 移除已有toast
-        document.querySelectorAll('.toast-msg').forEach(el => el.remove());
-
-        const toast = document.createElement('div');
-        toast.className = 'toast-msg';
-        toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transition:opacity 0.3s;max-width:90%;text-align:center;';
-        
-        if (type === 'success') {
-            toast.style.background = '#dcfce7';
-            toast.style.color = '#166534';
-            toast.style.border = '1px solid #bbf7d0';
+        if (window.showAccountToast) {
+            window.showAccountToast(msg, type);
         } else {
-            toast.style.background = '#fef2f2';
-            toast.style.color = '#dc2626';
-            toast.style.border = '1px solid #fecaca';
+            alert(msg);
         }
-
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => toast.style.opacity = '1');
-
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
     }
 
     // 验证码输入框只允许数字

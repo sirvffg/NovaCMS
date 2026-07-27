@@ -294,6 +294,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($config['website_name']) ?> - 个人中心</title>
+    <script>
+        (function () {
+            try {
+                document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+            } catch (error) {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+            }
+        })();
+    </script>
     
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
@@ -465,17 +474,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     </style>
+    <link href="/assets/css/account.css?v=20260727-2" rel="stylesheet">
 </head>
-<body>
+<body class="account-profile-page">
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                <i class="bi bi-box-seam text-primary"></i>
+                <span class="account-brand-mark"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
                 <span class="fw-bold"><?= e($config['website_name']) ?></span>
             </a>
-            <div class="ms-auto">
-                <button onclick="goBackOrHome()" class="btn btn-outline-primary rounded-pill px-4">
-                    <i class="bi bi-arrow-left me-1"></i> 返回
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <button type="button" class="account-icon-button" data-account-theme-toggle aria-label="切换显示模式">
+                    <i class="bi bi-moon-stars" aria-hidden="true"></i>
+                </button>
+                <button type="button" onclick="goBackOrHome()" class="btn btn-outline-primary rounded-pill px-3 px-md-4">
+                    <i class="bi bi-arrow-left me-md-1" aria-hidden="true"></i><span class="d-none d-md-inline">返回</span>
                 </button>
             </div>
         </div>
@@ -502,125 +515,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <?php endif; ?>
 
-        <div class="row g-4">
-            <!-- 左侧侧边栏 -->
-            <div class="col-lg-4 col-xl-3 profile-sidebar">
-                <div class="card shadow-sm mb-4">
-                    <div class="profile-cover"></div>
-                    <div class="card-body pt-0">
-                        <div class="profile-avatar-wrapper">
-                            <div class="profile-avatar">
-                                <i class="bi bi-person-fill"></i>
-                            </div>
-                        </div>
-                        <div class="text-center mt-3 mb-4">
-                            <h4 class="fw-bold mb-1"><?= e($user['username']) ?></h4>
-                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                                <?= $user['role'] === 'admin' ? '管理员' : '普通用户' ?>
-                            </span>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <div class="info-item">
-                                <div class="info-label">注册时间</div>
-                                <div class="info-value">
-                                    <i class="bi bi-calendar3 me-2 text-primary"></i>
-                                    <?= isset($user['created_at']) ? date('Y-m-d', strtotime($user['created_at'])) : '未知' ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr class="my-4 text-muted opacity-25">
-                        
-                        <div class="nav flex-column nav-pills">
-                            <a href="#security" class="nav-link active">
-                                <i class="bi bi-shield-check"></i> 安全设置
-                            </a>
-                            <a href="#devices" class="nav-link">
-                                <i class="bi bi-laptop"></i> 设备管理
-                            </a>
-                            <a href="/vendor/login.php?logout=1" class="nav-link text-danger mt-2">
-                                <i class="bi bi-box-arrow-right"></i> 退出登录
-                            </a>
+        <section class="account-profile-hero" id="account-overview" aria-labelledby="profileGreeting">
+            <div class="account-profile-hero-main">
+                <div class="account-profile-identity">
+                    <div class="account-avatar" aria-hidden="true"><?= e(mb_substr($user['username'], 0, 1)) ?></div>
+                    <div class="min-w-0">
+                        <span class="account-role-badge">
+                            <i class="bi bi-<?= $user['role'] === 'admin' ? 'shield-check' : 'person-check' ?>" aria-hidden="true"></i>
+                            <?= $user['role'] === 'admin' ? '管理员' : '注册用户' ?>
+                        </span>
+                        <h1 id="profileGreeting">你好，<?= e($user['username']) ?></h1>
+                        <div class="account-profile-meta">
+                            <span><i class="bi bi-envelope me-1" aria-hidden="true"></i><?= e($user['email']) ?></span>
+                            <span><i class="bi bi-shield-check me-1" aria-hidden="true"></i>账户保护已启用</span>
                         </div>
                     </div>
                 </div>
-
-                <!-- 设备管理卡片 -->
-                <div class="card settings-card bg-white mt-4" id="devices">
-                    <div class="settings-header">
-                        <div class="settings-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-                            <i class="bi bi-laptop"></i>
-                        </div>
-                        <h5 class="fw-bold mb-0">设备管理</h5>
-                        <span class="badge bg-secondary bg-opacity-10 text-secondary ms-auto">最多 <?= $maxDevices ?> 台</span>
-                    </div>
-                    <div class="card-body p-4">
-                        <?php if (empty($activeDevices)): ?>
-                        <div class="text-center text-muted py-4">
-                            <i class="bi bi-laptop fs-1 d-block mb-3 opacity-25"></i>
-                            <p>暂无在线设备</p>
-                        </div>
-                        <?php else: ?>
-                        <div class="list-group list-group-flush">
-                            <?php foreach ($activeDevices as $i => $device): ?>
-                            <div class="list-group-item px-0 border-0 <?= $i > 0 ? 'border-top pt-3 mt-3' : '' ?>">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div class="d-flex align-items-start">
-                                        <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3 text-primary">
-                                            <i class="bi bi-<?= strpos($device['device_name'], 'Windows') !== false ? 'display' : (strpos($device['device_name'], 'iPhone') !== false || strpos($device['device_name'], 'Android') !== false || strpos($device['device_name'], 'iPad') !== false ? 'phone' : 'laptop') ?> fs-5"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold text-dark mb-1">
-                                                <?= htmlspecialchars($device['device_name']) ?>
-                                                <?php if (!empty($device['is_current'])): ?>
-                                                <span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size:0.7rem;">当前设备</span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="text-muted small">
-                                                <div><i class="bi bi-globe me-1"></i>IP: <?= htmlspecialchars($device['ip_address']) ?></div>
-                                                <div><i class="bi bi-clock me-1"></i>最后活跃: <?= getTimeAgo($device['last_active_at']) ?></div>
-                                                <div><i class="bi bi-box-arrow-in-right me-1"></i>登录方式: <?= $device['login_method'] === 'auto' ? '记住我' : '密码登录' ?></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <?php if (empty($device['is_current'])): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger ms-3 mt-1" onclick="removeDevice(<?= $device['id'] ?>, this)">
-                                        <i class="bi bi-box-arrow-right me-1"></i>下线
-                                    </button>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
-                        <div class="alert alert-light border-0 mt-3 mb-0 rounded-3">
-                            <i class="bi bi-info-circle me-2 text-primary"></i>
-                            <small class="text-muted">登录新设备时，超出限制将自动下线最久未活跃的设备。修改密码会使所有设备下线。</small>
-                        </div>
-                    </div>
+                <a href="/" class="btn btn-light rounded-pill px-3">
+                    <i class="bi bi-house me-1" aria-hidden="true"></i>返回首页
+                </a>
+            </div>
+            <div class="account-profile-stats" aria-label="账户概览">
+                <div class="account-stat">
+                    <span class="account-stat-label">账户状态</span>
+                    <span class="account-stat-value"><?= !empty($user['is_banned']) ? '访问受限' : '状态正常' ?></span>
+                </div>
+                <div class="account-stat">
+                    <span class="account-stat-label">在线设备</span>
+                    <span class="account-stat-value"><?= count($activeDevices) ?> / <?= $maxDevices ?> 台</span>
+                </div>
+                <div class="account-stat">
+                    <span class="account-stat-label">加入时间</span>
+                    <span class="account-stat-value"><?= isset($user['created_at']) ? date('Y-m-d', strtotime($user['created_at'])) : '未知' ?></span>
                 </div>
             </div>
+        </section>
+
+        <div class="account-profile-grid">
+            <!-- 左侧侧边栏 -->
+            <aside class="account-nav-card" aria-label="账户设置导航">
+                <div class="account-nav-heading">账户设置</div>
+                <nav class="account-section-nav">
+                    <a href="#profile-info" class="account-nav-link active">
+                        <i class="bi bi-person" aria-hidden="true"></i><span>账户资料</span>
+                    </a>
+                    <a href="#email-settings" class="account-nav-link">
+                        <i class="bi bi-envelope" aria-hidden="true"></i><span>邮箱绑定</span>
+                    </a>
+                    <a href="#password-settings" class="account-nav-link">
+                        <i class="bi bi-key" aria-hidden="true"></i><span>密码安全</span>
+                    </a>
+                    <a href="#devices" class="account-nav-link">
+                        <i class="bi bi-laptop" aria-hidden="true"></i><span>登录设备</span>
+                    </a>
+                    <a href="/vendor/login.php?logout=1" class="account-nav-link text-danger">
+                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>退出登录</span>
+                    </a>
+                </nav>
+            </aside>
 
             <!-- 右侧内容区 -->
-            <div class="col-lg-8 col-xl-9">
-                <div class="card settings-card bg-white" id="security">
+            <div class="account-content-stack">
+                <div class="card settings-card" id="security">
                     <div class="settings-header">
                         <div class="settings-icon">
-                            <i class="bi bi-shield-lock"></i>
+                            <i class="bi bi-sliders" aria-hidden="true"></i>
                         </div>
-                        <h5 class="fw-bold mb-0">账户安全设置</h5>
+                        <div class="settings-header-copy">
+                            <h2>账户设置</h2>
+                            <p>管理登录名、绑定邮箱与账户密码</p>
+                        </div>
                     </div>
-                    <div class="card-body p-4">
+                    <div class="card-body p-0">
                         <!-- 修改用户名 -->
-                        <div class="mb-5">
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3 text-primary">
-                                    <i class="bi bi-person fs-5"></i>
+                        <section class="account-section" id="profile-info">
+                            <div class="account-section-heading">
+                                <div class="account-section-icon">
+                                    <i class="bi bi-person" aria-hidden="true"></i>
                                 </div>
                                 <div>
-                                    <h6 class="fw-bold mb-1">基本信息</h6>
-                                    <p class="text-muted small mb-0">设置一个独特的昵称</p>
+                                    <h3>账户资料</h3>
+                                    <p>用户名同时用于登录和公开显示，修改后请使用新用户名登录。</p>
                                 </div>
                             </div>
 
@@ -629,29 +604,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <input type="hidden" name="action" value="change_username">
                                 <div class="col-md-8">
                                     <div class="form-floating">
-                                        <input type="text" name="username" id="username" class="form-control" placeholder="新用户名" value="<?= e($user['username']) ?>" required minlength="2" maxlength="20">
-                                        <label for="username">用户名</label>
+                                        <input type="text" name="username" id="username" class="form-control" placeholder="新用户名"
+                                               value="<?= e($user['username']) ?>" autocomplete="username"
+                                               required minlength="3" maxlength="20">
+                                        <label for="username">用户名 / 登录名</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4 d-flex align-items-center">
-                                    <button type="submit" class="btn btn-action w-100 h-100" style="min-height: 58px;">
+                                    <button type="submit" class="btn btn-action w-100 h-100">
                                         <i class="bi bi-check2-circle me-2"></i>保存修改
                                     </button>
                                 </div>
                             </form>
-                        </div>
-
-                        <hr class="text-muted opacity-10 my-4">
+                        </section>
 
                         <!-- 修改邮箱 -->
-                        <div class="mb-5">
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3 text-primary">
-                                    <i class="bi bi-envelope fs-5"></i>
+                        <section class="account-section" id="email-settings">
+                            <div class="account-section-heading">
+                                <div class="account-section-icon">
+                                    <i class="bi bi-envelope" aria-hidden="true"></i>
                                 </div>
                                 <div>
-                                    <h6 class="fw-bold mb-1">绑定邮箱</h6>
-                                    <p class="text-muted small mb-0">当前绑定：<?= e($user['email']) ?></p>
+                                    <h3>绑定邮箱</h3>
+                                    <p>当前绑定：<?= e($user['email']) ?>。更换邮箱需要验证码确认。</p>
                                 </div>
                             </div>
 
@@ -660,17 +635,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <input type="hidden" name="action" value="change_email">
                                 <div class="col-md-6">
                                     <div class="form-floating">
-                                        <input type="email" name="email" id="email" class="form-control" placeholder="新邮箱地址" required>
+                                        <input type="email" name="email" id="email" class="form-control" placeholder="新邮箱地址"
+                                               value="<?= e($_POST['email'] ?? '') ?>" autocomplete="email" inputmode="email" required>
                                         <label for="email">新邮箱地址</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="input-group h-100" id="verificationCodeGroup" style="display:none;">
+                                    <div class="input-group h-100 d-none" id="verificationCodeGroup">
                                         <div class="form-floating flex-grow-1">
-                                            <input type="text" name="verification_code" id="verification_code" class="form-control" placeholder="验证码" maxlength="6">
+                                            <input type="text" name="verification_code" id="verification_code" class="form-control"
+                                                   placeholder="验证码" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
                                             <label for="verification_code">验证码</label>
                                         </div>
-                                        <button class="btn btn-outline-primary px-4" type="button" id="sendCodeBtn" onclick="sendVerificationCode()" style="display:none;">
+                                        <button class="btn btn-outline-primary px-3 d-none" type="button" id="sendCodeBtn" onclick="sendVerificationCode()">
                                             发送验证码
                                         </button>
                                     </div>
@@ -681,41 +658,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </button>
                                 </div>
                             </form>
-                        </div>
-
-                        <hr class="text-muted opacity-10 my-4">
+                        </section>
 
                         <!-- 修改密码 -->
-                        <div>
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3 text-primary">
-                                    <i class="bi bi-key fs-5"></i>
+                        <section class="account-section" id="password-settings">
+                            <div class="account-section-heading">
+                                <div class="account-section-icon">
+                                    <i class="bi bi-key" aria-hidden="true"></i>
                                 </div>
                                 <div>
-                                    <h6 class="fw-bold mb-1">登录密码</h6>
-                                    <p class="text-muted small mb-0">建议定期更换密码以保障账户安全</p>
+                                    <h3>登录密码</h3>
+                                    <p>建议使用字母、数字和符号组合；修改后其他设备会被下线。</p>
                                 </div>
                             </div>
 
-                            <form method="POST" class="row g-3">
+                            <form method="POST" class="row g-3" id="passwordForm">
                                 <?= csrfField() ?>
                                 <input type="hidden" name="action" value="change_password">
                                 <div class="col-md-4">
-                                    <div class="form-floating">
-                                        <input type="password" name="old_password" id="old_password" class="form-control" placeholder="当前密码" required>
-                                        <label for="old_password">当前密码</label>
+                                    <div class="account-input-wrap">
+                                        <input type="password" name="old_password" id="old_password" class="form-control pe-5"
+                                               placeholder="当前密码" autocomplete="current-password" required>
+                                        <button type="button" class="account-password-toggle" data-password-toggle="old_password" aria-label="显示当前密码">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="form-floating">
-                                        <input type="password" name="new_password" id="new_password" class="form-control" placeholder="新密码" required minlength="6">
-                                        <label for="new_password">新密码 (至少6位)</label>
+                                    <div class="account-input-wrap">
+                                        <input type="password" name="new_password" id="new_password" class="form-control pe-5"
+                                               placeholder="新密码（至少 6 位）" autocomplete="new-password"
+                                               data-password-strength="newPasswordStrength" required minlength="6">
+                                        <button type="button" class="account-password-toggle" data-password-toggle="new_password" aria-label="显示新密码">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <div class="account-strength" id="newPasswordStrength" data-level="0" aria-label="密码强度">
+                                        <span></span><span></span><span></span><span></span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="form-floating">
-                                        <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="确认新密码" required minlength="6">
-                                        <label for="confirm_password">确认新密码</label>
+                                    <div class="account-input-wrap">
+                                        <input type="password" name="confirm_password" id="confirm_password" class="form-control pe-5"
+                                               placeholder="再次输入新密码" autocomplete="new-password" required minlength="6">
+                                        <button type="button" class="account-password-toggle" data-password-toggle="confirm_password" aria-label="显示确认密码">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="col-12 mt-3">
@@ -724,69 +712,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </button>
                                 </div>
                             </form>
-                        </div>
+                        </section>
                     </div>
                 </div>
 
                 <!-- 设备管理卡片 -->
-                <div class="card settings-card bg-white mt-4" id="devices">
+                <section class="card settings-card" id="devices" aria-labelledby="devicesTitle">
                     <div class="settings-header">
-                        <div class="settings-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-                            <i class="bi bi-laptop"></i>
+                        <div class="settings-icon">
+                            <i class="bi bi-laptop" aria-hidden="true"></i>
                         </div>
-                        <h5 class="fw-bold mb-0">设备管理</h5>
-                        <span class="badge bg-secondary bg-opacity-10 text-secondary ms-auto">最多 <?= $maxDevices ?> 台</span>
+                        <div class="settings-header-copy">
+                            <h2 id="devicesTitle">登录设备</h2>
+                            <p>查看当前在线会话并下线不再使用的设备</p>
+                        </div>
+                        <span class="badge rounded-pill ms-auto" id="deviceCountBadge" style="color: var(--account-primary); background: var(--account-primary-soft);">
+                            <?= count($activeDevices) ?> / <?= $maxDevices ?> 台
+                        </span>
                     </div>
-                    <div class="card-body p-4">
+                    <div class="account-section">
                         <?php if (empty($activeDevices)): ?>
-                        <div class="text-center text-muted py-4">
-                            <i class="bi bi-laptop fs-1 d-block mb-3 opacity-25"></i>
-                            <p>暂无在线设备</p>
+                        <div class="account-empty-state" id="deviceEmptyState">
+                            <i class="bi bi-laptop" aria-hidden="true"></i>
+                            <p class="mb-0">暂无在线设备</p>
                         </div>
                         <?php else: ?>
-                        <div class="list-group list-group-flush">
-                            <?php foreach ($activeDevices as $i => $device): ?>
-                            <div class="list-group-item px-0 border-0 <?= $i > 0 ? 'border-top pt-3 mt-3' : '' ?>">
-                                <div class="d-flex align-items-start justify-content-between">
-                                    <div class="d-flex align-items-start">
-                                        <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3 text-primary">
-                                            <i class="bi bi-<?= strpos($device['device_name'], 'Windows') !== false ? 'display' : (strpos($device['device_name'], 'iPhone') !== false || strpos($device['device_name'], 'Android') !== false || strpos($device['device_name'], 'iPad') !== false ? 'phone' : 'laptop') ?> fs-5"></i>
+                        <div class="account-device-list" id="deviceList">
+                            <?php foreach ($activeDevices as $device): ?>
+                            <article class="account-device-item" data-device-id="<?= (int)$device['id'] ?>">
+                                <div class="account-device-main">
+                                    <div class="account-device-icon">
+                                        <i class="bi bi-<?= strpos($device['device_name'], 'Windows') !== false ? 'display' : (strpos($device['device_name'], 'iPhone') !== false || strpos($device['device_name'], 'Android') !== false || strpos($device['device_name'], 'iPad') !== false ? 'phone' : 'laptop') ?>" aria-hidden="true"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="account-device-name">
+                                            <span><?= htmlspecialchars($device['device_name']) ?></span>
+                                            <?php if (!empty($device['is_current'])): ?>
+                                            <span class="account-current-badge"><i class="bi bi-check-circle-fill" aria-hidden="true"></i>当前设备</span>
+                                            <?php endif; ?>
                                         </div>
-                                        <div>
-                                            <div class="fw-bold text-dark mb-1">
-                                                <?= htmlspecialchars($device['device_name']) ?>
-                                                <?php if (!empty($device['is_current'])): ?>
-                                                <span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size:0.7rem;">当前设备</span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="text-muted small">
-                                                <div><i class="bi bi-globe me-1"></i>IP: <?= htmlspecialchars($device['ip_address']) ?></div>
-                                                <div><i class="bi bi-clock me-1"></i>最后活跃: <?= getTimeAgo($device['last_active_at']) ?></div>
-                                                <div><i class="bi bi-box-arrow-in-right me-1"></i>登录方式: <?= $device['login_method'] === 'auto' ? '记住我' : '密码登录' ?></div>
-                                            </div>
+                                        <div class="account-device-meta">
+                                            <span><i class="bi bi-globe" aria-hidden="true"></i><?= htmlspecialchars($device['ip_address']) ?></span>
+                                            <span><i class="bi bi-clock" aria-hidden="true"></i><?= getTimeAgo($device['last_active_at']) ?></span>
+                                            <span><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i><?= $device['login_method'] === 'auto' ? '记住我' : '密码登录' ?></span>
                                         </div>
                                     </div>
-                                    <?php if (empty($device['is_current'])): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger ms-3 mt-1" onclick="removeDevice(<?= $device['id'] ?>, this)">
-                                        <i class="bi bi-box-arrow-right me-1"></i>下线
-                                    </button>
-                                    <?php endif; ?>
                                 </div>
-                            </div>
+                                <?php if (empty($device['is_current'])): ?>
+                                <button type="button" class="btn btn-outline-danger account-device-remove" onclick="removeDevice(<?= (int)$device['id'] ?>, this)">
+                                    <i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>下线设备
+                                </button>
+                                <?php endif; ?>
+                            </article>
                             <?php endforeach; ?>
                         </div>
                         <?php endif; ?>
-                        <div class="alert alert-light border-0 mt-3 mb-0 rounded-3">
-                            <i class="bi bi-info-circle me-2 text-primary"></i>
-                            <small class="text-muted">登录新设备时，超出限制将自动下线最久未活跃的设备。修改密码会使所有设备下线。</small>
+                        <div class="account-tip">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span>登录新设备时，超出限制将自动下线最久未活跃的设备。修改密码会使现有设备会话失效。</span>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     </div>
 
     <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/account-ui.js?v=20260727-1"></script>
     <?php
     // 时间格式化辅助函数
     function getTimeAgo($datetime) {
@@ -814,12 +806,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 监听邮箱输入框变化
         emailInput.addEventListener('input', function() {
             if (this.value !== originalEmail && this.value !== '') {
-                sendCodeBtn.style.display = 'block';
-                verificationCodeGroup.style.display = 'flex';
+                sendCodeBtn.classList.remove('d-none');
+                verificationCodeGroup.classList.remove('d-none');
                 verificationInput.setAttribute('required', 'required');
             } else {
-                sendCodeBtn.style.display = 'none';
-                verificationCodeGroup.style.display = 'none';
+                sendCodeBtn.classList.add('d-none');
+                verificationCodeGroup.classList.add('d-none');
                 verificationInput.removeAttribute('required');
                 verificationInput.value = '';
             }
@@ -830,7 +822,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const email = emailInput.value;
             
             if (!email) {
-                alert('请输入邮箱地址');
+                window.showAccountToast?.('请输入邮箱地址', 'danger');
+                emailInput.focus();
                 return;
             }
             
@@ -838,6 +831,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // 禁用按钮
             sendCodeBtn.disabled = true;
+            const originalButtonText = sendCodeBtn.textContent;
+            sendCodeBtn.textContent = '发送中...';
             
             // 发送请求
             const formData = new FormData();
@@ -852,16 +847,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(data.message);
+                    window.showAccountToast?.(data.message, 'success');
                     startCountdown();
                 } else {
-                    alert(data.message);
+                    window.showAccountToast?.(data.message, 'danger');
+                    sendCodeBtn.textContent = originalButtonText;
                     sendCodeBtn.disabled = false;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('发送失败，请重试');
+                window.showAccountToast?.('发送失败，请重试', 'danger');
+                sendCodeBtn.textContent = originalButtonText;
                 sendCodeBtn.disabled = false;
             });
         }
@@ -894,6 +891,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 下线设备
         function removeDevice(sessionId, btn) {
             if (!confirm('确定要下线此设备吗？')) return;
+            const originalButtonHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>处理中';
             const formData = new FormData();
             formData.append('action', 'remove_device');
             formData.append('session_id', sessionId);
@@ -906,21 +906,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    const card = btn.closest('.list-group-item');
-                    card.style.transition = 'all 0.3s';
+                    const card = btn.closest('.account-device-item');
+                    const list = document.getElementById('deviceList');
                     card.style.opacity = '0';
                     card.style.transform = 'translateX(20px)';
                     setTimeout(() => {
-                        const nextBorder = card.nextElementSibling;
-                        if (nextBorder) nextBorder.remove();
                         card.remove();
-                    }, 300);
+                        const remaining = list ? list.querySelectorAll('.account-device-item').length : 0;
+                        const countBadge = document.getElementById('deviceCountBadge');
+                        if (countBadge) countBadge.textContent = `${remaining} / <?= $maxDevices ?> 台`;
+                        if (list && remaining === 0) {
+                            list.outerHTML = '<div class="account-empty-state" id="deviceEmptyState"><i class="bi bi-laptop" aria-hidden="true"></i><p class="mb-0">暂无在线设备</p></div>';
+                        }
+                    }, 260);
+                    window.showAccountToast?.(data.message, 'success');
                 } else {
-                    alert(data.message);
+                    btn.disabled = false;
+                    btn.innerHTML = originalButtonHtml;
+                    window.showAccountToast?.(data.message, 'danger');
                 }
             })
-            .catch(() => alert('操作失败，请重试'));
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalButtonHtml;
+                window.showAccountToast?.('操作失败，请重试', 'danger');
+            });
         }
+
+        // 恢复服务端校验失败后保留的新邮箱状态
+        emailInput.dispatchEvent(new Event('input'));
+
+        // 客户端先提示两次密码不一致，服务端仍会进行最终校验
+        document.getElementById('passwordForm')?.addEventListener('submit', function(event) {
+            const newPassword = document.getElementById('new_password');
+            const confirmPassword = document.getElementById('confirm_password');
+            if (newPassword.value !== confirmPassword.value) {
+                event.preventDefault();
+                window.showAccountToast?.('两次输入的新密码不一致', 'danger');
+                confirmPassword.focus();
+            }
+        });
+
+        verificationInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        });
     </script>
 </body>
 </html>
