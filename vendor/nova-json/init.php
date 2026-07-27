@@ -83,6 +83,9 @@ require_once $novaDir . '/class/theme/class-theme.php';
 require_once $novaDir . '/class/filesystem/class-file.php';
 require_once $novaDir . '/class/filesystem/class-upload.php';
 require_once $novaDir . '/class/filesystem/class-image.php';
+require_once $novaDir . '/class/admin/class-admin-menu.php';
+require_once $novaDir . '/class/admin/class-admin-page.php';
+require_once $novaDir . '/class/admin/class-front-page.php';
 
 /**
  * 从 Authorization 头提取 Bearer Token 并设置用户登录状态

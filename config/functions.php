@@ -272,6 +272,27 @@ function e($string) {
 }
 
 /**
+ * 将字符串转换为 URL 友好的 slug
+ * 用于页面路由、菜单 ID 等场景
+ * @param string $title
+ * @param string $separator
+ * @return string
+ */
+function sanitize_title($title, $separator = '-') {
+    // 移除 HTML 标签
+    $title = strip_tags($title);
+    // 将特殊字符替换为分隔符
+    $title = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $title);
+    // 将空格和连续分隔符替换为单个分隔符
+    $title = preg_replace('/[\s\-_]+/', $separator, $title);
+    // 去除首尾分隔符
+    $title = trim($title, $separator);
+    // 转小写
+    $title = mb_strtolower($title, 'UTF-8');
+    return $title ?: 'untitled';
+}
+
+/**
  * JavaScript 安全输出函数 - 防止XSS攻击
  * 适用于JavaScript变量、JSON等上下文
  *
