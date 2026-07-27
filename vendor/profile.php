@@ -7,66 +7,6 @@ require_once '../config/email_config.php';
 // 记录访问
 recordVisit($_SERVER['REQUEST_URI']);
 
-// 引入注册时使用的邮箱域名验证函数
-if (!function_exists('isAllowedEmailDomain')) {
-    function isAllowedEmailDomain($email) {
-        $pos = strrpos($email, '@');
-        if ($pos === false) return false;
-        $domain = strtolower(substr($email, $pos + 1));
-        $allowed = [
-            'qq.com','vip.qq.com','foxmail.com','163.com','126.com','yeah.net','sina.com','sina.cn',
-            'sohu.com','139.com','aliyun.com','gmail.com','outlook.com','hotmail.com','live.com',
-            'yahoo.com','yahoo.co.jp','icloud.com','proton.me','protonmail.com','mail.com','gmx.com','gmx.de'
-        ];
-        if (in_array($domain, $allowed, true)) return true;
-        foreach ($allowed as $d) {
-            $suffix = '.' . $d;
-            if (strlen($domain) > strlen($suffix) && substr($domain, -strlen($suffix)) === $suffix) {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
-// 引入注册时使用的用户名验证函数
-if (!function_exists('isValidUsername')) {
-    function isValidUsername($username) {
-        // 用户名长度检查
-        if (strlen($username) < 3 || strlen($username) > 20) {
-            return ['valid' => false, 'message' => '用户名长度应在3-20个字符之间'];
-        }
-        
-        // 用户名格式检查：只允许字母、数字、下划线、中文
-        if (!preg_match('/^[\x{4e00}-\x{9fa5}a-zA-Z0-9_]+$/u', $username)) {
-            return ['valid' => false, 'message' => '用户名只能包含中文、字母、数字和下划线'];
-        }
-        
-        // 用户名不能以数字开头
-        if (preg_match('/^\d/', $username)) {
-            return ['valid' => false, 'message' => '用户名不能以数字开头'];
-        }
-        
-        // 用户名不能以特殊字符开头或结尾
-        if (preg_match('/^_/', $username) || preg_match('/_$/', $username)) {
-            return ['valid' => false, 'message' => '用户名不能以下划线开头或结尾'];
-        }
-        
-        // 检查用户名是否包含连续的下划线
-        if (strpos($username, '__') !== false) {
-            return ['valid' => false, 'message' => '用户名不能包含连续的下划线'];
-        }
-        
-        // 禁止使用的敏感词
-        $forbidden_words = ['admin', '管理员', 'root', 'system', '系统', 'test', '测试', 'guest', '游客', 'null', 'undefined'];
-        if (in_array(strtolower($username), array_map('strtolower', $forbidden_words))) {
-            return ['valid' => false, 'message' => '该用户名已被保留，请使用其他名称'];
-        }
-        
-        return ['valid' => true, 'message' => ''];
-    }
-}
-
 // 检查是否登录
 if (!isset($_SESSION['user_id'])) {
     header('Location: /vendor/login.php?redirect_url=' . urlencode($_SERVER['REQUEST_URI']));
@@ -79,7 +19,6 @@ $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
 // 确保设备管理表存在
 ensureSessionTables();
 $maxDevices = (int)($config['max_devices'] ?? 2);
-$activeDevices = getUserActiveDevices($_SESSION['user_id']);
 
 // 获取用户信息
 $stmt = $db->prepare("SELECT * FROM admins WHERE id = ?");
@@ -87,10 +26,7 @@ $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();
 
 if (!$user) {
-    // 用户不存在，可能是被删除了
-    session_destroy();
-    setcookie('device_token', '', time() - 3600, '/');
-    setcookie('nova_token', '', time() - 3600, '/');
+    logoutAuthenticatedUser();
     header('Location: /vendor/login.php');
     exit;
 }
@@ -103,27 +39,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 发送验证码
     if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
         if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
-            echo json_encode(['success' => false, 'message' => '安全验证失败，请刷新页面后重试']);
-            exit;
+            accountJsonResponse(['success' => false, 'message' => '安全验证失败，请刷新页面后重试'], 403);
         }
         $email = trim($_POST['email'] ?? '');
         
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(['success' => false, 'message' => '请输入有效的邮箱地址']);
-            exit;
+            accountJsonResponse(['success' => false, 'message' => '请输入有效的邮箱地址'], 422);
         }
 
         if (!isAllowedEmailDomain($email)) {
-            echo json_encode(['success' => false, 'message' => '请使用常用邮箱地址']);
-            exit;
+            accountJsonResponse(['success' => false, 'message' => '该邮箱域名不在站点允许范围内'], 422);
+        }
+
+        $rateKey = 'user:' . (int)$user['id'] . ':email:' . hash('sha256', accountLowercase($email));
+        $rateLimit = checkRateLimit('change_email_code', 3, 3600, $rateKey);
+        if (!$rateLimit['allowed']) {
+            accountJsonResponse(['success' => false, 'message' => $rateLimit['message']], 429);
         }
 
         // 检查邮箱是否被其他用户占用
         $check_stmt = $db->prepare("SELECT id FROM admins WHERE email = ?");
         $check_stmt->execute([$email]);
         if ($check_stmt->fetch()) {
-            echo json_encode(['success' => false, 'message' => '该邮箱已被其他账号使用']);
-            exit;
+            accountJsonResponse(['success' => false, 'message' => '该邮箱已被其他账号使用'], 409);
         }
 
         try {
@@ -132,25 +70,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$email]);
             
             // 生成验证码
-            $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $code = generateVerificationCode();
             $expires_at = date('Y-m-d H:i:s', time() + 600);
             
             // 存储验证码
             $stmt = $db->prepare("INSERT INTO email_verification (email, code, purpose, expires_at) VALUES (?, ?, 'change_email', ?)");
             if ($stmt->execute([$email, $code, $expires_at])) {
                 if (sendVerificationEmail($email, $code)) {
-                    // 生产环境应去除验证码显示
-                    echo json_encode(['success' => true, 'message' => "验证码已发送到 {$email}"]);
+                    accountJsonResponse(['success' => true, 'message' => "验证码已发送到 {$email}"]);
                 } else {
-                    echo json_encode(['success' => false, 'message' => '邮件发送失败']);
+                    $db->prepare("DELETE FROM email_verification WHERE email = ? AND code = ? AND purpose = 'change_email'")
+                        ->execute([$email, $code]);
+                    accountJsonResponse(['success' => false, 'message' => '邮件发送失败，请稍后重试'], 502);
                 }
             } else {
-                echo json_encode(['success' => false, 'message' => '验证码生成失败']);
+                accountJsonResponse(['success' => false, 'message' => '验证码生成失败'], 500);
             }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => '系统错误: ' . $e->getMessage()]);
+            error_log('Send change-email code error: ' . $e->getMessage());
+            accountJsonResponse(['success' => false, 'message' => '系统暂时不可用，请稍后重试'], 500);
         }
-        exit;
     }
 
     // 修改密码
@@ -168,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_msg = '当前密码错误';
         } elseif ($new_password !== $confirm_password) {
             $error_msg = '两次输入的新密码不一致';
-        } elseif (strlen($new_password) < 6) {
+        } elseif (accountTextLength($new_password) < 6) {
             $error_msg = '新密码长度至少6位';
         } else {
             // 更新密码
@@ -176,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update_stmt = $db->prepare("UPDATE admins SET password = ? WHERE id = ?");
             if ($update_stmt->execute([$new_password_hash, $user['id']])) {
                 $success_msg = '密码修改成功，所有其他设备已下线，下次登录请使用新密码';
-                invalidateAllUserDevices($user['id']);
+                invalidateOtherUserDevices($user['id']);
             } else {
                 $error_msg = '密码修改失败，请重试';
             }
@@ -242,25 +181,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($check_stmt->fetch()) {
                 $error_msg = '该邮箱已被其他账号使用';
             } else {
-                // 验证验证码
-                $stmt = $db->prepare("SELECT id FROM email_verification WHERE email = ? AND code = ? AND purpose = 'change_email' AND is_used = 0 AND expires_at > NOW()");
-                $stmt->execute([$email, $verification_code]);
-                if (!$stmt->fetch()) {
-                    $error_msg = '验证码无效或已过期';
-                } else {
-                    // 标记验证码已使用
-                    $stmt = $db->prepare("UPDATE email_verification SET is_used = 1, used_at = NOW() WHERE email = ? AND code = ? AND purpose = 'change_email'");
+                try {
+                    $db->beginTransaction();
+                    $stmt = $db->prepare("SELECT id FROM email_verification
+                        WHERE email = ? AND code = ? AND purpose = 'change_email'
+                        AND is_used = 0 AND expires_at > NOW() FOR UPDATE");
                     $stmt->execute([$email, $verification_code]);
-                    
-                    // 更新邮箱
-                    $update_stmt = $db->prepare("UPDATE admins SET email = ? WHERE id = ?");
-                    if ($update_stmt->execute([$email, $user['id']])) {
-                        $success_msg = '邮箱修改成功';
-                        $user['email'] = $email; // 更新当前变量
-                        $_SESSION['user_email'] = $email; // 更新 Session
+                    $verificationId = $stmt->fetchColumn();
+                    if (!$verificationId) {
+                        $db->rollBack();
+                        $error_msg = '验证码无效或已过期';
                     } else {
-                        $error_msg = '更新失败，请重试';
+                        $updateCode = $db->prepare("UPDATE email_verification SET is_used = 1, used_at = NOW()
+                            WHERE id = ? AND is_used = 0");
+                        $updateCode->execute([$verificationId]);
+                        $updateEmail = $db->prepare("UPDATE admins SET email = ? WHERE id = ?");
+                        $updateEmail->execute([$email, $user['id']]);
+                        $db->commit();
+
+                        $success_msg = '邮箱修改成功';
+                        $user['email'] = $email;
+                        $_SESSION['user_email'] = $email;
                     }
+                } catch (Exception $e) {
+                    if ($db->inTransaction()) {
+                        $db->rollBack();
+                    }
+                    error_log('Change email transaction error: ' . $e->getMessage());
+                    $error_msg = '邮箱更新失败，请稍后重试';
                 }
             }
         }
@@ -269,24 +217,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 下线设备 AJAX
     if (isset($_POST['action']) && $_POST['action'] === 'remove_device') {
-        header('Content-Type: application/json');
         if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
-            echo json_encode(['success' => false, 'message' => '安全验证失败']);
-            exit;
+            accountJsonResponse(['success' => false, 'message' => '安全验证失败'], 403);
         }
         $sessionId = intval($_POST['session_id'] ?? 0);
         if ($sessionId <= 0) {
-            echo json_encode(['success' => false, 'message' => '无效的设备ID']);
-            exit;
+            accountJsonResponse(['success' => false, 'message' => '无效的设备ID'], 422);
         }
         if (removeUserDevice($sessionId, $user['id'])) {
-            echo json_encode(['success' => true, 'message' => '设备已下线']);
+            accountJsonResponse(['success' => true, 'message' => '设备已下线']);
         } else {
-            echo json_encode(['success' => false, 'message' => '操作失败或无法下线当前设备']);
+            accountJsonResponse(['success' => false, 'message' => '操作失败或无法下线当前设备'], 409);
         }
-        exit;
     }
 }
+
+$activeDevices = getUserActiveDevices($user['id']);
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -474,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     </style>
-    <link href="/assets/css/account.css?v=20260727-2" rel="stylesheet">
+    <link href="/assets/css/account.css?v=20260728-1" rel="stylesheet">
 </head>
 <body class="account-profile-page">
     <nav class="navbar navbar-expand-lg fixed-top">
@@ -568,9 +514,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <a href="#devices" class="account-nav-link">
                         <i class="bi bi-laptop" aria-hidden="true"></i><span>登录设备</span>
                     </a>
-                    <a href="/vendor/login.php?logout=1" class="account-nav-link text-danger">
-                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>退出登录</span>
-                    </a>
+                    <form method="POST" action="/vendor/login.php" class="account-nav-form">
+                        <?= csrfField() ?>
+                        <input type="hidden" name="action" value="logout">
+                        <input type="hidden" name="redirect_url" value="/vendor/login.php">
+                        <button type="submit" class="account-nav-link text-danger">
+                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>退出登录</span>
+                        </button>
+                    </form>
                 </nav>
             </aside>
 

@@ -10,15 +10,15 @@ if (isBotBlacklisted()) { http_response_code(403); header('Location: /vendor/pub
 // 记录访问
 recordVisit($_SERVER['REQUEST_URI']);
 
-// 处理退出登录
-if (isset($_GET['logout']) && $_GET['logout'] == 1) {
-    if (isset($_SESSION['user_id'])) {
-        logoutCurrentDevice($_SESSION['user_id']);
+// 退出登录仅接受带 CSRF 的 POST 请求，避免跨站请求触发登出。
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'logout') {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        exit('安全验证失败，请返回后刷新页面重试');
     }
-    session_destroy();
-    setcookie('device_token', '', time() - 3600, '/');
-    setcookie('nova_token', '', time() - 3600, '/');
-    header('Location: /vendor/login.php');
+    logoutAuthenticatedUser();
+    $logoutRedirect = safeRedirectUrl($_POST['redirect_url'] ?? '/vendor/login.php');
+    header('Location: ' . $logoutRedirect);
     exit;
 }
 
@@ -712,7 +712,7 @@ if ($need_email_verify) {
             }
         }
     </style>
-    <link href="/assets/css/account.css?v=20260727-2" rel="stylesheet">
+    <link href="/assets/css/account.css?v=20260728-1" rel="stylesheet">
 </head>
 <body class="account-auth-page">
     <div class="account-auth-toolbar" aria-label="页面工具">

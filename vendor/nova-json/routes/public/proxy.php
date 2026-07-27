@@ -409,9 +409,10 @@ function nova_dispatch_local_route($route, $method, $params) {
         return $result;
 
     } catch (Exception $e) {
+        error_log('Nova public proxy error: ' . $e->getMessage());
         return new Nova_REST_Response([
             'code'    => 'proxy_internal_error',
-            'message' => '内部代理执行失败: ' . $e->getMessage(),
+            'message' => '内部代理暂时不可用，请稍后重试',
             'data'    => ['status' => 500],
         ], 500);
     }

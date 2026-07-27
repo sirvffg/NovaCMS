@@ -54,11 +54,12 @@ try {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     
 } catch (Exception $e) {
+    error_log('QQ avatar API error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
         'error' => '服务器内部错误',
-        'message' => $e->getMessage()
+        'message' => '头像服务暂时不可用，请稍后重试'
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 ?>

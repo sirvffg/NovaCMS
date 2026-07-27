@@ -38,7 +38,8 @@
 }
 
 .account-auth-page,
-.account-profile-page {
+.account-profile-page,
+.account-appeal-page {
     min-height: 100vh;
     margin: 0;
     color: var(--account-ink);
@@ -48,7 +49,8 @@
 }
 
 .account-auth-page *,
-.account-profile-page * {
+.account-profile-page *,
+.account-appeal-page * {
     box-sizing: border-box;
 }
 
@@ -700,6 +702,390 @@
     aspect-ratio: 2 / 1;
 }
 
+/* Shared registration and recovery flows */
+.account-auth-page.account-register-page .auth-wrapper {
+    grid-template-columns: minmax(0, .9fr) minmax(520px, 1.1fr);
+}
+
+.account-auth-page.account-register-page .auth-main-inner {
+    max-width: 540px;
+}
+
+.account-auth-page.account-recovery-page .auth-wrapper {
+    min-height: 640px;
+}
+
+.account-auth-page .form-floating > .form-control,
+.account-auth-page .form-floating > .form-select {
+    min-height: 54px;
+    border: 1px solid var(--account-border);
+    border-radius: var(--account-radius-sm);
+    color: var(--account-ink);
+    background-color: var(--account-surface-soft);
+    box-shadow: none;
+}
+
+.account-auth-page .form-floating > .form-control:focus,
+.account-auth-page .form-floating > .form-select:focus {
+    color: var(--account-ink);
+    border-color: color-mix(in srgb, var(--account-primary) 58%, transparent);
+    background-color: var(--account-surface);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--account-primary) 12%, transparent);
+}
+
+.account-auth-page .form-floating > label,
+.account-auth-page .form-text,
+.account-auth-page .text-secondary,
+.account-auth-page .text-muted {
+    color: var(--account-muted) !important;
+}
+
+.account-auth-page .input-group > .form-floating:not(:last-child) > .form-control {
+    border-top-right-radius: var(--account-radius-sm);
+    border-bottom-right-radius: var(--account-radius-sm);
+}
+
+.account-auth-page .input-group {
+    gap: 10px;
+}
+
+.account-auth-page .input-group > .btn {
+    min-width: 118px;
+    border: 1px solid color-mix(in srgb, var(--account-primary) 35%, transparent);
+    border-radius: var(--account-radius-sm) !important;
+    color: var(--account-primary);
+    background: var(--account-primary-soft);
+    font-weight: 700;
+}
+
+.account-auth-page .input-group > .btn:hover:not(:disabled) {
+    color: var(--account-primary-strong);
+    border-color: var(--account-primary);
+}
+
+.account-auth-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.account-auth-grid > * {
+    min-width: 0;
+}
+
+.account-domain-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 26px;
+}
+
+.account-domain-cloud-label {
+    width: 100%;
+    margin-bottom: 2px;
+    color: #94a3b8;
+    font-size: .72rem;
+}
+
+.account-domain-chip {
+    padding: 5px 9px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 999px;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, .06);
+    font-size: .68rem;
+}
+
+.account-auth-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 18px 0 22px;
+    padding: 13px 14px;
+    border: 1px solid var(--account-border);
+    border-radius: var(--account-radius-sm);
+    color: var(--account-muted);
+    background: var(--account-surface-soft);
+    font-size: .8rem;
+    line-height: 1.55;
+}
+
+.account-auth-callout i {
+    color: var(--account-primary);
+}
+
+.account-flow-icon {
+    width: 58px;
+    height: 58px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    border: 1px solid color-mix(in srgb, var(--account-primary) 24%, transparent);
+    border-radius: 18px;
+    color: var(--account-primary);
+    background: var(--account-primary-soft);
+    font-size: 1.5rem;
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--account-primary) 10%, transparent);
+}
+
+.account-email-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 13px 14px;
+    border: 1px solid var(--account-border);
+    border-radius: var(--account-radius-sm);
+    color: var(--account-ink);
+    background: var(--account-surface-soft);
+}
+
+.account-email-display > i {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border-radius: 11px;
+    color: var(--account-primary);
+    background: var(--account-primary-soft);
+}
+
+.account-auth-page .alert-success {
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+}
+
+[data-bs-theme="dark"] .account-auth-page .alert-success {
+    color: #bbf7d0;
+    border-color: rgba(74, 222, 128, .28);
+    background: rgba(20, 83, 45, .28);
+}
+
+.account-auth-page .slider-verification-box {
+    border: 1px solid var(--account-border);
+    border-radius: var(--account-radius-md);
+    color: var(--account-ink);
+    background: var(--account-surface);
+    box-shadow: var(--account-shadow-lg);
+}
+
+.account-auth-page .slider-verification-title,
+.account-auth-page .slider-tips {
+    color: var(--account-muted);
+}
+
+.account-auth-page #register-captcha-container,
+.account-auth-page #register-captcha-container .auth-card {
+    max-width: 100%;
+}
+
+.account-auth-page #register-captcha-container .auth-card {
+    width: min(340px, calc(100vw - 56px)) !important;
+    min-width: 0 !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+}
+
+.account-auth-page #register-captcha-container .puzzle-container,
+.account-auth-page #register-captcha-container .slider-track {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.account-auth-page #register-captcha-container .puzzle-container {
+    height: auto !important;
+    aspect-ratio: 2 / 1;
+}
+
+.account-auth-page #forgot-captcha-container,
+.account-auth-page #forgot-captcha-container .auth-card {
+    max-width: 100%;
+}
+
+.account-auth-page #forgot-captcha-container .auth-card {
+    width: min(340px, calc(100vw - 56px)) !important;
+    min-width: 0 !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+}
+
+.account-auth-page #forgot-captcha-container .puzzle-container,
+.account-auth-page #forgot-captcha-container .slider-track {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.account-auth-page #forgot-captcha-container .puzzle-container {
+    height: auto !important;
+    aspect-ratio: 2 / 1;
+}
+
+/* Appeal center */
+.account-appeal-page {
+    padding: 34px 20px 64px;
+    background:
+        radial-gradient(circle at 8% 6%, rgba(99, 102, 241, .13), transparent 30%),
+        radial-gradient(circle at 92% 18%, rgba(8, 145, 178, .1), transparent 28%),
+        var(--account-bg);
+}
+
+.account-appeal-page .appeal-container {
+    width: min(1020px, 100%);
+    max-width: 1020px;
+}
+
+.account-appeal-theme {
+    position: fixed;
+    z-index: 30;
+    top: 22px;
+    right: 22px;
+}
+
+.account-appeal-page .back-link {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 16px;
+    border: 1px solid var(--account-border);
+    border-radius: 999px;
+    color: var(--account-ink);
+    background: color-mix(in srgb, var(--account-surface) 90%, transparent);
+    box-shadow: var(--account-shadow-sm);
+    backdrop-filter: blur(14px);
+}
+
+.account-appeal-page .page-header {
+    margin: 30px 0 26px;
+    padding: 34px;
+    border: 1px solid var(--account-border);
+    border-radius: var(--account-radius-lg);
+    color: #f8fafc;
+    text-align: left;
+    background:
+        radial-gradient(circle at 90% 0, rgba(99, 102, 241, .62), transparent 38%),
+        linear-gradient(145deg, #111827, #1e293b);
+    box-shadow: var(--account-shadow-sm);
+}
+
+.account-appeal-page .page-header h1 {
+    margin-bottom: 9px;
+    color: #fff;
+    font-size: clamp(1.8rem, 4vw, 2.65rem);
+    letter-spacing: -.035em;
+}
+
+.account-appeal-page .page-header p {
+    margin: 0;
+    color: #cbd5e1;
+}
+
+.account-appeal-page .user-status-bar,
+.account-appeal-page .form-card,
+.account-appeal-page .appeal-record,
+.account-appeal-page .ip-info-card {
+    color: var(--account-ink);
+    border: 1px solid var(--account-border);
+    background: var(--account-surface);
+    box-shadow: var(--account-shadow-sm);
+}
+
+.account-appeal-page .user-status-bar,
+.account-appeal-page .form-card {
+    border-radius: var(--account-radius-md);
+}
+
+.account-appeal-page .user-status-bar .user-name,
+.account-appeal-page .appeal-record .record-type,
+.account-appeal-page .appeal-record .record-reply strong,
+.account-appeal-page .history-section h3,
+.account-appeal-page .form-card h2 {
+    color: var(--account-ink);
+}
+
+.account-appeal-page .user-status-bar .user-email,
+.account-appeal-page .record-time,
+.account-appeal-page .form-subtitle,
+.account-appeal-page .empty-state,
+.account-appeal-page .form-text.hint {
+    color: var(--account-muted) !important;
+}
+
+.account-appeal-page .type-card {
+    border: 1px solid var(--account-border);
+    border-radius: var(--account-radius-md);
+    color: var(--account-ink);
+    background: var(--account-surface);
+    box-shadow: var(--account-shadow-sm);
+}
+
+.account-appeal-page .type-card:hover {
+    border-color: color-mix(in srgb, var(--account-primary) 35%, transparent);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .1);
+}
+
+.account-appeal-page .type-card.active {
+    border-color: var(--account-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--account-primary) 12%, transparent);
+}
+
+.account-appeal-page .type-name,
+.account-appeal-page .record-reason,
+.account-appeal-page .record-reply,
+.account-appeal-page .ip-info-card strong {
+    color: var(--account-ink);
+}
+
+.account-appeal-page .type-desc,
+.account-appeal-page .ip-info-card {
+    color: var(--account-muted);
+}
+
+.account-appeal-page .appeal-record .record-reply {
+    background: var(--account-surface-soft);
+}
+
+.account-appeal-page .form-floating > .form-control,
+.account-appeal-page .form-floating > .form-select {
+    color: var(--account-ink);
+    border-color: var(--account-border);
+    background-color: var(--account-surface-soft);
+}
+
+.account-appeal-page .form-floating > .form-control:focus,
+.account-appeal-page .form-floating > .form-select:focus {
+    color: var(--account-ink);
+    border-color: var(--account-primary);
+    background-color: var(--account-surface);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--account-primary) 12%, transparent);
+}
+
+.account-appeal-page .btn-primary {
+    border-color: transparent;
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+    box-shadow: 0 10px 22px rgba(79, 70, 229, .2);
+}
+
+.account-appeal-page .auth-modal .modal-content {
+    color: var(--account-ink);
+    border: 1px solid var(--account-border);
+    background: var(--account-surface);
+}
+
+.account-appeal-page .auth-modal .modal-header,
+.account-appeal-page .auth-modal .modal-footer {
+    border-color: var(--account-border);
+}
+
+.account-appeal-page .auth-modal .modal-title,
+.account-appeal-page .auth-modal .modal-footer-text {
+    color: var(--account-ink);
+}
+
 /* Profile */
 .account-profile-page {
     background:
@@ -927,6 +1313,17 @@
     font-size: .87rem;
     font-weight: 680;
     transition: color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.account-nav-form {
+    margin: 0;
+}
+
+.account-nav-form .account-nav-link {
+    width: 100%;
+    border: 0;
+    text-align: left;
+    background: transparent;
 }
 
 .account-nav-link i {
@@ -1287,6 +1684,10 @@
         border-radius: 25px;
     }
 
+    .account-auth-page.account-register-page .auth-wrapper {
+        grid-template-columns: 1fr;
+    }
+
     .auth-sidebar {
         min-height: 260px;
         padding: 32px;
@@ -1405,6 +1806,21 @@
         grid-template-columns: 1fr;
     }
 
+    .account-auth-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .account-auth-page .input-group {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .account-auth-page .input-group > .btn {
+        width: 100%;
+        min-height: 48px;
+    }
+
     .account-code-button {
         width: 100%;
     }
@@ -1455,6 +1871,20 @@
     .account-device-remove {
         width: 100%;
     }
+
+    .account-appeal-page {
+        padding: 18px 12px 40px;
+    }
+
+    .account-appeal-theme {
+        top: 14px;
+        right: 14px;
+    }
+
+    .account-appeal-page .page-header {
+        padding: 26px 21px;
+        border-radius: 21px;
+    }
 }
 
 @media (max-width: 420px) {
@@ -1482,7 +1912,8 @@
 
 @media (prefers-reduced-motion: reduce) {
     .account-auth-page *,
-    .account-profile-page * {
+    .account-profile-page *,
+    .account-appeal-page * {
         scroll-behavior: auto !important;
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;

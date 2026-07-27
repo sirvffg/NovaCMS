@@ -692,11 +692,21 @@ $type_map = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>封禁申诉 - <?= e($config['website_name']) ?></title>
+    <script>
+        (function () {
+            try {
+                document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+            } catch (error) {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+            }
+        })();
+    </script>
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
     <?php endif; ?>
     <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.staticfile.net/bootstrap/5.3.0/css/bootstrap.min.css') ?>" rel="stylesheet">
     <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.staticfile.net/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
+    <link href="/assets/css/harmonyos-sans.css" rel="stylesheet">
     <link href="/assets/css/harmonyos-sans.css" rel="stylesheet">
     <style>
         :root {
@@ -810,8 +820,12 @@ $type_map = [
             .auth-modal .modal-body { padding: 16px 20px 20px; }
         }
     </style>
+    <link href="/assets/css/account.css?v=20260728-1" rel="stylesheet">
 </head>
-<body>
+<body class="account-appeal-page">
+    <button type="button" class="account-icon-button account-appeal-theme" data-account-theme-toggle aria-label="切换显示模式">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+    </button>
     <div class="appeal-container">
         <a href="/" class="back-link">
             <i class="bi bi-arrow-left"></i>
@@ -1178,6 +1192,7 @@ $type_map = [
     </div>
 
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="/assets/js/account-ui.js?v=20260727-1"></script>
     <script>
     // ===================== 申诉提交 =====================
     function submitAppeal(e) {

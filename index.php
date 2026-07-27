@@ -19,12 +19,11 @@ recordVisit('/');
 
 // 处理退出登录
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'logout') {
-    if (isset($_SESSION['user_id'])) {
-        logoutCurrentDevice($_SESSION['user_id']);
+    if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        exit('安全验证失败，请刷新页面后重试');
     }
-    session_destroy();
-    setcookie('device_token', '', time() - 3600, '/');
-    setcookie('nova_token', '', time() - 3600, '/');
+    logoutAuthenticatedUser();
     header('Location: ' . $_SERVER['PHP_SELF']);
     exit;
 }
@@ -372,6 +371,7 @@ $imageBedEnabled = !empty($config['image_bed_display_enabled']) && $config['imag
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" style="display: inline;">
+                                    <?= csrfField() ?>
                                     <input type="hidden" name="action" value="logout">
                                     <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right"></i> 退出登录</button>
                                 </form>

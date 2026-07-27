@@ -561,9 +561,21 @@ function safeRedirectUrl($url) {
         return $url;
     }
     
-    // 允许绝对路径但必须是本站
-    $host = $_SERVER['HTTP_HOST'] ?? '';
-    if ($host && strpos($url, $host) !== false) {
+    // 绝对 URL 仅允许 http(s)，且主机名必须与当前站点完全一致。
+    $parts = parse_url($url);
+    if (!is_array($parts) || empty($parts['host'])) {
+        return '/';
+    }
+    $scheme = strtolower((string)($parts['scheme'] ?? ''));
+    if (!in_array($scheme, ['http', 'https'], true)) {
+        return '/';
+    }
+
+    $requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $requestHost = preg_replace('/:\d+$/', '', $requestHost);
+    $requestHost = trim($requestHost, '[]');
+    $urlHost = trim(strtolower((string)$parts['host']), '[]');
+    if ($requestHost !== '' && hash_equals($requestHost, $urlHost)) {
         return $url;
     }
     
@@ -1333,10 +1345,19 @@ function refreshDeviceActivity() {
 function removeUserDevice($sessionId, $userId) {
     try {
         $db = getDB();
-        $stmt = $db->prepare("UPDATE user_sessions SET is_active = 0, deleted_by_user = 1
-            WHERE id = ? AND user_id = ? AND is_current = 0 AND is_active = 1");
-        return $stmt->execute([$sessionId, $userId]) && $stmt->rowCount() > 0;
+        $currentToken = (string)($_COOKIE['device_token'] ?? '');
+        if ($currentToken !== '') {
+            $stmt = $db->prepare("UPDATE user_sessions SET is_active = 0, deleted_by_user = 1, is_current = 0
+                WHERE id = ? AND user_id = ? AND device_token <> ? AND is_active = 1");
+            $executed = $stmt->execute([$sessionId, $userId, $currentToken]);
+        } else {
+            $stmt = $db->prepare("UPDATE user_sessions SET is_active = 0, deleted_by_user = 1, is_current = 0
+                WHERE id = ? AND user_id = ? AND is_current = 0 AND is_active = 1");
+            $executed = $stmt->execute([$sessionId, $userId]);
+        }
+        return $executed && $stmt->rowCount() > 0;
     } catch (Exception $e) {
+        error_log('Remove user device error: ' . $e->getMessage());
         return false;
     }
 }
@@ -1382,18 +1403,59 @@ function invalidateAllUserDevices($userId) {
 }
 
 /**
+ * 修改密码后仅使其他设备失效；没有设备 Cookie 时回退为全部失效。
+ */
+function invalidateOtherUserDevices($userId) {
+    try {
+        $db = getDB();
+        $currentToken = (string)($_COOKIE['device_token'] ?? '');
+        if ($currentToken !== '') {
+            $stmt = $db->prepare("UPDATE user_sessions SET is_active = 0, is_current = 0
+                WHERE user_id = ? AND device_token <> ? AND is_active = 1");
+            $stmt->execute([$userId, $currentToken]);
+        } else {
+            $stmt = $db->prepare("UPDATE user_sessions SET is_active = 0, is_current = 0
+                WHERE user_id = ? AND is_active = 1");
+            $stmt->execute([$userId]);
+        }
+        return true;
+    } catch (Exception $e) {
+        error_log('Invalidate other devices error: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * 获取用户当前在线设备列表（用户视角）
  */
 function getUserActiveDevices($userId) {
     try {
         $db = getDB();
-        $stmt = $db->prepare("SELECT id, device_name, ip_address, last_active_at, login_at, login_method, is_current
+        $stmt = $db->prepare("SELECT id, device_token, device_name, ip_address, last_active_at, login_at, login_method, is_current
             FROM user_sessions
             WHERE user_id = ? AND is_active = 1 AND status = 'success' AND deleted_by_user = 0
+            AND (expires_at IS NULL OR expires_at > NOW())
             ORDER BY is_current DESC, last_active_at DESC");
         $stmt->execute([$userId]);
-        return $stmt->fetchAll();
+        $devices = $stmt->fetchAll();
+        $currentToken = (string)($_COOKIE['device_token'] ?? '');
+        foreach ($devices as &$device) {
+            if ($currentToken !== '') {
+                $device['is_current'] = hash_equals((string)$device['device_token'], $currentToken) ? 1 : 0;
+            }
+            unset($device['device_token']);
+        }
+        unset($device);
+
+        usort($devices, function ($left, $right) {
+            if ((int)$left['is_current'] !== (int)$right['is_current']) {
+                return (int)$right['is_current'] <=> (int)$left['is_current'];
+            }
+            return strtotime($right['last_active_at'] ?? '') <=> strtotime($left['last_active_at'] ?? '');
+        });
+        return $devices;
     } catch (Exception $e) {
+        error_log('Get active devices error: ' . $e->getMessage());
         return [];
     }
 }
@@ -1422,7 +1484,9 @@ function getUserLoginLogs($userId, $limit = 50) {
 function getUserActiveDeviceCount($userId) {
     try {
         $db = getDB();
-        $stmt = $db->prepare("SELECT COUNT(*) FROM user_sessions WHERE user_id = ? AND is_active = 1 AND status = 'success'");
+        $stmt = $db->prepare("SELECT COUNT(*) FROM user_sessions
+            WHERE user_id = ? AND is_active = 1 AND status = 'success'
+            AND deleted_by_user = 0 AND (expires_at IS NULL OR expires_at > NOW())");
         $stmt->execute([$userId]);
         return (int)$stmt->fetchColumn();
     } catch (Exception $e) {
@@ -1763,3 +1827,5 @@ function markIPAsTrusted($userId, $ip) {
         // 忽略
     }
 }
+
+require_once __DIR__ . '/account_functions.php';

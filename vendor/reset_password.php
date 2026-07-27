@@ -44,28 +44,39 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
         $error = '请填写所有必填字段';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = '请输入有效的邮箱地址';
-    } elseif (strlen($new_password) < 6) {
+    } elseif (accountTextLength($new_password) < 6) {
         $error = '密码长度至少6位';
     } elseif ($new_password !== $confirm_password) {
         $error = '两次输入的密码不一致';
     } else {
         try {
-            // 验证邮箱验证码
-            $stmt = $db->prepare("SELECT id FROM email_verification WHERE email = ? AND code = ? AND purpose = 'reset' AND is_used = 0 AND expires_at > NOW()");
+            $db->beginTransaction();
+            $stmt = $db->prepare("SELECT id FROM email_verification
+                WHERE email = ? AND code = ? AND purpose = 'reset'
+                AND is_used = 0 AND expires_at > NOW() FOR UPDATE");
             $stmt->execute([$email, $verification_code]);
-            $verification = $stmt->fetch();
+            $verificationId = $stmt->fetchColumn();
             
-            if (!$verification) {
+            if (!$verificationId) {
+                $db->rollBack();
                 $error = '验证码无效或已过期，请重新获取';
             } else {
-                // 标记验证码已使用
-                $stmt = $db->prepare("UPDATE email_verification SET is_used = 1, used_at = NOW() WHERE id = ?");
-                $stmt->execute([$verification['id']]);
+                $stmt = $db->prepare("SELECT id FROM admins WHERE email = ? FOR UPDATE");
+                $stmt->execute([$email]);
+                $userId = $stmt->fetchColumn();
+                if (!$userId) {
+                    $db->rollBack();
+                    $error = '验证码无效或已过期，请重新获取';
+                } else {
+                    $stmt = $db->prepare("UPDATE email_verification SET is_used = 1, used_at = NOW()
+                        WHERE id = ? AND is_used = 0");
+                    $stmt->execute([$verificationId]);
                 
-                // 更新密码
-                $hashedPassword = hashPassword($new_password);
-                $stmt = $db->prepare("UPDATE admins SET password = ? WHERE email = ?");
-                if ($stmt->execute([$hashedPassword, $email])) {
+                    $hashedPassword = hashPassword($new_password);
+                    $stmt = $db->prepare("UPDATE admins SET password = ? WHERE id = ?");
+                    $stmt->execute([$hashedPassword, $userId]);
+                    $db->commit();
+                    invalidateAllUserDevices((int)$userId);
                     $success = '密码重置成功！即将跳转到登录页面...';
                     
                     // 构建跳转 URL
@@ -76,12 +87,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
                     
                     // 3秒后跳转到登录页面
                     header('refresh:3;url=' . $login_url);
-                } else {
-                    $error = '密码重置失败，请重试';
                 }
             }
         } catch (Exception $e) {
-            $error = '密码重置出错: ' . $e->getMessage();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            error_log('Password reset error: ' . $e->getMessage());
+            $error = '密码重置暂时失败，请稍后重试';
         }
     }
     }
@@ -93,6 +106,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($config['website_name']) ?> - 重置密码</title>
+    <script>
+        (function () {
+            try {
+                document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+            } catch (error) {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+            }
+        })();
+    </script>
     
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
@@ -413,34 +435,49 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
             }
         }
     </style>
+    <link href="/assets/css/account.css?v=20260728-1" rel="stylesheet">
 </head>
-<body>
-    <a href="/vendor/forgot_password.php?email=<?= urlencode($email) ?><?= ($redirect_url && $redirect_url !== '/') ? '&redirect_url=' . urlencode($redirect_url) : '' ?>" class="back-link">
-        <i class="bi bi-arrow-left"></i>
-        <span>返回</span>
-    </a>
+<body class="account-auth-page account-recovery-page">
+    <div class="account-auth-toolbar" aria-label="页面工具">
+        <a href="/vendor/forgot_password.php?email=<?= urlencode($email) ?><?= ($redirect_url && $redirect_url !== '/') ? '&redirect_url=' . urlencode($redirect_url) : '' ?>" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i><span>返回</span>
+        </a>
+        <button type="button" class="account-icon-button" data-account-theme-toggle aria-label="切换显示模式">
+            <i class="bi bi-moon-stars" aria-hidden="true"></i>
+        </button>
+    </div>
 
     <div class="auth-wrapper">
         <div class="auth-sidebar">
             <div class="auth-sidebar-content">
                 <div class="brand-logo">
-                    <i class="bi bi-box-seam"></i>
-                    <?= e($config['website_name']) ?>
+                    <span class="brand-mark"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <span><?= e($config['website_name']) ?></span>
                 </div>
                 <div class="welcome-text">
-                    <h2>重置密码</h2>
-                    <p>为了您的账户安全，请设置一个新的强密码。建议使用字母、数字和符号的组合。</p>
+                    <span class="account-eyebrow">Secure reset</span>
+                    <h2>重新保护你的账户</h2>
+                    <p>验证码仅能使用一次；密码更新后，现有设备会话将全部失效。</p>
+                    <ul class="auth-feature-list" aria-label="密码建议">
+                        <li class="auth-feature-item"><span class="auth-feature-icon"><i class="bi bi-check2"></i></span><span>至少 6 个字符</span></li>
+                        <li class="auth-feature-item"><span class="auth-feature-icon"><i class="bi bi-shuffle"></i></span><span>组合字母、数字和符号</span></li>
+                        <li class="auth-feature-item"><span class="auth-feature-icon"><i class="bi bi-laptop"></i></span><span>旧设备自动下线</span></li>
+                    </ul>
                 </div>
             </div>
-            <div class="auth-sidebar-content text-center mt-4">
-                <small style="opacity: 0.7;">&copy; <?= date('Y') ?> <?= e($config['website_name']) ?>. All rights reserved.</small>
+            <div class="auth-sidebar-content auth-sidebar-footer">
+                <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+                <span class="auth-security-pill"><i class="bi bi-shield-lock"></i> 一次性验证</span>
             </div>
         </div>
 
         <div class="auth-main">
+            <div class="auth-main-inner">
+            <div class="account-flow-icon"><i class="bi bi-key" aria-hidden="true"></i></div>
             <div class="mb-4">
+                <span class="account-eyebrow">New password</span>
                 <h1 class="auth-title">设置新密码</h1>
-                <p class="auth-subtitle">请输入验证码并设置您的新密码</p>
+                <p class="auth-subtitle">输入邮件中的验证码，并设置新的登录密码。</p>
             </div>
 
             <?php if ($success): ?>
@@ -458,8 +495,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
             <?php endif; ?>
 
             <?php if (!$success): ?>
-            <div class="email-display">
-                <i class="bi bi-person-circle"></i>
+            <div class="account-email-display">
+                <i class="bi bi-envelope-check"></i>
                 <div>
                     <small class="text-muted d-block" style="font-size: 0.8rem;">重置账户</small>
                     <span class="fw-medium"><?= htmlspecialchars($email) ?></span>
@@ -474,37 +511,50 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="verification_code" name="verification_code" 
                            placeholder="验证码" required maxlength="6"
-                           pattern="[0-9]{6}">
+                           pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" autofocus>
                     <label for="verification_code">6位验证码</label>
                 </div>
 
-                <div class="form-floating mb-3">
-                    <input type="password" class="form-control" id="newPassword" name="new_password" 
-                           placeholder="新密码" required minlength="6">
-                    <label for="newPassword">新密码 (至少6位)</label>
+                <div class="account-form-group">
+                    <label class="account-form-label" for="newPassword">新密码</label>
+                    <div class="account-input-wrap">
+                        <i class="bi bi-lock account-input-icon" aria-hidden="true"></i>
+                        <input type="password" class="form-control account-input" id="newPassword" name="new_password"
+                               placeholder="至少 6 位" required minlength="6" autocomplete="new-password"
+                               data-password-strength="resetPasswordStrength">
+                        <button type="button" class="account-password-toggle" data-password-toggle="newPassword" aria-label="显示新密码" aria-pressed="false"><i class="bi bi-eye"></i></button>
+                    </div>
+                    <div class="account-strength" id="resetPasswordStrength" data-level="0" aria-label="密码强度"><span></span><span></span><span></span><span></span></div>
                 </div>
 
-                <div class="form-floating mb-4">
-                    <input type="password" class="form-control" id="confirmPassword" name="confirm_password" 
-                           placeholder="确认新密码" required minlength="6">
-                    <label for="confirmPassword">确认新密码</label>
+                <div class="account-form-group mb-4">
+                    <label class="account-form-label" for="confirmPassword">确认新密码</label>
+                    <div class="account-input-wrap">
+                        <i class="bi bi-shield-lock account-input-icon" aria-hidden="true"></i>
+                        <input type="password" class="form-control account-input" id="confirmPassword" name="confirm_password"
+                               placeholder="再次输入新密码" required minlength="6" autocomplete="new-password">
+                        <button type="button" class="account-password-toggle" data-password-toggle="confirmPassword" aria-label="显示确认密码" aria-pressed="false"><i class="bi bi-eye"></i></button>
+                    </div>
                 </div>
 
-                <button type="button" class="btn btn-primary w-100 mb-4" onclick="submitReset()">
-                    重置密码
+                <button type="button" class="btn account-btn-primary w-100 mb-4" onclick="submitReset()">
+                    <span>更新密码</span><i class="bi bi-arrow-right"></i>
                 </button>
 
                 <div class="text-center">
-                    <a href="/vendor/forgot_password.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="text-decoration-none" style="color: var(--primary-color);">
+                    <a href="/vendor/forgot_password.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="account-link">
                         <i class="bi bi-arrow-clockwise"></i> 重新发送验证码
                     </a>
                 </div>
             </form>
             <?php endif; ?>
+            <div class="auth-footnote"><i class="bi bi-lock"></i>密码将使用安全哈希保存</div>
+            </div>
         </div>
     </div>
     
     <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/account-ui.js?v=20260727-1"></script>
     <script>
         <?php if (!$success): ?>
         // 提交重置
@@ -579,8 +629,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
                     alertDiv.querySelector('.btn-close')?.remove();
                     
                     // 插入到表单上方
-                    const formDiv = document.querySelector('.email-display').parentNode;
-                    formDiv.insertBefore(alertDiv, document.querySelector('.email-display'));
+                    const formDiv = document.querySelector('.account-email-display').parentNode;
+                    formDiv.insertBefore(alertDiv, document.querySelector('.account-email-display'));
                     
                     if (alert.classList.contains('alert-success') || alert.textContent.includes('密码重置成功')) {
                         foundSuccess = true;
@@ -636,8 +686,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             
-            // 插入到email-display前面
-            const emailDisplay = document.querySelector('.email-display');
+            // 插入到账户邮箱摘要前面
+            const emailDisplay = document.querySelector('.account-email-display');
             emailDisplay.parentNode.insertBefore(alertDiv, emailDisplay);
             
             // 5秒后自动消失

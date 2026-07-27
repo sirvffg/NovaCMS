@@ -10,79 +10,6 @@ if (isBotBlacklisted()) { http_response_code(403); header('Location: /vendor/pub
 // 记录访问
 recordVisit($_SERVER['REQUEST_URI']);
 
-function isAllowedEmailDomain($email) {
-    $pos = strrpos($email, '@');
-    if ($pos === false) return false;
-    $domain = strtolower(substr($email, $pos + 1));
-    
-    // 从数据库获取允许的邮箱后缀
-    global $db;
-    try {
-        $config = $db->query("SELECT allowed_email_domains FROM website_config LIMIT 1")->fetch();
-        if ($config && !empty($config['allowed_email_domains'])) {
-            $allowed = array_map('trim', explode(',', strtolower($config['allowed_email_domains'])));
-        } else {
-            // 默认允许的邮箱后缀
-            $allowed = [
-                'qq.com','vip.qq.com','foxmail.com','163.com','126.com','yeah.net','sina.com','sina.cn',
-                'sohu.com','139.com','aliyun.com','gmail.com','outlook.com','hotmail.com','live.com',
-                'yahoo.com','yahoo.co.jp','icloud.com','proton.me','protonmail.com','mail.com','gmx.com','gmx.de'
-            ];
-        }
-    } catch (Exception $e) {
-        // 如果查询失败（比如字段还不存在），使用默认配置
-        $allowed = [
-            'qq.com','vip.qq.com','foxmail.com','163.com','126.com','yeah.net','sina.com','sina.cn',
-            'sohu.com','139.com','aliyun.com','gmail.com','outlook.com','hotmail.com','live.com',
-            'yahoo.com','yahoo.co.jp','icloud.com','proton.me','protonmail.com','mail.com','gmx.com','gmx.de'
-        ];
-    }
-    
-    if (in_array($domain, $allowed, true)) return true;
-    foreach ($allowed as $d) {
-        $suffix = '.' . $d;
-        if (strlen($domain) > strlen($suffix) && substr($domain, -strlen($suffix)) === $suffix) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function isValidUsername($username) {
-    // 用户名长度检查
-    if (strlen($username) < 3 || strlen($username) > 20) {
-        return ['valid' => false, 'message' => '用户名长度应在3-20个字符之间'];
-    }
-    
-    // 用户名格式检查：只允许字母、数字、下划线、中文
-    if (!preg_match('/^[\x{4e00}-\x{9fa5}a-zA-Z0-9_]+$/u', $username)) {
-        return ['valid' => false, 'message' => '用户名只能包含中文、字母、数字和下划线'];
-    }
-    
-    // 用户名不能以数字开头
-    if (preg_match('/^\d/', $username)) {
-        return ['valid' => false, 'message' => '用户名不能以数字开头'];
-    }
-    
-    // 用户名不能以特殊字符开头或结尾
-    if (preg_match('/^_/', $username) || preg_match('/_$/', $username)) {
-        return ['valid' => false, 'message' => '用户名不能以下划线开头或结尾'];
-    }
-    
-    // 检查用户名是否包含连续的下划线
-    if (strpos($username, '__') !== false) {
-        return ['valid' => false, 'message' => '用户名不能包含连续的下划线'];
-    }
-    
-    // 禁止使用的敏感词
-    $forbidden_words = ['admin', '管理员', 'root', 'system', '系统', 'test', '测试', 'guest', '游客', 'null', 'undefined'];
-    if (in_array(strtolower($username), array_map('strtolower', $forbidden_words))) {
-        return ['valid' => false, 'message' => '该用户名已被保留，请使用其他名称'];
-    }
-    
-    return ['valid' => true, 'message' => ''];
-}
-
 // 获取网站配置
 $db = getDB();
 $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
@@ -189,15 +116,19 @@ $db->exec("CREATE TABLE IF NOT EXISTS `email_verification` (
 if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
     $email = trim($_POST['email'] ?? '');
 
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
+        $register_error = '安全验证失败，请刷新页面后重试';
+    } elseif (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $register_error = '请输入有效的邮箱地址';
     } elseif (!isAllowedEmailDomain($email)) {
         $register_error = '请使用常用邮箱地址';
     } else {
         // 速率限制检查：防止邮箱验证码滥用
-        $rateLimit = checkRateLimit('email_code', 3, 3600); // 1小时内最多3次发送
-        if (!$rateLimit['allowed']) {
-            $register_error = $rateLimit['message'];
+        $ipRateLimit = checkRateLimit('register_email_code', 5, 3600);
+        $emailRateKey = 'email:' . hash('sha256', accountLowercase($email));
+        $emailRateLimit = checkRateLimit('register_email_code', 3, 3600, $emailRateKey);
+        if (!$ipRateLimit['allowed'] || !$emailRateLimit['allowed']) {
+            $register_error = !$ipRateLimit['allowed'] ? $ipRateLimit['message'] : $emailRateLimit['message'];
         } else {
             try {
                 // 先检查是否已有未过期的验证码（避免频繁生成）
@@ -220,7 +151,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
                     $stmt->execute([$email]);
 
                     // 生成6位验证码（使用更安全的随机数）
-                    $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                    $code = generateVerificationCode();
                     $expires_at = date('Y-m-d H:i:s', time() + 600); // 10分钟后过期
 
                     // 先存储验证码到数据库
@@ -229,7 +160,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
                         // 验证码已存储，再发送邮件（即使发送失败，验证码仍在数据库中）
                         $sendResult = sendVerificationEmail($email, $code);
                         if ($sendResult) {
-                            $email_sent = "验证码已发送到 {$email}，验证码是：{$code}（生产环境中不会显示验证码）";
+                            $email_sent = "验证码已发送到 {$email}，10分钟内有效";
                         } else {
                             // 邮件发送失败，但验证码已入库，用户可以稍后重试发送
                             $register_error = '邮件发送失败，请点击重发按钮重试（验证码已生成）';
@@ -276,7 +207,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
         $register_error = '请使用常用邮箱地址';
     } elseif ($password !== $confirm_password) {
         $register_error = '两次输入的密码不一致';
-    } elseif (strlen($password) < 6) {
+    } elseif (accountTextLength($password) < 6) {
         $register_error = '密码长度至少6位';
     } else {
         // 速率限制检查：防止恶意注册
@@ -344,7 +275,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
                         }
                     }
                 } catch (Exception $e) {
-                    $register_error = '注册出错: ' . $e->getMessage();
+                    error_log('Register account error: ' . $e->getMessage());
+                    $register_error = '注册暂时失败，请稍后重试';
                 }
             }
         }
@@ -359,6 +291,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($config['website_name']) ?> - 用户注册</title>
+    <script>
+        (function () {
+            try {
+                document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+            } catch (error) {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+            }
+        })();
+    </script>
     
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
@@ -679,58 +620,53 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
             }
         }
     </style>
+    <link href="/assets/css/account.css?v=20260728-1" rel="stylesheet">
 </head>
-<body>
-    <a href="<?= htmlspecialchars($redirect_url) ?>" class="back-link">
-        <i class="bi bi-arrow-left"></i>
-        <span>返回</span>
-    </a>
+<body class="account-auth-page account-register-page">
+    <div class="account-auth-toolbar" aria-label="页面工具">
+        <a href="<?= htmlspecialchars($redirect_url) ?>" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i><span>返回</span>
+        </a>
+        <button type="button" class="account-icon-button" data-account-theme-toggle aria-label="切换显示模式">
+            <i class="bi bi-moon-stars" aria-hidden="true"></i>
+        </button>
+    </div>
 
     <div class="auth-wrapper">
         <div class="auth-sidebar">
             <div class="auth-sidebar-content">
                 <div class="brand-logo">
-                    <i class="bi bi-box-seam"></i>
-                    <?= e($config['website_name']) ?>
+                    <span class="brand-mark"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <span><?= e($config['website_name']) ?></span>
                 </div>
                 <div class="welcome-text">
-                    <h2>PERSONAL BLOG SYSTEM</h2>
-                    <p>创建一个新账户，开启您的旅程。只需几分钟即可完成注册。</p>
-                    <?php
-                    // 从数据库获取允许的邮箱域名
-                    $allowedDomains = [];
-                    if (!empty($config['allowed_email_domains'])) {
-                        $allowedDomains = array_map('trim', explode(',', strtolower($config['allowed_email_domains'])));
-                    } else {
-                        $allowedDomains = [
-                            'qq.com','vip.qq.com','foxmail.com','163.com','126.com','yeah.net','sina.com','sina.cn',
-                            'sohu.com','139.com','aliyun.com','gmail.com','outlook.com','hotmail.com','live.com',
-                            'yahoo.com','yahoo.co.jp','icloud.com','proton.me','protonmail.com','mail.com','gmx.com','gmx.de'
-                        ];
-                    }
-                    ?>
-                    <div class="mt-3" style="opacity: 0.85;">
-                        <small style="font-size: 12px; opacity: 0.7;">支持邮箱：</small>
-                        <div class="mt-1" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <span class="account-eyebrow">Join the community</span>
+                    <h2>创建你的内容身份</h2>
+                    <p>一个账户即可参与评论、管理在线设备，并获得完整的内容体验。</p>
+                    <?php $allowedDomains = getAllowedEmailDomains(); ?>
+                    <div class="account-domain-cloud">
+                        <span class="account-domain-cloud-label">支持邮箱域名</span>
                             <?php foreach (array_slice($allowedDomains, 0, 12) as $domain): ?>
-                            <span style="background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 10px; font-size: 11px;"><?= htmlspecialchars($domain) ?></span>
+                            <span class="account-domain-chip"><?= htmlspecialchars($domain) ?></span>
                             <?php endforeach; ?>
                             <?php if (count($allowedDomains) > 12): ?>
-                            <span style="background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 10px; font-size: 11px;">+<?= count($allowedDomains) - 12 ?></span>
+                            <span class="account-domain-chip">+<?= count($allowedDomains) - 12 ?></span>
                             <?php endif; ?>
-                        </div>
                     </div>
                 </div>
             </div>
-            <div class="auth-sidebar-content text-center mt-4">
-                <small style="opacity: 0.7;">&copy; <?= date('Y') ?> <?= e($config['website_name']) ?>. All rights reserved.</small>
+            <div class="auth-sidebar-content auth-sidebar-footer">
+                <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+                <span class="auth-security-pill"><i class="bi bi-shield-lock" aria-hidden="true"></i> 安全注册</span>
             </div>
         </div>
 
         <div class="auth-main">
+            <div class="auth-main-inner">
             <div class="mb-4">
+                <span class="account-eyebrow">Create account</span>
                 <h1 class="auth-title">创建账户</h1>
-                <p class="auth-subtitle">请填写以下信息以完成注册</p>
+                <p class="auth-subtitle">完成邮箱验证后即可创建账户。</p>
             </div>
 
             <?php if ($register_success): ?>
@@ -757,24 +693,34 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
                     <input type="text" class="form-control" id="username" name="username" 
                            placeholder="用户名" 
                            value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" 
-                           required minlength="3" maxlength="20" autocomplete="username">
-                    <label for="username">用户名 (3-20字符)</label>
+                           required minlength="3" maxlength="20" autocomplete="username" autofocus>
+                    <label for="username">用户名 / 登录名（3-20字符）</label>
                     <div id="username-feedback" class="form-text mt-2"></div>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                            <input type="password" class="form-control" id="password" name="password" 
-                                   placeholder="密码" required minlength="6">
-                            <label for="password">密码 (至少6位)</label>
+                <div class="account-auth-grid">
+                    <div class="account-form-group">
+                        <label class="account-form-label" for="password">登录密码</label>
+                        <div class="account-input-wrap">
+                            <i class="bi bi-lock account-input-icon" aria-hidden="true"></i>
+                            <input type="password" class="form-control account-input" id="password" name="password"
+                                   placeholder="至少 6 位" autocomplete="new-password" required minlength="6"
+                                   data-password-strength="registerPasswordStrength">
+                            <button type="button" class="account-password-toggle" data-password-toggle="password" aria-label="显示密码" aria-pressed="false">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
                         </div>
+                        <div class="account-strength" id="registerPasswordStrength" data-level="0" aria-label="密码强度"><span></span><span></span><span></span><span></span></div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="form-floating">
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
-                                   placeholder="确认密码" required minlength="6">
-                            <label for="confirm_password">确认密码</label>
+                    <div class="account-form-group">
+                        <label class="account-form-label" for="confirm_password">确认密码</label>
+                        <div class="account-input-wrap">
+                            <i class="bi bi-shield-lock account-input-icon" aria-hidden="true"></i>
+                            <input type="password" class="form-control account-input" id="confirm_password" name="confirm_password"
+                                   placeholder="再次输入密码" autocomplete="new-password" required minlength="6">
+                            <button type="button" class="account-password-toggle" data-password-toggle="confirm_password" aria-label="显示确认密码" aria-pressed="false">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -784,7 +730,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
                         <div class="form-floating">
                             <input type="email" class="form-control" id="email" name="email" 
                                    placeholder="邮箱" 
-                                   value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autocomplete="email">
+                                   value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autocomplete="email" inputmode="email">
                             <label for="email">邮箱地址</label>
                         </div>
                         <button class="btn btn-outline-secondary" type="button" id="sendCodeBtn" onclick="sendVerificationCode()" disabled>
@@ -796,21 +742,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
 
                 <div class="form-floating mb-4">
                     <input type="text" class="form-control" id="verification_code" name="verification_code" 
-                           placeholder="邮箱验证码" required maxlength="6">
+                           placeholder="邮箱验证码" required maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code">
                     <label for="verification_code">邮箱验证码</label>
                 </div>
 
-                <button type="button" class="btn btn-primary w-100 mb-4" onclick="submitRegister()">
-                    立即注册
+                <button type="button" class="btn account-btn-primary w-100 mb-4" onclick="submitRegister()">
+                    <span>创建账户</span><i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </button>
 
                 <div class="text-center">
-                    <span class="text-secondary">已有账号？</span>
-                    <a href="/vendor/login.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="text-decoration-none fw-bold" style="color: var(--primary-color);">
+                    <span style="color:var(--account-muted)">已有账号？</span>
+                    <a href="/vendor/login.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="account-link">
                         立即登录
                     </a>
                 </div>
             </form>
+            <div class="auth-footnote"><i class="bi bi-lock" aria-hidden="true"></i>账户信息仅用于身份验证与安全通知</div>
+            </div>
         </div>
     </div>
     
@@ -826,7 +774,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
     </div>
     
     <script src="/assets/js/bootstrap.bundle.min.js"></script>
-    <script src="/vendor/public/captcha/BehaviorAuth.js"></script>
+    <script src="/assets/js/account-ui.js?v=20260727-1"></script>
+    <script src="/vendor/public/captcha/BehaviorAuth.js?v=20260728-1"></script>
     <script>
         let countdown = 0;
         let countdownInterval;
@@ -1060,6 +1009,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
             const formData = new FormData();
             formData.append('action', 'send_code');
             formData.append('email', email);
+            formData.append('csrf_token', document.querySelector('#registerForm input[name="csrf_token"]').value);
 
             fetch('', {
                 method: 'POST',

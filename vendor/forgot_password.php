@@ -28,13 +28,33 @@ $redirect_url = safeRedirectUrl($_POST['redirect_url'] ?? $_GET['redirect_url'] 
 if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
     $email = trim($_POST['email'] ?? '');
     
-    // 蜜罐检查
-    if (checkHoneypot()) {
-        $success = '如果该邮箱已注册，验证码已发送';
+    if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
+        $error = '安全验证失败，请刷新页面后重试';
+    } elseif (checkHoneypot()) {
+        $email_sent = '如果该邮箱已注册，验证码已发送';
+    } else {
+        $captchaToken = $_POST['captcha_token'] ?? '';
+        require_once __DIR__ . '/public/captcha/AuthApi.php';
+        $captchaAuth = new BehaviorAuth();
+        if ($captchaToken === '' || !$captchaAuth->verifyBizToken($captchaToken)) {
+            $error = '人机验证失败，请重试';
+        }
+    }
+
+    if ($error !== '' || $email_sent !== '') {
+        // 验证失败或蜜罐命中时不再处理邮箱。
     } elseif (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = '请输入有效的邮箱地址';
     } else {
         try {
+            $ipRateLimit = checkRateLimit('reset_email_code', 5, 3600);
+            $emailRateKey = 'email:' . hash('sha256', accountLowercase($email));
+            $emailRateLimit = checkRateLimit('reset_email_code', 3, 3600, $emailRateKey);
+            if (!$ipRateLimit['allowed'] || !$emailRateLimit['allowed']) {
+                $error = !$ipRateLimit['allowed'] ? $ipRateLimit['message'] : $emailRateLimit['message'];
+                throw new RuntimeException('Reset code rate limited');
+            }
+
             // LY-011: 防止邮箱枚举 — 无论邮箱是否注册，统一返回成功提示
             // 先检查邮箱是否已注册
             $stmt = $db->prepare("SELECT id FROM admins WHERE email = ?");
@@ -46,21 +66,30 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
                 $stmt = $db->prepare("DELETE FROM email_verification WHERE email = ? AND purpose = 'reset'");
                 $stmt->execute([$email]);
 
-                $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                $code = generateVerificationCode();
                 $expires_at = date('Y-m-d H:i:s', time() + 600);
 
                 $stmt = $db->prepare("INSERT INTO email_verification (email, code, purpose, expires_at) VALUES (?, ?, 'reset', ?)");
                 if ($stmt->execute([$email, $code, $expires_at])) {
-                    sendVerificationEmail($email, $code);
-                    $_SESSION['reset_email'] = $email;
+                    if (sendVerificationEmail($email, $code)) {
+                        $_SESSION['reset_email'] = $email;
+                    } else {
+                        $db->prepare("DELETE FROM email_verification WHERE email = ? AND code = ? AND purpose = 'reset'")
+                            ->execute([$email, $code]);
+                        error_log('Unable to send password reset email');
+                    }
                 }
             }
 
             // 无论邮箱是否存在，统一返回相同提示
-            $email_sent = '如果该邮箱已注册，验证码已发送';
+            if ($error === '') {
+                $email_sent = '如果该邮箱已注册，验证码已发送';
+            }
         } catch (Exception $e) {
-            // LY-011: 统一提示，不泄露具体错误信息
-            $email_sent = '如果该邮箱已注册，验证码已发送';
+            if ($error === '') {
+                error_log('Password reset code error: ' . $e->getMessage());
+                $email_sent = '如果该邮箱已注册，验证码已发送';
+            }
         }
     }
 }
@@ -71,6 +100,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($config['website_name']) ?> - 忘记密码</title>
+    <script>
+        (function () {
+            try {
+                document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+            } catch (error) {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+            }
+        })();
+    </script>
     
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
@@ -492,34 +530,49 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
             color: #999;
         }
     </style>
+    <link href="/assets/css/account.css?v=20260728-1" rel="stylesheet">
 </head>
-<body>
-    <a href="<?= htmlspecialchars($redirect_url) ?>" class="back-link">
-        <i class="bi bi-arrow-left"></i>
-        <span>返回</span>
-    </a>
+<body class="account-auth-page account-recovery-page">
+    <div class="account-auth-toolbar" aria-label="页面工具">
+        <a href="<?= htmlspecialchars($redirect_url) ?>" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i><span>返回</span>
+        </a>
+        <button type="button" class="account-icon-button" data-account-theme-toggle aria-label="切换显示模式">
+            <i class="bi bi-moon-stars" aria-hidden="true"></i>
+        </button>
+    </div>
 
     <div class="auth-wrapper">
         <div class="auth-sidebar">
             <div class="auth-sidebar-content">
                 <div class="brand-logo">
-                    <i class="bi bi-box-seam"></i>
-                    <?= e($config['website_name']) ?>
+                    <span class="brand-mark"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <span><?= e($config['website_name']) ?></span>
                 </div>
                 <div class="welcome-text">
-                    <h2>忘记密码？</h2>
-                    <p>不用担心，我们都遇到过。请输入您的注册邮箱，将向您发送验证码以重置密码。</p>
+                    <span class="account-eyebrow">Account recovery</span>
+                    <h2>安全找回账户</h2>
+                    <p>通过绑定邮箱验证身份，重置过程不会泄露账户是否存在。</p>
+                    <ul class="auth-feature-list" aria-label="找回密码流程">
+                        <li class="auth-feature-item"><span class="auth-feature-icon"><i class="bi bi-envelope-check"></i></span><span>验证绑定邮箱</span></li>
+                        <li class="auth-feature-item"><span class="auth-feature-icon"><i class="bi bi-shield-check"></i></span><span>完成人机验证</span></li>
+                        <li class="auth-feature-item"><span class="auth-feature-icon"><i class="bi bi-key"></i></span><span>设置新的密码</span></li>
+                    </ul>
                 </div>
             </div>
-            <div class="auth-sidebar-content text-center mt-4">
-                <small style="opacity: 0.7;">&copy; <?= date('Y') ?> <?= e($config['website_name']) ?>. All rights reserved.</small>
+            <div class="auth-sidebar-content auth-sidebar-footer">
+                <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+                <span class="auth-security-pill"><i class="bi bi-shield-lock"></i> 隐私保护</span>
             </div>
         </div>
 
         <div class="auth-main">
+            <div class="auth-main-inner">
+            <div class="account-flow-icon"><i class="bi bi-envelope-check" aria-hidden="true"></i></div>
             <div class="mb-4">
+                <span class="account-eyebrow">Verify email</span>
                 <h1 class="auth-title">找回密码</h1>
-                <p class="auth-subtitle">验证您的身份以继续</p>
+                <p class="auth-subtitle">输入注册邮箱，我们会发送 6 位验证码。</p>
             </div>
 
             <?php if ($error): ?>
@@ -537,6 +590,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
             <?php endif; ?>
 
             <form method="POST" id="forgotForm">
+                <?= csrfField() ?>
                 <?= honeypotField('website_hp') ?>
                 <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($redirect_url) ?>">
                 
@@ -544,59 +598,49 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
                     <div class="form-floating">
                         <input type="email" class="form-control" id="email" name="email" 
                                placeholder="邮箱" 
-                               value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
+                               value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autocomplete="email" inputmode="email" autofocus>
                         <label for="email">邮箱地址</label>
                     </div>
-                    <div class="form-text mt-2 ms-1">
-                        <i class="bi bi-info-circle"></i> 请输入您注册时的邮箱，接收验证码。
-                    </div>
+                    <div class="account-auth-callout"><i class="bi bi-info-circle"></i><span>为保护隐私，无论邮箱是否注册，页面都会显示相同结果。</span></div>
                 </div>
 
-                <button type="button" class="btn btn-primary w-100 mb-4" id="sendCodeMainBtn" onclick="sendVerificationCode()">
+                <button type="button" class="btn account-btn-primary w-100 mb-3" id="sendCodeMainBtn" onclick="sendVerificationCode()">
                     <i class="bi bi-envelope"></i> <span id="sendCodeMainText">发送验证码</span>
                 </button>
 
-                <button type="button" class="btn btn-success w-100 mb-4" id="nextStepBtn" onclick="submitForm()" style="display: none;">
+                <button type="button" class="btn account-btn-primary w-100 mb-4" id="nextStepBtn" onclick="submitForm()" style="display: none;">
                     <i class="bi bi-arrow-right"></i> 下一步
                 </button>
 
                 <div class="text-center">
-                    <span class="text-secondary">记起密码了？</span>
-                    <a href="/vendor/login.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="text-decoration-none fw-bold" style="color: var(--primary-color);">
+                    <span style="color:var(--account-muted)">记起密码了？</span>
+                    <a href="/vendor/login.php<?= ($redirect_url && $redirect_url !== '/') ? '?redirect_url=' . urlencode($redirect_url) : '' ?>" class="account-link">
                         立即登录
                     </a>
                 </div>
             </form>
+            <div class="auth-footnote"><i class="bi bi-lock"></i>验证码 10 分钟内有效</div>
+            </div>
         </div>
     </div>
     
-    <!-- 滑动验证弹窗 -->
-    <div class="slider-verification-modal" id="sliderModal">
-        <div class="slider-verification-box">
-            <div class="slider-verification-title">
-                <i class="bi bi-shield-check me-2"></i>安全验证
-            </div>
-            <div class="slider-track" id="sliderTrack">
-                <div class="slider-bg" id="sliderBg"></div>
-                <div class="slider-text" id="sliderText">按住滑块，拖动完成拼图</div>
-                <div class="slider-success" id="sliderSuccess">
-                    <i class="bi bi-check-circle-fill me-2"></i>验证通过
-                </div>
-                <div class="slider-thumb" id="sliderThumb">
-                    <i class="bi bi-chevron-double-right"></i>
+    <div class="modal fade" id="captchaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-body p-0 d-flex justify-content-center">
+                    <div id="forgot-captcha-container"></div>
                 </div>
             </div>
-            <div class="slider-tips">请滑动完成验证</div>
         </div>
     </div>
     
     <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/account-ui.js?v=20260727-1"></script>
+    <script src="/vendor/public/captcha/BehaviorAuth.js?v=20260728-1"></script>
     <script>
         let countdown = 0;
         let countdownInterval;
-        let isSliding = false;
-        let slideStartX = 0;
-        let slideVerified = false;
+        let forgotCaptcha = null;
         
         // 发送验证码
         function sendVerificationCode() {
@@ -618,107 +662,24 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
                 return;
             }
             
-            // 重置滑动验证状态
-            resetSlider();
-            // 显示滑动验证弹窗
-            showSliderModal();
-        }
-        
-        // 显示滑动验证弹窗
-        function showSliderModal() {
-            const modal = document.getElementById('sliderModal');
-            modal.classList.add('show');
-            initSlider();
-        }
-        
-        // 隐藏滑动验证弹窗
-        function hideSliderModal() {
-            const modal = document.getElementById('sliderModal');
-            modal.classList.remove('show');
-        }
-        
-        // 重置滑动验证
-        function resetSlider() {
-            slideVerified = false;
-            const bg = document.getElementById('sliderBg');
-            const thumb = document.getElementById('sliderThumb');
-            const text = document.getElementById('sliderText');
-            const success = document.getElementById('sliderSuccess');
-            bg.style.width = '0';
-            thumb.style.left = '0';
-            thumb.innerHTML = '<i class="bi bi-chevron-double-right"></i>';
-            thumb.style.background = 'white';
-            thumb.style.color = '#4361ee';
-            text.style.opacity = '1';
-            success.classList.remove('show');
-        }
-        
-        // 初始化滑动验证
-        function initSlider() {
-            const track = document.getElementById('sliderTrack');
-            const thumb = document.getElementById('sliderThumb');
-            
-            const startSlide = (e) => {
-                if (slideVerified) return;
-                isSliding = true;
-                slideStartX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-                thumb.innerHTML = '<i class="bi bi-arrow-right"></i>';
-            };
-            
-            const moveSlide = (e) => {
-                if (!isSliding || slideVerified) return;
-                e.preventDefault();
-                const currentX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-                const deltaX = currentX - slideStartX;
-                const trackWidth = track.offsetWidth;
-                const thumbWidth = thumb.offsetWidth;
-                const maxX = trackWidth - thumbWidth - 4;
-                
-                let newX = Math.max(0, Math.min(deltaX, maxX));
-                const percentage = (newX / maxX) * 100;
-                
-                document.getElementById('sliderBg').style.width = percentage + '%';
-                thumb.style.left = newX + 'px';
-                
-                // 验证成功
-                if (percentage >= 98) {
-                    isSliding = false;
-                    slideVerified = true;
-                    thumb.style.left = maxX + 'px';
-                    document.getElementById('sliderBg').style.width = '100%';
-                    thumb.innerHTML = '<i class="bi bi-check-lg"></i>';
-                    thumb.style.background = '#10b981';
-                    thumb.style.color = 'white';
-                    
+            const captchaModal = new bootstrap.Modal(document.getElementById('captchaModal'));
+            captchaModal.show();
+
+            if (!forgotCaptcha) {
+                forgotCaptcha = new BehaviorAuth('forgot-captcha-container', '/vendor/public/captcha/AuthApi.php');
+                forgotCaptcha.onSuccess = function (bizToken) {
                     setTimeout(() => {
-                        hideSliderModal();
-                        // 验证通过后发送验证码
-                        doSendCode();
-                    }, 500);
-                }
-            };
-            
-            const endSlide = () => {
-                if (slideVerified) return;
-                isSliding = false;
-                if (!slideVerified) {
-                    resetSlider();
-                }
-            };
-            
-            // 鼠标事件
-            thumb.addEventListener('mousedown', startSlide);
-            document.addEventListener('mousemove', moveSlide);
-            document.addEventListener('mouseup', endSlide);
-            
-            // 触摸事件
-            thumb.addEventListener('touchstart', startSlide);
-            document.addEventListener('touchmove', moveSlide, { passive: false });
-            document.addEventListener('touchend', endSlide);
+                        bootstrap.Modal.getInstance(document.getElementById('captchaModal'))?.hide();
+                        doSendCode(bizToken);
+                    }, 400);
+                };
+            } else {
+                forgotCaptcha.reset();
+            }
         }
         
         // 执行发送验证码
-        function doSendCode() {
+        function doSendCode(captchaToken) {
             const email = document.getElementById('email').value;
             const sendCodeBtn = document.getElementById('sendCodeMainBtn');
             const sendCodeText = document.getElementById('sendCodeMainText');
@@ -731,6 +692,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
             const formData = new FormData();
             formData.append('action', 'send_code');
             formData.append('email', email);
+            formData.append('csrf_token', document.querySelector('#forgotForm input[name="csrf_token"]').value);
+            formData.append('captcha_token', captchaToken);
             
             fetch('', {
                 method: 'POST',

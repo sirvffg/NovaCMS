@@ -290,7 +290,8 @@ function addComment($post_id, $content, $parent_id = null) {
             return ['success' => true, 'comment_id' => $comment_id, 'comment' => $comment, 'message' => '评论成功'];
         }
     } catch (Exception $e) {
-        return ['success' => false, 'message' => '评论失败：' . $e->getMessage()];
+        error_log('Create comment error: ' . $e->getMessage());
+        return ['success' => false, 'message' => '评论提交失败，请稍后重试'];
     }
 }
 
