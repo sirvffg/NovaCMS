@@ -71,10 +71,18 @@ require_once $novaDir . '/class/rest/class-request.php';
 require_once $novaDir . '/class/rest/class-response.php';
 require_once $novaDir . '/class/rest/class-server.php';
 require_once $novaDir . '/class/database/class-db.php';
+require_once $novaDir . '/class/database/class-db-cache.php';
+require_once $novaDir . '/class/database/class-db-schema.php';
+require_once $novaDir . '/class/database/class-db-query.php';
+require_once $novaDir . '/class/database/class-db-migration.php';
+require_once $novaDir . '/class/database/class-db-seeder.php';
 require_once $novaDir . '/class/system/class-hooks.php';
 require_once $novaDir . '/class/system/class-api.php';
 require_once $novaDir . '/class/plugin/class-plugin.php';
 require_once $novaDir . '/class/theme/class-theme.php';
+require_once $novaDir . '/class/filesystem/class-file.php';
+require_once $novaDir . '/class/filesystem/class-upload.php';
+require_once $novaDir . '/class/filesystem/class-image.php';
 
 /**
  * 从 Authorization 头提取 Bearer Token 并设置用户登录状态
