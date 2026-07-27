@@ -3,7 +3,7 @@
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'blog');
 define('DB_USER', 'blog');
-define('DB_PASS', 'Xhx280705');
+define('DB_PASS', 'admin');
 define('DB_CHARSET', 'utf8mb4');
 
 // 创建数据库连接
