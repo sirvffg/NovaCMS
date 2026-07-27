@@ -34,7 +34,6 @@ Nova_Backend_Menu::add_menu('留言管理',   'guestbook',   '/admin/guestbook.p
 Nova_Backend_Menu::add_menu('说说管理',   'shuoshuo',    '/admin/shuoshuo.php',        '说', 90);
 Nova_Backend_Menu::add_menu('相册管理',   'gallery',     '/admin/gallery.php',         '相', 100);
 Nova_Backend_Menu::add_menu('QQ群管理',   'qq_groups',   '/admin/qq_groups.php',       'Q',  110);
-Nova_Backend_Menu::add_menu('建站日志',   'logs',        '/admin/logs.php',            '建', 120);
 
 // 其他设置（含子菜单）
 Nova_Backend_Menu::add_menu('其他设置',   'settings',    '',                           '其', 130);

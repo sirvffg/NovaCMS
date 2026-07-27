@@ -328,7 +328,6 @@ $imageBedEnabled = !empty($config['image_bed_display_enabled']) && $config['imag
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="otherDropdown">
                             <li><a class="dropdown-item" href="/vendor/monitor.php"><i class="bi bi-speedometer2 me-2"></i>服务监控</a></li>
-                            <li><a class="dropdown-item" href="/license/log.php"><i class="bi bi-journal-text me-2"></i>建站日志</a></li>
                             <li><a class="dropdown-item" href="/license/terms.php"><i class="bi bi-file-earmark-text me-2"></i>协议</a></li>
                             <li><a class="dropdown-item" href="/license/rss.php"><i class="bi bi-rss me-2"></i>RSS</a></li>
                             <li><a class="dropdown-item" href="/license/sitemap.php"><i class="bi bi-map me-2"></i>Sitemap</a></li>

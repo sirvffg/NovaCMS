@@ -259,7 +259,7 @@ $db = new Nova_DB();
 
 $count = $db->get_var("SELECT COUNT(*) FROM shuoshuo");
 $row   = $db->get_row("SELECT * FROM admins WHERE id = ?", [1]);
-$items = $db->get_results("SELECT * FROM website_logs ORDER BY date DESC");
+$items = $db->get_results("SELECT * FROM shuoshuo ORDER BY id DESC");
 ```
 
 ### 写入方法

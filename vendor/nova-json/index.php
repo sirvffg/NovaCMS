@@ -53,9 +53,6 @@
  *   POST   /v1/statuses/monitor                 添加监控项
  *   GET    /v1/statuses/monitor/{id}            单个监控详情
  *   DELETE /v1/statuses/monitor/{id}            删除监控项
- *   GET    /v1/statuses/logs                    建站日志列表
- *   POST   /v1/statuses/logs                    添加日志
- *   DELETE /v1/statuses/logs/{id}               删除日志
  *   GET    /v1/statuses/guestbook               留言列表（含回复）
  *   POST   /v1/statuses/guestbook               提交留言或回复（公开）
  *   PUT    /v1/statuses/guestbook/{id}/reply    管理员回复留言

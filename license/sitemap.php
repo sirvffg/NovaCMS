@@ -71,13 +71,6 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
         <priority>0.8</priority>
     </url>
     
-    <!-- 网站更新日志页 -->
-    <url>
-        <loc><?= $baseUrl ?>/license/log.php</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
-    </url>
-
     <!-- 说说 -->
     <url>
         <loc><?= $baseUrl ?>/vendor/shuoshuo.php</loc>
