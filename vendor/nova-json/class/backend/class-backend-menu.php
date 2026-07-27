@@ -233,6 +233,8 @@ class Nova_Backend_Menu {
                         $badge = ' <span class="badge' . $bt . '">' . e($sub['options']['badge']) . '</span>';
                     }
                     $html .= '<li><a href="' . e($sub['url']) . '" class="' . $active . '">';
+                    $iconHtml = !empty($sub['options']['icon']) ? '<span class="menu-icon" style="width:24px;height:24px;font-size:11px;border-radius:6px;margin-right:8px;">' . e($sub['options']['icon']) . '</span>' : '<span style="display:inline-block;width:8px;margin-right:24px;"></span>';
+                    $html .= $iconHtml;
                     $html .= '<span class="menu-text">' . e($sub['title']) . $badge . '</span>';
                     $html .= '</a></li>';
                 }

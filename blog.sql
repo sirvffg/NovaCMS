@@ -1496,7 +1496,7 @@ ALTER TABLE `website_config`
 --
 DROP TABLE IF EXISTS `geo_visit_summary`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `geo_visit_summary`  AS SELECT `visit_stats`.`country` AS `country`, `visit_stats`.`province` AS `province`, `visit_stats`.`city` AS `city`, count(0) AS `total_visits`, count(distinct `visit_stats`.`ip_address`) AS `unique_ips`, min(`visit_stats`.`visit_time`) AS `first_visit`, max(`visit_stats`.`visit_time`) AS `last_visit` FROM `visit_stats` WHERE (`visit_stats`.`country` is not null) GROUP BY `visit_stats`.`country`, `visit_stats`.`province`, `visit_stats`.`city` ORDER BY `total_visits` DESC ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `geo_visit_summary`  AS SELECT `visit_stats`.`country` AS `country`, `visit_stats`.`province` AS `province`, `visit_stats`.`city` AS `city`, count(0) AS `total_visits`, count(distinct `visit_stats`.`ip_address`) AS `unique_ips`, min(`visit_stats`.`visit_time`) AS `first_visit`, max(`visit_stats`.`visit_time`) AS `last_visit` FROM `visit_stats` WHERE (`visit_stats`.`country` is not null) GROUP BY `visit_stats`.`country`, `visit_stats`.`province`, `visit_stats`.`city` ORDER BY `total_visits` DESC ;
 
 -- --------------------------------------------------------
 
@@ -1505,7 +1505,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `ip_visit_summary`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ip_visit_summary`  AS SELECT `visit_stats`.`ip_address` AS `ip_address`, `visit_stats`.`country` AS `country`, `visit_stats`.`province` AS `province`, `visit_stats`.`city` AS `city`, `visit_stats`.`isp` AS `isp`, count(0) AS `total_visits`, count(distinct `visit_stats`.`page_url`) AS `pages_visited`, min(`visit_stats`.`visit_time`) AS `first_visit`, max(`visit_stats`.`visit_time`) AS `last_visit` FROM `visit_stats` GROUP BY `visit_stats`.`ip_address`, `visit_stats`.`country`, `visit_stats`.`province`, `visit_stats`.`city`, `visit_stats`.`isp` ORDER BY `total_visits` DESC ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `ip_visit_summary`  AS SELECT `visit_stats`.`ip_address` AS `ip_address`, `visit_stats`.`country` AS `country`, `visit_stats`.`province` AS `province`, `visit_stats`.`city` AS `city`, `visit_stats`.`isp` AS `isp`, count(0) AS `total_visits`, count(distinct `visit_stats`.`page_url`) AS `pages_visited`, min(`visit_stats`.`visit_time`) AS `first_visit`, max(`visit_stats`.`visit_time`) AS `last_visit` FROM `visit_stats` GROUP BY `visit_stats`.`ip_address`, `visit_stats`.`country`, `visit_stats`.`province`, `visit_stats`.`city`, `visit_stats`.`isp` ORDER BY `total_visits` DESC ;
 
 -- --------------------------------------------------------
 
@@ -1514,7 +1514,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `view_blog_stats`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_blog_stats`  AS SELECT count(0) AS `total_posts`, sum(`blog_posts`.`views`) AS `total_views`, count(distinct `blog_posts`.`author`) AS `total_authors`, max(`blog_posts`.`created_at`) AS `latest_post_date` FROM `blog_posts` WHERE (`blog_posts`.`is_published` = 1) ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `view_blog_stats`  AS SELECT count(0) AS `total_posts`, sum(`blog_posts`.`views`) AS `total_views`, count(distinct `blog_posts`.`author`) AS `total_authors`, max(`blog_posts`.`created_at`) AS `latest_post_date` FROM `blog_posts` WHERE (`blog_posts`.`is_published` = 1) ;
 
 -- --------------------------------------------------------
 
@@ -1523,7 +1523,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `view_visit_summary`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_visit_summary`  AS SELECT cast(`visit_stats`.`visit_time` as date) AS `visit_date`, count(0) AS `total_visits`, count(distinct `visit_stats`.`ip_address`) AS `unique_visitors` FROM `visit_stats` GROUP BY cast(`visit_stats`.`visit_time` as date) ORDER BY `visit_date` DESC ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `view_visit_summary`  AS SELECT cast(`visit_stats`.`visit_time` as date) AS `visit_date`, count(0) AS `total_visits`, count(distinct `visit_stats`.`ip_address`) AS `unique_visitors` FROM `visit_stats` GROUP BY cast(`visit_stats`.`visit_time` as date) ORDER BY `visit_date` DESC ;
 
 --
 -- 限制导出的表

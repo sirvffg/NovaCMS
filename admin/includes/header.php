@@ -21,6 +21,9 @@ $page_title = isset($page_title) ? e($page_title) . ' - ' . e($config['website_n
 // =============================================
 // 动态注册后台侧边栏菜单
 // =============================================
+if (!defined('NOVA_API')) {
+    define('NOVA_API', true);
+}
 require_once __DIR__ . '/../../vendor/nova-json/class/backend/class-backend-menu.php';
 
 Nova_Backend_Menu::add_menu('仪表盘',     'dashboard',   '/admin/index.php',           '仪', 10);
@@ -36,11 +39,11 @@ Nova_Backend_Menu::add_menu('相册管理',   'gallery',     '/admin/gallery.php
 
 // 其他设置（含子菜单）
 Nova_Backend_Menu::add_menu('其他设置',   'settings',    '',                           '其', 130);
-Nova_Backend_Menu::add_submenu('settings', '一言管理',   'hitokoto',  '/admin/hitokoto.php',    20);
-Nova_Backend_Menu::add_submenu('settings', '文件管理',   'files',     '/admin/files.php',       40);
-Nova_Backend_Menu::add_submenu('settings', '邮件测试',   'email_test','/admin/email_test.php',   50);
-Nova_Backend_Menu::add_submenu('settings', 'SEO 工具集', 'seo_tools', '/admin/seo_tools.php',    60);
-Nova_Backend_Menu::add_submenu('settings', '系统日志查看','view_logs', '/admin/view_logs.php',    70);
+Nova_Backend_Menu::add_submenu('settings', '一言管理',   'hitokoto',  '/admin/hitokoto.php',    20,   ['icon' => '一']);
+Nova_Backend_Menu::add_submenu('settings', '文件管理',   'files',     '/admin/files.php',       40,   ['icon' => '文']);
+Nova_Backend_Menu::add_submenu('settings', '邮件测试',   'email_test','/admin/email_test.php',   50,   ['icon' => '邮']);
+Nova_Backend_Menu::add_submenu('settings', 'SEO 工具集', 'seo_tools', '/admin/seo_tools.php',    60,   ['icon' => 'S']);
+Nova_Backend_Menu::add_submenu('settings', '系统日志查看','view_logs', '/admin/view_logs.php',    70,   ['icon' => '日']);
 
 // 外部链接
 Nova_Backend_Menu::add_menu('查看网站',   'view-site',   '/',                           '查', 140, ['target' => '_blank']);
