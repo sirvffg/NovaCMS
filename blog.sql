@@ -713,38 +713,7 @@ INSERT INTO `photo_albums` (`id`, `name`, `description`, `cover_image`, `sort_or
 
 -- --------------------------------------------------------
 
---
--- 表的结构 `qq_groups`
---
 
-CREATE TABLE `qq_groups` (
-  `id` int(11) NOT NULL,
-  `sort_order` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
-  `max_members` int(11) NOT NULL DEFAULT '200' COMMENT '最大人数',
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '群名称',
-  `link` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '加群链接',
-  `description` text COLLATE utf8mb4_unicode_ci COMMENT '群介绍',
-  `note` text COLLATE utf8mb4_unicode_ci COMMENT '备注',
-  `is_show` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否显示',
-  `api_show` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'API是否显示',
-  `api_notification` text COLLATE utf8mb4_unicode_ci COMMENT 'API通知内容',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='QQ群列表';
-
--- --------------------------------------------------------
-
---
--- 表的结构 `qq_groups_notification`
---
-
-CREATE TABLE `qq_groups_notification` (
-  `id` int(11) NOT NULL,
-  `notification_content` text COLLATE utf8mb4_unicode_ci COMMENT '全局通知内容',
-  `is_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否启用',
-  `close_wait_time` int(11) NOT NULL DEFAULT '0' COMMENT '关闭按钮等待时间(秒),0表示不限制',
-  `close_button_text` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '我知道了' COMMENT '关闭按钮文字',
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='QQ群API全局通知';
 
 -- --------------------------------------------------------
 
@@ -1242,18 +1211,6 @@ ALTER TABLE `photo_albums`
   ADD PRIMARY KEY (`id`);
 
 --
--- 表的索引 `qq_groups`
---
-ALTER TABLE `qq_groups`
-  ADD PRIMARY KEY (`id`);
-
---
--- 表的索引 `qq_groups_notification`
---
-ALTER TABLE `qq_groups_notification`
-  ADD PRIMARY KEY (`id`);
-
---
 -- 表的索引 `rate_limits`
 --
 ALTER TABLE `rate_limits`
@@ -1512,18 +1469,6 @@ ALTER TABLE `photos`
 --
 ALTER TABLE `photo_albums`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- 使用表AUTO_INCREMENT `qq_groups`
---
-ALTER TABLE `qq_groups`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- 使用表AUTO_INCREMENT `qq_groups_notification`
---
-ALTER TABLE `qq_groups_notification`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- 使用表AUTO_INCREMENT `rate_limits`

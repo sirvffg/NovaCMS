@@ -319,7 +319,6 @@ $imageBedEnabled = !empty($config['image_bed_display_enabled']) && $config['imag
                             <li><a class="dropdown-item" href="/vendor/friend-links.php"><i class="bi bi-link-45deg me-2"></i>友链</a></li>
                             <li><a class="dropdown-item" href="/vendor/shuoshuo.php"><i class="bi bi-chat-quote me-2"></i>说说</a></li>
                             <li><a class="dropdown-item" href="/vendor/gallery.php"><i class="bi bi-images me-2"></i>相册</a></li>
-                            <li><a class="dropdown-item" href="/vendor/qq_groups.php"><i class="bi bi-people-fill me-2"></i>QQ群</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
