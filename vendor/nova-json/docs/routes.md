@@ -2591,16 +2591,10 @@ PUT /v1/statuses/gallery/photos/1
 | data.item.website_name | string | 站点名称 |
 | data.item.website_author | string | 站长 |
 | data.item.website_intro | string | 站点简介 |
-| data.item.website_description | string | 站点描述(SEO) |
-| data.item.website_detail | string | 站点详情 |
 | data.item.robot_description | string | 搜索引擎描述 |
 | data.item.logo | string | Logo地址 |
 | data.item.favicon | string | 网站图标 |
 | data.item.website_start_time | string | 网站开办时间 |
-| data.item.home_bg_image | string | 自定义背景图 |
-| data.item.home_bg_video | string | 自定义背景视频 |
-| data.item.use_bing_bg | bool | 是否使用Bing每日背景 |
-| data.item.bing_api | string | Bing API地址 |
 | data.item.contact_email | string | 联系邮箱 |
 | data.item.contact_qq | string | QQ号 |
 | data.item.social_wechat | string | 微信号 |
@@ -2612,8 +2606,6 @@ PUT /v1/statuses/gallery/photos/1
 | data.item.footer_extra | string | 页脚附加信息(HTML) |
 | data.item.icp_record | string | ICP备案号 |
 | data.item.public_security_record | string | 公安备案号 |
-| data.item.home_links | array | 主页小站链接列表 |
-| data.item.my_projects | array | 个人项目列表 |
 
 **模拟响应**
 
@@ -2627,32 +2619,13 @@ PUT /v1/statuses/gallery/photos/1
             "website_name": "冷月笙寒的小窝",
             "website_author": "冷月笙寒",
             "website_intro": "个人博客，分享技术与生活",
-            "website_description": "冷月笙寒的个人博客，专注于技术分享和生活记录",
             "logo": "/uploads/logo.png",
             "favicon": "/uploads/favicon.ico",
             "contact_email": "admin@example.com",
             "social_github": "https://github.com/example",
             "icp_record": "京ICP备xxxxxxxx号",
             "website_announcement": "网站已全新改版上线！",
-            "website_announcement_enable": "1",
-            "home_links": [
-                {
-                    "id": 1,
-                    "name": "GitHub",
-                    "url": "https://github.com",
-                    "icon": "fab fa-github",
-                    "sort_order": 1
-                }
-            ],
-            "my_projects": [
-                {
-                    "id": 1,
-                    "name": "NovaCMS",
-                    "description": "内容管理系统",
-                    "url": "https://github.com/example/novacms",
-                    "sort_order": 1
-                }
-            ]
+            "website_announcement_enable": "1"
         }
     }
 }

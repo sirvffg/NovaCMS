@@ -150,8 +150,6 @@ require_once 'includes/header.php';
                 <form method="POST" id="configForm" enctype="multipart/form-data">
                     <?= csrfField() ?>
                     <input type="hidden" name="logo" id="logoUrl" value="<?= e($config['logo'] ?? '') ?>">
-                    <input type="hidden" name="home_bg_image" id="bgImageUrl" value="<?= e($config['home_bg_image'] ?? '') ?>">
-                    <input type="hidden" name="home_bg_video" id="bgVideoUrl" value="<?= e($config['home_bg_video'] ?? '') ?>">
 
                     <div class="card mb-4">
                         <div class="card-header bg-white p-0 border-bottom-0">
@@ -159,11 +157,6 @@ require_once 'includes/header.php';
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link active" id="tab-basic" data-bs-toggle="tab" data-bs-target="#content-basic" type="button" role="tab">
                                         <i class="bi bi-gear me-2"></i> 基本设置
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="tab-home" data-bs-toggle="tab" data-bs-target="#content-home" type="button" role="tab">
-                                        <i class="bi bi-house-door me-2"></i> 主页设置
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
@@ -353,16 +346,6 @@ require_once 'includes/header.php';
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label class="form-label">个人简短介绍(在主页简短介绍显示) (支持Markdown)</label>
-                                                <textarea name="website_description" id="website_description" class="form-control" rows="8"><?= e($config['website_description']) ?></textarea>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">个人详细介绍(支持Markdown)</label>
-                                                <textarea name="website_detail" id="website_detail" class="form-control" rows="12"><?= e($config['website_detail'] ?? '') ?></textarea>
-                                            </div>
-
-                                            <div class="mb-3">
                                                 <label class="form-label">网站开办时间</label>
                                                 <input type="datetime-local" name="website_start_time" class="form-control" 
                                                        value="<?= !empty($config['website_start_time']) ? date('Y-m-d\TH:i', strtotime($config['website_start_time'])) : '' ?>">
@@ -372,85 +355,7 @@ require_once 'includes/header.php';
                                     </div>
                         </div>
 
-                        <!-- 主页设置 -->
-                        <div class="tab-pane fade" id="content-home" role="tabpanel">
-                            <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5>主页小站链接</h5>
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="openLinkModal()">
-                                        <i class="bi bi-plus-lg"></i> 添加链接
-                                    </button>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle" id="homeLinksTable">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 50px;">排序</th>
-                                                    <th style="width: 60px;">图标</th>
-                                                    <th>名称</th>
-                                                    <th>链接</th>
-                                                    <th>徽章</th>
-                                                    <th>状态</th>
-                                                    <th style="width: 150px;">操作</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- JS加载数据 -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div class="card mt-4">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5>我的个人项目</h5>
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="openProjectModal()">
-                                        <i class="bi bi-plus-lg"></i> 添加项目
-                                    </button>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle" id="myProjectsTable">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 50px;">排序</th>
-                                                    <th style="width: 60px;">介绍图</th>
-                                                    <th>项目名称/描述</th>
-                                                    <th>标签</th>
-                                                    <th>开始时间</th>
-                                                    <th>状态</th>
-                                                    <th style="width: 150px;">操作</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- JS加载数据 -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card mt-4">
-                                <div class="card-header">
-                                    <h5>协议与政策</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label class="form-label">服务条款内容 (支持HTML)</label>
-                                        <textarea name="terms_content" class="form-control" rows="10"><?= e($config['terms_content'] ?? '') ?></textarea>
-                                        <small class="text-muted">留空则使用系统默认服务条款。支持HTML标签。</small>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">隐私政策内容 (支持HTML)</label>
-                                        <textarea name="privacy_content" class="form-control" rows="10"><?= e($config['privacy_content'] ?? '') ?></textarea>
-                                        <small class="text-muted">留空则使用系统默认隐私政策。支持HTML标签。</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
 
                         <!-- 外观设置 -->
                         <div class="tab-pane fade" id="content-appearance" role="tabpanel">
@@ -497,77 +402,6 @@ require_once 'includes/header.php';
                                                         <div class="form-text">支持 PNG, JPG, ICO (推荐透明背景)</div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>背景设置</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-4">
-                                                <div class="form-check form-switch mb-3">
-                                                    <input class="form-check-input" type="checkbox" id="useBingBg" name="use_bing_bg" value="1" <?= !empty($config['use_bing_bg']) ? 'checked' : '' ?>>
-                                                    <label class="form-check-label" for="useBingBg">使用Bing每日图片作为默认背景</label>
-                                                </div>
-                                                <div class="mb-3 ps-4" id="bingApiContainer" style="<?= empty($config['use_bing_bg']) ? 'display: none;' : '' ?>">
-                                                    <label class="form-label">Bing API 地址</label>
-                                                    <input type="text" name="bing_api" class="form-control" value="<?= e($config['bing_api'] ?? '') ?>" placeholder="输入API地址">
-                                                    <div class="form-text">设置后将优先使用此API获取背景图片。如果不填写，则使用默认的随机图片API。</div>
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <div class="col-md-6 mb-4">
-                                                    <label class="form-label">自定义背景图片</label>
-                                                    <div class="preview-box mb-2" id="bgImagePreview" style="height: 150px;">
-                                                        <?php if (!empty($config['home_bg_image'])): ?>
-                                                        <img src="<?= e($config['home_bg_image']) ?>" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
-                                                        <?php else: ?>
-                                                        <div class="text-center text-muted">
-                                                            <i class="bi bi-image fs-1 d-block mb-1"></i>
-                                                            <small>未设置</small>
-                                                        </div>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                    <div class="d-flex gap-2">
-                                                        <input type="file" id="bgImageInput" accept="image/*" class="d-none">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" onclick="document.getElementById('bgImageInput').click()">
-                                                            上传图片
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger <?= empty($config['home_bg_image']) ? 'd-none' : '' ?>" id="clearBgImageBtn" onclick="clearBgImage()">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-md-6 mb-4">
-                                                    <label class="form-label">自定义背景视频</label>
-                                                    <div class="preview-box mb-2" id="bgVideoPreview" style="height: 150px;">
-                                                        <?php if (!empty($config['home_bg_video'])): ?>
-                                                        <video src="<?= e($config['home_bg_video']) ?>" style="width: 100%; height: 100%; object-fit: cover;" muted loading="lazy"></video>
-                                                        <?php else: ?>
-                                                        <div class="text-center text-muted">
-                                                            <i class="bi bi-camera-video fs-1 d-block mb-1"></i>
-                                                            <small>未设置</small>
-                                                        </div>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                    <div class="d-flex gap-2">
-                                                        <input type="file" id="bgVideoInput" accept="video/*" class="d-none">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" onclick="document.getElementById('bgVideoInput').click()">
-                                                            上传视频
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger <?= empty($config['home_bg_video']) ? 'd-none' : '' ?>" id="clearBgVideoBtn" onclick="clearBgVideo()">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="alert alert-light border small">
-                                                <i class="bi bi-info-circle me-1"></i> <strong>显示优先级：</strong> 背景视频 > 背景图片 > Bing每日图片 > 默认背景
                                             </div>
                                         </div>
                                     </div>
@@ -720,6 +554,24 @@ require_once 'includes/header.php';
                                         </div>
                                     </div>
 
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>协议与政策</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">服务条款内容 (支持HTML)</label>
+                                        <textarea name="terms_content" class="form-control" rows="10"><?= e($config['terms_content'] ?? '') ?></textarea>
+                                        <small class="text-muted">留空则使用系统默认服务条款。支持HTML标签。</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">隐私政策内容 (支持HTML)</label>
+                                        <textarea name="privacy_content" class="form-control" rows="10"><?= e($config['privacy_content'] ?? '') ?></textarea>
+                                        <small class="text-muted">留空则使用系统默认隐私政策。支持HTML标签。</small>
+                                    </div>
+                                </div>
+                            </div>
+
                                     <div class="card">
                                         <div class="card-header">
                                             <h5>页脚设置</h5>
@@ -775,297 +627,11 @@ require_once 'includes/header.php';
                 </form>
 
     <?php include 'includes/markdown_editor.php'; ?>
-    
-    <!-- Link Modal (Moved outside of configForm) -->
-    <div class="modal fade" id="linkModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="linkModalTitle">添加链接</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="linkForm">
-                        <input type="hidden" name="id" id="linkId">
-                        <div class="mb-3">
-                            <label class="form-label">名称</label>
-                            <input type="text" class="form-control" name="name" id="linkName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">链接 URL</label>
-                            <input type="text" class="form-control" name="url" id="linkUrl" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">图标 (类名或图片URL)</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="icon" id="linkIcon" placeholder="bi bi-house 或 /assets/..." required>
-                                <span class="input-group-text"><i id="iconPreview" class="bi bi-question"></i></span>
-                            </div>
-                            <div class="d-flex mt-2">
-                                <input type="file" id="linkIconUpload" accept="image/*" class="d-none" onchange="uploadLinkIcon(this)">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('linkIconUpload').click()">
-                                    <i class="bi bi-upload me-1"></i> 上传图标
-                                </button>
-                                <div class="form-text ms-2 mt-1">支持上传图片或直接输入 Bootstrap Icons 类名</div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">描述</label>
-                            <textarea class="form-control" name="description" id="linkDescription" rows="2"></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">徽章文本</label>
-                                <input type="text" class="form-control" name="badge_text" id="linkBadgeText">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">徽章颜色</label>
-                                <select class="form-select" name="badge_color" id="linkBadgeColor">
-                                    <option value="primary">Primary (蓝)</option>
-                                    <option value="success">Success (绿)</option>
-                                    <option value="danger">Danger (红)</option>
-                                    <option value="warning">Warning (黄)</option>
-                                    <option value="info">Info (青)</option>
-                                    <option value="dark">Dark (黑)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">排序</label>
-                                <input type="number" class="form-control" name="sort_order" id="linkSortOrder" value="0">
-                            </div>
-                            <div class="col-md-6 mb-3 d-flex align-items-end">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="is_active" id="linkIsActive" checked>
-                                    <label class="form-check-label" for="linkIsActive">启用显示</label>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="saveLink()">保存</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
 
     <script>
-    // Link Management Scripts
-    let linkModal;
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Modal
-        const linkModalEl = document.getElementById('linkModal');
-        if (linkModalEl) {
-            linkModal = new bootstrap.Modal(linkModalEl);
-        }
-        
-        // Load initial data
-        loadLinks();
-        
-        // Icon preview
-        const linkIconInput = document.getElementById('linkIcon');
-        if (linkIconInput) {
-            linkIconInput.addEventListener('input', function() {
-                const val = this.value;
-                const preview = document.getElementById('iconPreview');
-                if (val.startsWith('http') || val.startsWith('/')) {
-                    preview.className = '';
-                    preview.style.backgroundImage = `url(${val})`;
-                    preview.style.backgroundSize = 'contain';
-                    preview.style.backgroundRepeat = 'no-repeat';
-                    preview.style.backgroundPosition = 'center';
-                    preview.style.width = '16px';
-                    preview.style.height = '16px';
-                    preview.style.display = 'inline-block';
-                } else {
-                    preview.style = '';
-                    preview.className = val;
-                }
-            });
-        }
-    });
-
-    function loadLinks() {
-        const tbody = document.querySelector('#homeLinksTable tbody');
-        if (!tbody) return;
-
-        fetch('api/home_links.php?action=list')
-            .then(response => response.text())
-            .then(text => {
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch(e) {
-                    console.error('home_links API 返回非 JSON:', text);
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">数据解析失败，请查看控制台</td></tr>';
-                    return;
-                }
-                if (data.success && data.data) {
-                    tbody.innerHTML = '';
-                    if (data.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">暂无链接，点击上方"添加链接"按钮创建</td></tr>';
-                        return;
-                    }
-                    data.data.forEach(link => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${link.sort_order}</td>
-                            <td>${renderIcon(link.icon)}</td>
-                            <td>
-                                <div class="fw-bold">${link.name}</div>
-                                <small class="text-muted">${link.description || ''}</small>
-                            </td>
-                            <td><a href="${link.url}" target="_blank" class="text-truncate d-inline-block" style="max-width: 150px;">${link.url}</a></td>
-                            <td>${link.badge_text ? `<span class="badge bg-${link.badge_color}">${link.badge_text}</span>` : '-'}</td>
-                            <td>
-                                <span class="badge bg-${link.is_active == 1 ? 'success' : 'secondary'}">
-                                    ${link.is_active == 1 ? '显示' : '隐藏'}
-                                </span>
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="editLink(${link.id})"><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteLink(${link.id})"><i class="bi bi-trash"></i></button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">' + (data.message || '数据加载失败') + '</td></tr>';
-                }
-            })
-            .catch(err => {
-                console.error('loadLinks fetch error:', err);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">网络错误，请检查控制台</td></tr>';
-            });
-    }
-
-    function renderIcon(icon) {
-        if (!icon) return '-';
-        if (icon.startsWith('http') || icon.startsWith('/')) {
-            return `<img src="${icon}" style="width: 24px; height: 24px; object-fit: contain;" loading="lazy">`;
-        }
-        return `<i class="${icon} fs-5"></i>`;
-    }
-
-    function openLinkModal() {
-        if (!linkModal) {
-            console.error('Link Modal not initialized');
-            return;
-        }
-        document.getElementById('linkForm').reset();
-        document.getElementById('linkId').value = '';
-        document.getElementById('linkModalTitle').innerText = '添加链接';
-        // Reset preview
-        const preview = document.getElementById('iconPreview');
-        if (preview) {
-            preview.className = 'bi bi-question';
-            preview.style = '';
-        }
-        linkModal.show();
-    }
-
-    function editLink(id) {
-        fetch(`api/home_links.php?action=get&id=${id}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const link = data.data;
-                    document.getElementById('linkId').value = link.id;
-                    document.getElementById('linkName').value = link.name;
-                    document.getElementById('linkUrl').value = link.url;
-                    document.getElementById('linkIcon').value = link.icon;
-                    document.getElementById('linkDescription').value = link.description;
-                    document.getElementById('linkBadgeText').value = link.badge_text;
-                    document.getElementById('linkBadgeColor').value = link.badge_color;
-                    document.getElementById('linkSortOrder').value = link.sort_order;
-                    document.getElementById('linkIsActive').checked = link.is_active == 1;
-                    document.getElementById('linkModalTitle').innerText = '编辑链接';
-                    // 触发图标预览更新
-                    document.getElementById('linkIcon').dispatchEvent(new Event('input'));
-                    linkModal.show();
-                }
-            });
-    }
-
-    function saveLink() {
-        const form = document.getElementById('linkForm');
-        const formData = new FormData(form);
-        const id = formData.get('id');
-        const action = id ? 'edit' : 'add';
-        
-        fetch(`api/home_links.php?action=${action}`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                linkModal.hide();
-                loadLinks();
-            } else {
-                alert('保存失败: ' + data.message);
-            }
-        });
-    }
-
-    function deleteLink(id) {
-        if (confirm('确定要删除这个链接吗？')) {
-            const formData = new FormData();
-            formData.append('id', id);
-            
-            fetch('api/home_links.php?action=delete', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadLinks();
-                } else {
-                    alert('删除失败: ' + data.message);
-                }
-            });
-        }
-    }
-
-    function uploadLinkIcon(input) {
-        if (!input.files || !input.files[0]) return;
-        
-        const file = input.files[0];
-        const formData = new FormData();
-        formData.append('image', file);
-        
-        // 使用通用的图片上传接口
-        fetch('upload_image.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const linkIconInput = document.getElementById('linkIcon');
-                linkIconInput.value = data.url;
-                linkIconInput.dispatchEvent(new Event('input')); // 触发预览更新
-            } else {
-                alert('上传失败: ' + (data.error || '未知错误'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('上传出错，请重试');
-        });
-    }
-    </script>
-    
-    <script>
         // 初始化 Markdown 编辑器
-        initMarkdownEditor('website_description');
-        initMarkdownEditor('website_detail');
         initMarkdownEditor('website_announcement');
         
         // Robot描述字符计数
@@ -1086,19 +652,6 @@ require_once 'includes/header.php';
             robotDescTextarea.addEventListener('input', updateRobotDescLength);
         }
 
-        // Bing背景开关控制
-        const useBingBg = document.getElementById('useBingBg');
-        const bingApiContainer = document.getElementById('bingApiContainer');
-        if (useBingBg && bingApiContainer) {
-            useBingBg.addEventListener('change', function() {
-                if (this.checked) {
-                    bingApiContainer.style.display = 'block';
-                } else {
-                    bingApiContainer.style.display = 'none';
-                }
-            });
-        }
-        
         // 通用上传处理函数
         function handleUpload(inputId, apiUrl, paramName, previewId, urlInputId, successMsg, type = 'image', clearBtnId = null) {
             const input = document.getElementById(inputId);
@@ -1193,8 +746,6 @@ require_once 'includes/header.php';
         // 初始化上传
         handleUpload('faviconInput', '/admin/upload_favicon.php', 'favicon', 'faviconPreview', null, '图标上传成功');
         handleUpload('logoInput', '/admin/upload_image.php', 'image', 'logoPreview', 'logoUrl', 'Logo上传成功');
-        handleUpload('bgImageInput', '/admin/upload_image.php', 'image', 'bgImagePreview', 'bgImageUrl', '图片上传成功', 'image', 'clearBgImageBtn');
-        handleUpload('bgVideoInput', '/admin/upload_video.php', 'video', 'bgVideoPreview', 'bgVideoUrl', '视频上传成功', 'video', 'clearBgVideoBtn');
 
         // 进度条相关辅助函数
         function createProgressOverlay(fileName, fileSize) {
@@ -1267,22 +818,6 @@ require_once 'includes/header.php';
             `;
             setTimeout(() => overlay.remove(), 2000);
         }
-        
-        // 清除背景逻辑
-        function clearBgImage() {
-            if(confirm('确定清除背景图片？')) {
-                document.getElementById('bgImageUrl').value = '';
-                document.getElementById('bgImagePreview').innerHTML = '<div class="text-center text-muted"><i class="bi bi-image fs-1 d-block mb-1"></i><small>未设置</small></div>';
-                document.getElementById('clearBgImageBtn').classList.add('d-none');
-            }
-        }
-        function clearBgVideo() {
-            if(confirm('确定清除背景视频？')) {
-                document.getElementById('bgVideoUrl').value = '';
-                document.getElementById('bgVideoPreview').innerHTML = '<div class="text-center text-muted"><i class="bi bi-camera-video fs-1 d-block mb-1"></i><small>未设置</small></div>';
-                document.getElementById('clearBgVideoBtn').classList.add('d-none');
-            }
-        }
 
         // 邮件模式切换
         const emailModeSelect = document.getElementById('emailModeSelect');
@@ -1312,267 +847,5 @@ require_once 'includes/header.php';
             }
         }
 
-    </script>
-    <!-- Project Modal -->
-    <div class="modal fade" id="projectModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="projectModalTitle">添加项目</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="projectForm">
-                        <input type="hidden" name="id" id="projectId">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="mb-3">
-                                    <label class="form-label">项目名称</label>
-                                    <input type="text" class="form-control" name="name" id="projectName" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">项目链接</label>
-                                    <input type="text" class="form-control" name="url" id="projectUrl">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">图标 (类名或图片URL)</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" name="icon" id="projectIcon" placeholder="bi bi-github" required>
-                                        <span class="input-group-text"><i id="projectIconPreview" class="bi bi-question"></i></span>
-                                    </div>
-                                    <div class="d-flex mt-2">
-                                        <input type="file" id="projectIconUpload" accept="image/*" class="d-none" onchange="uploadProjectIcon(this)">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="document.getElementById('projectIconUpload').click()">
-                                            <i class="bi bi-upload me-1"></i> 上传图标
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">项目描述</label>
-                            <textarea class="form-control" name="description" id="projectDescription" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">技术栈标签 (逗号分隔)</label>
-                                <input type="text" class="form-control" name="tags" id="projectTags" placeholder="PHP, Redis, Docker">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">开始时间</label>
-                                <input type="text" class="form-control" name="start_date" id="projectStartDate" placeholder="例如: 2024年2月">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">排序</label>
-                                <input type="number" class="form-control" name="sort_order" id="projectSortOrder" value="0">
-                            </div>
-                            <div class="col-md-6 mb-3 d-flex align-items-end">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="is_active" id="projectIsActive" checked>
-                                    <label class="form-check-label" for="projectIsActive">启用显示</label>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="saveProject()">保存</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    // Project Management Scripts
-    let projectModal;
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Modal
-        const projectModalEl = document.getElementById('projectModal');
-        if (projectModalEl) {
-            projectModal = new bootstrap.Modal(projectModalEl);
-        }
-        
-        // Load initial data
-        loadProjects();
-        
-        // Icon preview
-        const projectIconInput = document.getElementById('projectIcon');
-        if (projectIconInput) {
-            projectIconInput.addEventListener('input', function() {
-                const val = this.value;
-                const preview = document.getElementById('projectIconPreview');
-                if (val.startsWith('http') || val.startsWith('/')) {
-                    preview.className = '';
-                    preview.style.backgroundImage = `url(${val})`;
-                    preview.style.backgroundSize = 'contain';
-                    preview.style.backgroundRepeat = 'no-repeat';
-                    preview.style.backgroundPosition = 'center';
-                    preview.style.width = '16px';
-                    preview.style.height = '16px';
-                    preview.style.display = 'inline-block';
-                } else {
-                    preview.style = '';
-                    preview.className = val;
-                }
-            });
-        }
-    });
-
-    function loadProjects() {
-        fetch('api/my_projects.php?action=list')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const tbody = document.querySelector('#myProjectsTable tbody');
-                    if (!tbody) return;
-                    
-                    tbody.innerHTML = '';
-                    data.data.forEach(project => {
-                        let tagsHtml = '';
-                        if (project.tags) {
-                            project.tags.split(/[,，]/).forEach(tag => {
-                                tag = tag.trim();
-                                if (tag) tagsHtml += `<span class="badge bg-light text-dark border me-1">${tag}</span>`;
-                            });
-                        }
-
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${project.sort_order}</td>
-                            <td>${renderIcon(project.icon)}</td>
-                            <td>
-                                <div class="fw-bold">${project.name}</div>
-                                <small class="text-muted text-truncate d-inline-block" style="max-width: 200px;">${project.description || ''}</small>
-                            </td>
-                            <td>${tagsHtml || '-'}</td>
-                            <td>${project.start_date || '-'}</td>
-                            <td>
-                                <span class="badge bg-${project.is_active == 1 ? 'success' : 'secondary'}">
-                                    ${project.is_active == 1 ? '显示' : '隐藏'}
-                                </span>
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="editProject(${project.id})"><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteProject(${project.id})"><i class="bi bi-trash"></i></button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                }
-            });
-    }
-
-    function openProjectModal() {
-        if (!projectModal) return;
-        document.getElementById('projectForm').reset();
-        document.getElementById('projectId').value = '';
-        document.getElementById('projectModalTitle').innerText = '添加项目';
-        // Reset preview
-        const preview = document.getElementById('projectIconPreview');
-        if (preview) {
-            preview.className = 'bi bi-question';
-            preview.style = '';
-        }
-        projectModal.show();
-    }
-
-    function editProject(id) {
-        fetch(`api/my_projects.php?action=get&id=${id}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const project = data.data;
-                    document.getElementById('projectId').value = project.id;
-                    document.getElementById('projectName').value = project.name;
-                    document.getElementById('projectUrl').value = project.url;
-                    document.getElementById('projectIcon').value = project.icon;
-                    document.getElementById('projectDescription').value = project.description;
-                    document.getElementById('projectTags').value = project.tags;
-                    document.getElementById('projectStartDate').value = project.start_date;
-                    document.getElementById('projectSortOrder').value = project.sort_order;
-                    document.getElementById('projectIsActive').checked = project.is_active == 1;
-                    document.getElementById('projectModalTitle').innerText = '编辑项目';
-                    
-                    document.getElementById('projectIcon').dispatchEvent(new Event('input'));
-                    projectModal.show();
-                }
-            });
-    }
-
-    function saveProject() {
-        const form = document.getElementById('projectForm');
-        const formData = new FormData(form);
-        const id = formData.get('id');
-        const action = id ? 'edit' : 'add';
-        
-        fetch(`api/my_projects.php?action=${action}`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                projectModal.hide();
-                loadProjects();
-            } else {
-                alert('保存失败: ' + data.message);
-            }
-        });
-    }
-
-    function deleteProject(id) {
-        if (confirm('确定要删除这个项目吗？')) {
-            const formData = new FormData();
-            formData.append('id', id);
-            
-            fetch('api/my_projects.php?action=delete', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadProjects();
-                } else {
-                    alert('删除失败: ' + data.message);
-                }
-            });
-        }
-    }
-
-    function uploadProjectIcon(input) {
-        if (!input.files || !input.files[0]) return;
-        
-        const file = input.files[0];
-        const formData = new FormData();
-        formData.append('image', file);
-        
-        fetch('upload_image.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const iconInput = document.getElementById('projectIcon');
-                iconInput.value = data.url;
-                iconInput.dispatchEvent(new Event('input'));
-            } else {
-                alert('上传失败: ' + (data.error || '未知错误'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('上传出错，请重试');
-        });
-    }
     </script>
 <?php require_once 'includes/footer.php'; ?>

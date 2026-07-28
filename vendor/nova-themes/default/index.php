@@ -13,9 +13,7 @@ include $themePath . '/partials/navbar.php';
         </div>
     </div>
     <div id="bgImage" class="hero-bg-media hero-bg-image" 
-         data-custom-image="<?= !empty($config['home_bg_image']) ? e($config['home_bg_image']) : '' ?>"
-         data-use-bing="<?= !empty($config['use_bing_bg']) && $config['use_bing_bg'] == 1 ? '1' : '0' ?>"
-         style="background-image: url('<?= !empty($config['home_bg_image']) ? e($config['home_bg_image']) : 'https://bing.img.run/rand.php' ?>');">
+         style="background-image: url('https://bing.img.run/rand.php');">
     </div>
     <div class="hero-overlay"></div>
     <div class="container hero-content text-center text-white position-relative z-2 align-self-center">

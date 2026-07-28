@@ -28,17 +28,10 @@ function nova_get_settings($request) {
         'website_name',             // 站点名称
         'website_author',           // 站长
         'website_intro',            // 站点简介
-        'website_description',      // 站点描述(SEO)
-        'website_detail',           // 站点详情
         'robot_description',        // 搜索引擎描述
         'logo',                     // Logo 地址
         'favicon',                  // 网站图标
         'website_start_time',       // 网站开办时间
-        // ── 背景设置 ──
-        'home_bg_image',            // 自定义背景图
-        'home_bg_video',            // 自定义背景视频
-        'use_bing_bg',              // 是否使用Bing每日背景
-        'bing_api',                 // Bing API 地址
         // ── 联系方式 ──
         'contact_email',            // 联系邮箱
         'contact_qq',               // QQ号
@@ -71,22 +64,6 @@ function nova_get_settings($request) {
     // ── 备案信息 ──
     $item['icp_record'] = $config['icp_record'] ?? '';
     $item['public_security_record'] = $config['public_security_record'] ?? '';
-
-    // ── 主页小站链接 ──
-    try {
-        $links = $db->query("SELECT * FROM home_links WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
-        $item['home_links'] = $links ?: [];
-    } catch (Exception $e) {
-        $item['home_links'] = [];
-    }
-
-    // ── 个人项目 ──
-    try {
-        $projects = $db->query("SELECT * FROM my_projects WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
-        $item['my_projects'] = $projects ?: [];
-    } catch (Exception $e) {
-        $item['my_projects'] = [];
-    }
 
     return [
         'code'    => 'rest_ok',

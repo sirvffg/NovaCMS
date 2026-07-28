@@ -438,25 +438,6 @@ CREATE TABLE `hitokoto` (
 -- --------------------------------------------------------
 
 --
--- 表的结构 `home_links`
---
-
-CREATE TABLE `home_links` (
-  `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL COMMENT '名称',
-  `url` varchar(255) NOT NULL COMMENT '链接',
-  `icon` varchar(255) DEFAULT NULL COMMENT '图标(类名或图片路径)',
-  `description` varchar(255) DEFAULT NULL COMMENT '描述',
-  `badge_text` varchar(50) DEFAULT NULL COMMENT '徽章文本',
-  `badge_color` varchar(20) DEFAULT 'primary' COMMENT '徽章颜色(primary, success, etc)',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `is_active` tinyint(1) DEFAULT '1' COMMENT '是否启用',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主页小站链接表';
-
--- --------------------------------------------------------
-
---
 -- 表的结构 `honeypot_logs`
 --
 
@@ -547,25 +528,6 @@ CREATE TABLE `license_version_updates` (
   `changelog` text NOT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- 表的结构 `my_projects`
---
-
-CREATE TABLE `my_projects` (
-  `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL COMMENT '项目名称',
-  `description` text COMMENT '项目描述',
-  `url` varchar(255) DEFAULT NULL COMMENT '项目链接',
-  `icon` varchar(255) DEFAULT NULL COMMENT '图标(类名或图片路径)',
-  `tags` varchar(255) DEFAULT NULL COMMENT '标签(逗号分隔)',
-  `start_date` varchar(50) DEFAULT NULL COMMENT '开始时间',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `is_active` tinyint(1) DEFAULT '1' COMMENT '是否启用',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='我的项目表';
 
 -- --------------------------------------------------------
 
@@ -734,15 +696,10 @@ CREATE TABLE `website_config` (
   `website_announcement_date` datetime DEFAULT NULL COMMENT '公告发布日期',
   `website_announcement_popup` tinyint(1) DEFAULT '0' COMMENT '是否弹窗展示公告',
   `website_announcement_enable` tinyint(1) DEFAULT '1' COMMENT '是否开启公告展示',
-  `website_description` longtext COLLATE utf8mb4_unicode_ci COMMENT '网站详细介绍(支持Markdown)',
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '网站描述（友链网站描述）',
-  `website_detail` longtext COLLATE utf8mb4_unicode_ci COMMENT '个人详细介绍(支持Markdown)',
   `robot_description` longtext COLLATE utf8mb4_unicode_ci COMMENT 'SEO描述（用于搜索引擎收录）',
   `logo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '网站Logo',
   `favicon` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '网站图标',
-  `home_bg_image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '主页背景图片',
-  `home_bg_video` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '主页背景视频',
-  `use_bing_bg` tinyint(1) DEFAULT '1' COMMENT '使用Bing每日图片(1:是 0:否)',
   `contact_email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '联系邮箱',
   `contact_qq` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '联系QQ',
   `social_wechat` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '微信号',
@@ -750,7 +707,6 @@ CREATE TABLE `website_config` (
   `email_mode` enum('test','production') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'test' COMMENT '邮件模式: test-测试模式, production-生产模式',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `website_start_time` datetime DEFAULT NULL COMMENT '网站开办时间',
-  `bing_api` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT 'Bing API地址',
   `social_douyin` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '抖音',
   `social_kuaishou` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '快手',
   `social_bilibili` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'B站',
@@ -789,10 +745,10 @@ CREATE TABLE `website_config` (
 INSERT INTO `website_config` (
   `id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`,
   `website_announcement`, `website_announcement_date`, `website_announcement_popup`,
-  `website_announcement_enable`, `website_description`, `description`,
-  `website_detail`, `robot_description`, `logo`, `favicon`, `home_bg_image`,
-  `home_bg_video`, `use_bing_bg`, `contact_email`, `contact_qq`, `social_wechat`,
-  `social_github`, `email_mode`, `updated_at`, `website_start_time`, `bing_api`,
+  `website_announcement_enable`, `description`,
+  `robot_description`, `logo`, `favicon`,
+  `contact_email`, `contact_qq`, `social_wechat`,
+  `social_github`, `email_mode`, `updated_at`, `website_start_time`,
   `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`,
   `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`,
   `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`,
@@ -802,10 +758,9 @@ INSERT INTO `website_config` (
   `terms_content`, `privacy_content`, `active_theme`
 ) VALUES (
   1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1,
-  '', NULL, 0, 0, '', '', '', '', '/assets/images/favicon.png',
-  '', '', '', 1, '', '', '', '', 'production',
+  '', NULL, 0, 0, '', '', '', '/assets/images/favicon.png',
+  '', '', '', '', 'production',
   '2026-07-27 06:04:12', '2025-05-20 05:20:00',
-  'https://wallpaper.lygalaxy.cn/api/random.php?apikey=bk_26c54a517de0db0403836a53389c27375679a70e5a4a0e03e20f06591c9a5',
   '', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls',
   '', '43.129.255.54', 1785128559, 'qq.com', 'Powered by LyGalaxy',
   '', '', '', '', 3, 20, '京ICP备20240428112号-1',
@@ -928,9 +883,6 @@ ALTER TABLE `guestbook`
 ALTER TABLE `hitokoto`
   ADD PRIMARY KEY (`id`);
 
-ALTER TABLE `home_links`
-  ADD PRIMARY KEY (`id`);
-
 ALTER TABLE `honeypot_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ip` (`ip_address`),
@@ -952,9 +904,6 @@ ALTER TABLE `license_verification_logs`
   ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `license_version_updates`
-  ADD PRIMARY KEY (`id`);
-
-ALTER TABLE `my_projects`
   ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `notifications`
@@ -1072,9 +1021,6 @@ ALTER TABLE `guestbook`
 ALTER TABLE `hitokoto`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
-ALTER TABLE `home_links`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
 ALTER TABLE `honeypot_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
@@ -1091,9 +1037,6 @@ ALTER TABLE `license_verification_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE `license_version_updates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
-ALTER TABLE `my_projects`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE `notifications`

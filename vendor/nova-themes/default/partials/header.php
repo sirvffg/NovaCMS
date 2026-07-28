@@ -14,7 +14,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle ?? $config['website_name']) ?> - <?= e($config['website_name']) ?></title>
-    <meta name="description" content="<?= e(!empty($config['robot_description']) ? strip_tags($config['robot_description']) : strip_tags(mb_substr($config['website_description'], 0, 160))) ?>">
+    <meta name="description" content="<?= e(!empty($config['robot_description']) ? strip_tags($config['robot_description']) : $config['website_name']) ?>">
     <meta name="keywords" content="<?= e($config['website_name']) ?>,博客,技术分享,个人网站,编程,生活">
     <meta name="author" content="<?= e($config['website_name']) ?>">
     <meta name="robots" content="index, follow">
