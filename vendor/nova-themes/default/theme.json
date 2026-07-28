@@ -1,0 +1,9 @@
+{
+    "name": "默认主题",
+    "slug": "default",
+    "version": "1.0.0",
+    "author": "NovaCMS",
+    "description": "NovaCMS 默认主题",
+    "screenshot": "screenshot.png",
+    "min_nova_version": "1.0.0"
+}

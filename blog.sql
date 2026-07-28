@@ -847,7 +847,8 @@ CREATE TABLE `website_config` (
   `icp_record` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT 'ICP备案号',
   `public_security_record` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '公安备案号',
   `terms_content` longtext COLLATE utf8mb4_unicode_ci COMMENT '服务条款内容(支持HTML)',
-  `privacy_content` longtext COLLATE utf8mb4_unicode_ci COMMENT '隐私政策内容(支持HTML)'
+  `privacy_content` longtext COLLATE utf8mb4_unicode_ci COMMENT '隐私政策内容(支持HTML)',
+  `active_theme` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'default' COMMENT '激活的主题'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='网站配置表';
 
 --

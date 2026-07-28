@@ -31,6 +31,7 @@ Nova_Backend_Menu::add_menu('网站配置',   'config',      '/admin/config.php'
 Nova_Backend_Menu::add_menu('博客管理',   'posts',       '/admin/posts.php',           '博', 30);
 Nova_Backend_Menu::add_menu('隐私与付费记录', 'privacy', '/admin/privacy_access.php',  '隐', 40);
 Nova_Backend_Menu::add_menu('用户管理',   'admins',      '/admin/admins.php',          '用', 50);
+Nova_Backend_Menu::add_menu('主题管理',   'themes',      '/admin/themes.php',          '主', 55);
 Nova_Backend_Menu::add_menu('友情链接',   'links',       '/admin/links.php',           '友', 60);
 Nova_Backend_Menu::add_menu('访问统计',   'stats',       '/admin/stats.php',           '访', 70);
 Nova_Backend_Menu::add_menu('留言管理',   'guestbook',   '/admin/guestbook.php',       '留', 80);
