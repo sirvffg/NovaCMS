@@ -160,8 +160,8 @@ require_once 'includes/header.php';
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="tab-appearance" data-bs-toggle="tab" data-bs-target="#content-appearance" type="button" role="tab">
-                                        <i class="bi bi-palette me-2"></i> 外观设置
+                                    <button class="nav-link" id="tab-contact" data-bs-toggle="tab" data-bs-target="#content-contact" type="button" role="tab">
+                                        <i class="bi bi-telephone me-2"></i> 联系方式
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
@@ -196,7 +196,72 @@ require_once 'includes/header.php';
                                                 <input type="text" name="website_author" class="form-control" value="<?= e($config['website_author'] ?? '') ?>" placeholder="您的名字">
                                             </div>
 
-                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">网站开办时间</label>
+                                                <input type="datetime-local" name="website_start_time" class="form-control" 
+                                                       value="<?= !empty($config['website_start_time']) ? date('Y-m-d\TH:i', strtotime($config['website_start_time'])) : '' ?>">
+                                                <div class="form-text">设置后将在博客页脚显示网站已运行时间。</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5>Logo与图标</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-4">
+                                                <label class="form-label">网站图标 (Favicon)</label>
+                                                <div class="upload-area">
+                                                    <div id="faviconPreview" class="preview-box" style="width: 80px; height: 80px;">
+                                                        <?php if (!empty($config['favicon'])): ?>
+                                                        <img src="<?= e($config['favicon']) ?>?v=<?= time() ?>" style="max-width: 48px; max-height: 48px;" loading="lazy">
+                                                        <?php else: ?>
+                                                        <i class="bi bi-image text-muted fs-3"></i>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div>
+                                                        <input type="file" id="faviconInput" accept=".ico,.png,.jpg,.jpeg,.gif" class="d-none">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" onclick="document.getElementById('faviconInput').click()">
+                                                            <i class="bi bi-upload me-1"></i> 更换图标
+                                                        </button>
+                                                        <div class="form-text">支持 ICO, PNG, JPG (推荐 32x32 或 64x64)</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">网站Logo</label>
+                                                <div class="upload-area">
+                                                    <div id="logoPreview" class="preview-box" style="width: 160px; height: 80px;">
+                                                        <?php if (!empty($config['logo'])): ?>
+                                                        <img src="<?= e($config['logo']) ?>" style="max-width: 90%; max-height: 90%;" loading="lazy">
+                                                        <?php else: ?>
+                                                        <i class="bi bi-image text-muted fs-3"></i>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div>
+                                                        <input type="file" id="logoInput" accept="image/*" class="d-none">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" onclick="document.getElementById('logoInput').click()">
+                                                            <i class="bi bi-upload me-1"></i> 更换Logo
+                                                        </button>
+                                                        <div class="form-text">支持 PNG, JPG, ICO (推荐透明背景)</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                        </div>
+
+
+
+                        <!-- 联系方式 -->
+                        <div class="tab-pane fade" id="content-contact" role="tabpanel">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5>联系方式</h5>
+                                        </div>
+                                        <div class="card-body">
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
                                                     <label class="form-label">QQ号(用于网站首页头像与联系方式)</label>
@@ -301,65 +366,6 @@ require_once 'includes/header.php';
                                                     <div class="input-group">
                                                         <span class="input-group-text"><i class="bi bi-youtube"></i></span>
                                                         <input type="text" name="social_youtube" class="form-control" value="<?= e($config['social_youtube'] ?? '') ?>">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label class="form-label">网站开办时间</label>
-                                                <input type="datetime-local" name="website_start_time" class="form-control" 
-                                                       value="<?= !empty($config['website_start_time']) ? date('Y-m-d\TH:i', strtotime($config['website_start_time'])) : '' ?>">
-                                                <div class="form-text">设置后将在博客页脚显示网站已运行时间。</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                        </div>
-
-
-
-                        <!-- 外观设置 -->
-                        <div class="tab-pane fade" id="content-appearance" role="tabpanel">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Logo与图标</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-4">
-                                                <label class="form-label">网站图标 (Favicon)</label>
-                                                <div class="upload-area">
-                                                    <div id="faviconPreview" class="preview-box" style="width: 80px; height: 80px;">
-                                                        <?php if (!empty($config['favicon'])): ?>
-                                                        <img src="<?= e($config['favicon']) ?>?v=<?= time() ?>" style="max-width: 48px; max-height: 48px;" loading="lazy">
-                                                        <?php else: ?>
-                                                        <i class="bi bi-image text-muted fs-3"></i>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                    <div>
-                                                        <input type="file" id="faviconInput" accept=".ico,.png,.jpg,.jpeg,.gif" class="d-none">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" onclick="document.getElementById('faviconInput').click()">
-                                                            <i class="bi bi-upload me-1"></i> 更换图标
-                                                        </button>
-                                                        <div class="form-text">支持 ICO, PNG, JPG (推荐 32x32 或 64x64)</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label class="form-label">网站Logo</label>
-                                                <div class="upload-area">
-                                                    <div id="logoPreview" class="preview-box" style="width: 160px; height: 80px;">
-                                                        <?php if (!empty($config['logo'])): ?>
-                                                        <img src="<?= e($config['logo']) ?>" style="max-width: 90%; max-height: 90%;" loading="lazy">
-                                                        <?php else: ?>
-                                                        <i class="bi bi-image text-muted fs-3"></i>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                    <div>
-                                                        <input type="file" id="logoInput" accept="image/*" class="d-none">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" onclick="document.getElementById('logoInput').click()">
-                                                            <i class="bi bi-upload me-1"></i> 更换Logo
-                                                        </button>
-                                                        <div class="form-text">支持 PNG, JPG, ICO (推荐透明背景)</div>
                                                     </div>
                                                 </div>
                                             </div>
