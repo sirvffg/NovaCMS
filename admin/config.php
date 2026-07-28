@@ -200,7 +200,6 @@ require_once 'includes/header.php';
                                                 <label class="form-label">网站开办时间</label>
                                                 <input type="datetime-local" name="website_start_time" class="form-control" 
                                                        value="<?= !empty($config['website_start_time']) ? date('Y-m-d\TH:i', strtotime($config['website_start_time'])) : '' ?>">
-                                                <div class="form-text">设置后将在博客页脚显示网站已运行时间。</div>
                                             </div>
                                         </div>
                                     </div>
@@ -222,9 +221,14 @@ require_once 'includes/header.php';
                                                     </div>
                                                     <div>
                                                         <input type="file" id="faviconInput" accept=".ico,.png,.jpg,.jpeg,.gif" class="d-none">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" onclick="document.getElementById('faviconInput').click()">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2 me-2" onclick="document.getElementById('faviconInput').click()">
                                                             <i class="bi bi-upload me-1"></i> 更换图标
                                                         </button>
+                                                        <?php if (!empty($config['favicon'])): ?>
+                                                        <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="clearFavicon()">
+                                                            <i class="bi bi-trash me-1"></i> 清除图标
+                                                        </button>
+                                                        <?php endif; ?>
                                                         <div class="form-text">支持 ICO, PNG, JPG (推荐 32x32 或 64x64)</div>
                                                     </div>
                                                 </div>
@@ -242,9 +246,14 @@ require_once 'includes/header.php';
                                                     </div>
                                                     <div>
                                                         <input type="file" id="logoInput" accept="image/*" class="d-none">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" onclick="document.getElementById('logoInput').click()">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2 me-2" onclick="document.getElementById('logoInput').click()">
                                                             <i class="bi bi-upload me-1"></i> 更换Logo
                                                         </button>
+                                                        <?php if (!empty($config['logo'])): ?>
+                                                        <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="clearLogo()">
+                                                            <i class="bi bi-trash me-1"></i> 清除Logo
+                                                        </button>
+                                                        <?php endif; ?>
                                                         <div class="form-text">支持 PNG, JPG, ICO (推荐透明背景)</div>
                                                     </div>
                                                 </div>
@@ -708,7 +717,63 @@ require_once 'includes/header.php';
 
         // 初始化上传
         handleUpload('faviconInput', '/admin/upload_favicon.php', 'favicon', 'faviconPreview', null, '图标上传成功');
-        handleUpload('logoInput', '/admin/upload_image.php', 'image', 'logoPreview', 'logoUrl', 'Logo上传成功');
+        handleUpload('logoInput', '/admin/upload_logo.php', 'logo', 'logoPreview', 'logoUrl', 'Logo上传成功');
+
+        // 清除图标
+        function clearFavicon() {
+            if (!confirm('确定要清除网站图标吗？')) return;
+
+            fetch('/admin/api/clear_image.php?type=favicon')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 清除预览
+                        const previewBox = document.getElementById('faviconPreview');
+                        previewBox.innerHTML = '<i class="bi bi-image text-muted fs-3"></i>';
+
+                        // 移除清除按钮
+                        event.target.remove();
+
+                        // 提示成功
+                        alert('图标已清除');
+                    } else {
+                        alert('清除失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    alert('清除失败: ' + error.message);
+                });
+        }
+
+        // 清除Logo
+        function clearLogo() {
+            if (!confirm('确定要清除网站Logo吗？')) return;
+
+            fetch('/admin/api/clear_image.php?type=logo')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 清除预览
+                        const previewBox = document.getElementById('logoPreview');
+                        previewBox.innerHTML = '<i class="bi bi-image text-muted fs-3"></i>';
+
+                        // 清除隐藏的URL字段
+                        const logoUrlInput = document.getElementById('logoUrl');
+                        if (logoUrlInput) logoUrlInput.value = '';
+
+                        // 移除清除按钮
+                        event.target.remove();
+
+                        // 提示成功
+                        alert('Logo已清除');
+                    } else {
+                        alert('清除失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    alert('清除失败: ' + error.message);
+                });
+        }
 
         // 进度条相关辅助函数
         function createProgressOverlay(fileName, fileSize) {
