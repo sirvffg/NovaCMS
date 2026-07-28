@@ -45,6 +45,9 @@ Nova_Backend_Menu::add_submenu('settings', '邮件测试',   'email_test','/admi
 Nova_Backend_Menu::add_submenu('settings', 'SEO 工具集', 'seo_tools', '/admin/seo_tools.php',    60,   ['icon' => 'S']);
 Nova_Backend_Menu::add_submenu('settings', '系统日志查看','view_logs', '/admin/view_logs.php',    70,   ['icon' => '日']);
 
+// 备份管理
+Nova_Backend_Menu::add_menu('备份管理', 'backup', '/admin/backup.php', '备', 120);
+
 // 外部链接
 Nova_Backend_Menu::add_menu('查看网站',   'view-site',   '/',                           '查', 140, ['target' => '_blank']);
 ?>
