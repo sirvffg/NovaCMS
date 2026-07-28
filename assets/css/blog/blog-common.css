@@ -790,24 +790,3 @@ footer .beian-item:hover {
 .pagination .page-link:hover {
     background: rgba(102, 126, 234, 0.1);
 }
-
-/* ========================================
-   AI摘要打字机效果（共用）
-   ======================================== */
-.typing-text {
-    white-space: pre-wrap;
-    word-break: break-word;
-    position: relative;
-}
-.typing-text::after {
-    content: "|";
-    animation: blink 1s infinite;
-    margin-left: 2px;
-}
-@keyframes blink {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0; }
-}
-.typing-done::after {
-    display: none;
-}

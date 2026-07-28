@@ -75,7 +75,7 @@ function v1_get_post_list($request) {
                      p.published_at, p.created_at, p.updated_at,
                      p.has_privacy_content, p.privacy_type,
                      p.has_paid_content, p.post_price,
-                     p.license, p.ai_summary";
+                     p.license";
     if ($showContent) {
         $selectFields .= ", p.content";
     }
@@ -196,7 +196,6 @@ function v1_format_post_item($post) {
         'created_at'   => $post['created_at'],
         'updated_at'   => $post['updated_at'],
         'license'      => $post['license'],
-        'ai_summary'   => $post['ai_summary'],
         'has_privacy_content' => (bool)($post['has_privacy_content'] ?? false),
         'has_paid_content'    => (bool)($post['has_paid_content'] ?? false),
         'current_user_id'                 => $userId,

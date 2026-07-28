@@ -86,45 +86,6 @@ CREATE TABLE `appeal_tokens` (
 
 -- --------------------------------------------------------
 
---
--- 表的结构 `blog_ai_models`
---
-
-CREATE TABLE `blog_ai_models` (
-  `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `api_base` varchar(500) NOT NULL,
-  `api_key` text NOT NULL,
-  `model_id` varchar(200) NOT NULL,
-  `enabled` tinyint(1) NOT NULL DEFAULT '1',
-  `is_default` tinyint(1) NOT NULL DEFAULT '0',
-  `sort_order` int(11) NOT NULL DEFAULT '0',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 模型（每行独立 Key）';
-
--- --------------------------------------------------------
-
---
--- 表的结构 `blog_ai_usage_log`
---
-
-CREATE TABLE `blog_ai_usage_log` (
-  `id` int(11) NOT NULL,
-  `post_id` int(11) DEFAULT NULL,
-  `admin_id` int(11) DEFAULT NULL,
-  `ai_model_id` int(11) DEFAULT NULL,
-  `model_id_str` varchar(200) DEFAULT NULL,
-  `prompt_tokens` int(11) NOT NULL DEFAULT '0',
-  `completion_tokens` int(11) NOT NULL DEFAULT '0',
-  `total_tokens` int(11) NOT NULL DEFAULT '0',
-  `success` tinyint(1) NOT NULL DEFAULT '0',
-  `error_message` text,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `request_payload` mediumtext COMMENT '请求体',
-  `response_payload` mediumtext COMMENT '响应体'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 调用用量';
-
 -- --------------------------------------------------------
 
 --
@@ -235,20 +196,15 @@ CREATE TABLE `blog_posts` (
   `privacy_type` enum('fixed_answer','open_answer','manual_approval','login_only') COLLATE utf8mb4_unicode_ci DEFAULT 'fixed_answer' COMMENT '隐私内容验证类型: fixed_answer-固定答案, open_answer-开放答案, manual_approval-人工审核, login_only-仅需登录',
   `approval_required` tinyint(1) DEFAULT '0' COMMENT '开放答案是否需要管理员审核(0:自动授权 1:需要审核)',
   `privacy_custom_text` text COLLATE utf8mb4_unicode_ci,
-  `license` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'CC BY-NC-SA 4.0' COMMENT '文章许可协议: CC BY, CC BY-NC, CC BY-SA, CC BY-NC-SA, CC BY-ND, CC BY-NC-ND, CC0, MIT, Apache-2.0, GPL-3.0, LGPL-3.0, BSD-3-Clause, ODbL, GFDL, PLOS, ArXiv, OGL, 无协议',
-  `ai_summary` mediumtext COLLATE utf8mb4_unicode_ci COMMENT 'AI摘要(可较长)',
-  `ai_summary_hash` char(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '清洗正文SHA256',
-  `ai_summary_model_id` int(11) DEFAULT NULL,
-  `ai_summary_at` datetime DEFAULT NULL,
-  `ai_summary_error` text COLLATE utf8mb4_unicode_ci COMMENT '上次生成失败原因'
+  `license` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'CC BY-NC-SA 4.0' COMMENT '文章许可协议: CC BY, CC BY-NC, CC BY-SA, CC BY-NC-SA, CC BY-ND, CC BY-NC-ND, CC0, MIT, Apache-2.0, GPL-3.0, LGPL-3.0, BSD-3-Clause, ODbL, GFDL, PLOS, ArXiv, OGL, 无协议'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='博客文章表';
 
 --
 -- 转存表中的数据 `blog_posts`
 --
 
-INSERT INTO `blog_posts` (`id`, `title`, `content`, `summary`, `author`, `cover_image`, `category`, `tags`, `views`, `is_published`, `is_pinned`, `is_featured`, `published_at`, `created_at`, `updated_at`, `privacy_question`, `privacy_answer`, `has_privacy_content`, `has_paid_content`, `post_price`, `privacy_type`, `approval_required`, `privacy_custom_text`, `license`, `ai_summary`, `ai_summary_hash`, `ai_summary_model_id`, `ai_summary_at`, `ai_summary_error`) VALUES
-(1, '如何使用Markdown写作', '我来为你详细介绍Markdown的使用方法，让你快速掌握这个轻量级标记语言。\n\n## 📝 **Markdown基础语法**\n\n### 1. **标题**\n```markdown\n# 一级标题\n## 二级标题\n### 三级标题\n#### 四级标题\n##### 五级标题\n###### 六级标题\n```\n\n### 2. **文本格式**\n```markdown\n**粗体文本** 或 __粗体文本__\n*斜体文本* 或 _斜体文本_\n~~删除线文本~~\n***粗斜体文本***\n```\n\n### 3. **列表**\n```markdown\n- 无序列表项\n* 另一种无序列表\n+ 第三种无序列表\n\n1. 有序列表第一项\n2. 有序列表第二项\n3. 有序列表第三项\n```\n\n### 4. **链接与图片**\n```markdown\n[链接文字](URL)\n![图片描述](图片URL)\n```\n\n### 5. **引用**\n```markdown\n> 引用文本\n> 多行引用\n>> 嵌套引用\n```\n\n### 6. **代码**\n- 行内代码：\\`code\\`\n- 代码块：\n\\`\\`\\`语言\n代码内容\n\\`\\`\\`\n\n### 7. **分割线**\n```markdown\n---\n***\n___\n```\n\n### 8. **表格**\n```markdown\n| 表头1 | 表头2 | 表头3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n| 左对齐 | 居中对齐 | 右对齐 |\n```\n\n对齐方式：\n- 左对齐 `:---`\n- 居中对齐 `:---:`\n- 右对齐 `---:`\n\n## 🎯 **高级技巧**\n\n### 1. **任务列表**\n```markdown\n- [x] 已完成任务\n- [ ] 未完成任务\n- [ ] 另一个任务\n```\n\n### 2. **脚注**\n```markdown\n这是一段文字[^1]\n[^1]: 这是脚注内容\n```\n\n### 3. **数学公式（部分平台支持）**\n```markdown\n行内公式：$E = mc^2$\n\n块级公式：\n$$\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n$$\n```\n\n### 4. **目录（部分平台支持）**\n```markdown\n[TOC]\n```\n\n## 🔧 **实用工具推荐**\n\n### **编辑器：**\n- **VS Code** + Markdown插件\n- **Typora**（所见即所得）\n- **Obsidian**（知识管理）\n- **Notion**（在线协作）\n\n### **在线工具：**\n- **StackEdit**（在线编辑器）\n- **Markdown Table Generator**（表格生成）\n- **Mermaid Live Editor**（图表绘制）\n\n## 💡 **最佳实践**\n\n1. **保持简洁**：Markdown的精髓在于简单\n2. **使用空格**：元素前后加空格更易读\n3. **适当分段**：避免过长的段落\n4. **善用标题**：建立清晰的文档结构\n5. **预览习惯**：写作时经常预览效果\n\n## 🚀 **快速上手示例**\n\n```markdown\n# 项目报告\n\n## 项目概述\n这是一个**重要项目**，截止日期是 *下周五*。\n\n## 任务清单\n- [x] 需求分析\n- [ ] 设计阶段\n- [ ] 开发实现\n\n## 进度表格\n| 阶段 | 负责人 | 进度 |\n|------|--------|------|\n| 分析 | 张三 | 100% |\n| 设计 | 李四 | 50% |\n\n## 代码示例\n```python\ndef hello():\n    print(\"Hello Markdown!\")\n```\n\n> 提示：使用Markdown让文档更专业！\n```\n\n## 🌟 **各平台兼容性**\n- **完全支持**：GitHub、GitLab、Stack Overflow\n- **部分支持**：微信公众平台、知乎\n- **扩展语法**：Notion、Obsidian有自己的扩展\n\n**开始建议**：从简单的文档开始，逐渐尝试复杂格式，多写多练自然就熟练了！\n\n有什么特定的Markdown使用场景或问题吗？我可以提供更具体的指导。\n```\n\n[Privacy]\n\nwow\n\n[/Privacy]', NULL, 'admin', NULL, '项目案例', '笔记', 516, 1, 0, 0, '2025-12-02 19:21:11', '2025-12-02 19:21:11', '2026-07-27 05:48:56', '您看到信息的平台+你的账号ID  以及对网站的建议（由于监管要求，请认真填写来源信息，否则一律封禁账号以及所在地区IP段） 没进Q群和没抖音酷安关注的请勿申请', NULL, 1, 0, 0.00, 'manual_approval', 1, '下载的内容在填写表单之后会显示哦！\n温馨提示: <color:red>请您认真填写表单中的内容，后台均会审核，不认真填写将会导致封号</color>\n填写示例  抖音+XXX账号id（您的账号ID）  后面有建议可以填写如果没有就可以直接提交\n需要人工审核的哦\n没进Q群和没关注抖音(需要进粉丝群) 以及 酷安未关注和私信的 请勿申请  申请一律不同意', 'CC BY 4.0', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `blog_posts` (`id`, `title`, `content`, `summary`, `author`, `cover_image`, `category`, `tags`, `views`, `is_published`, `is_pinned`, `is_featured`, `published_at`, `created_at`, `updated_at`, `privacy_question`, `privacy_answer`, `has_privacy_content`, `has_paid_content`, `post_price`, `privacy_type`, `approval_required`, `privacy_custom_text`, `license`) VALUES
+(1, '如何使用Markdown写作', '我来为你详细介绍Markdown的使用方法，让你快速掌握这个轻量级标记语言。\n\n## 📝 **Markdown基础语法**\n\n### 1. **标题**\n```markdown\n# 一级标题\n## 二级标题\n### 三级标题\n#### 四级标题\n##### 五级标题\n###### 六级标题\n```\n\n### 2. **文本格式**\n```markdown\n**粗体文本** 或 __粗体文本__\n*斜体文本* 或 _斜体文本_\n~~删除线文本~~\n***粗斜体文本***\n```\n\n### 3. **列表**\n```markdown\n- 无序列表项\n* 另一种无序列表\n+ 第三种无序列表\n\n1. 有序列表第一项\n2. 有序列表第二项\n3. 有序列表第三项\n```\n\n### 4. **链接与图片**\n```markdown\n[链接文字](URL)\n![图片描述](图片URL)\n```\n\n### 5. **引用**\n```markdown\n> 引用文本\n> 多行引用\n>> 嵌套引用\n```\n\n### 6. **代码**\n- 行内代码：\\`code\\`\n- 代码块：\n\\`\\`\\`语言\n代码内容\n\\`\\`\\`\n\n### 7. **分割线**\n```markdown\n---\n***\n___\n```\n\n### 8. **表格**\n```markdown\n| 表头1 | 表头2 | 表头3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n| 左对齐 | 居中对齐 | 右对齐 |\n```\n\n对齐方式：\n- 左对齐 `:---`\n- 居中对齐 `:---:`\n- 右对齐 `---:`\n\n## 🎯 **高级技巧**\n\n### 1. **任务列表**\n```markdown\n- [x] 已完成任务\n- [ ] 未完成任务\n- [ ] 另一个任务\n```\n\n### 2. **脚注**\n```markdown\n这是一段文字[^1]\n[^1]: 这是脚注内容\n```\n\n### 3. **数学公式（部分平台支持）**\n```markdown\n行内公式：$E = mc^2$\n\n块级公式：\n$$\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n$$\n```\n\n### 4. **目录（部分平台支持）**\n```markdown\n[TOC]\n```\n\n## 🔧 **实用工具推荐**\n\n### **编辑器：**\n- **VS Code** + Markdown插件\n- **Typora**（所见即所得）\n- **Obsidian**（知识管理）\n- **Notion**（在线协作）\n\n### **在线工具：**\n- **StackEdit**（在线编辑器）\n- **Markdown Table Generator**（表格生成）\n- **Mermaid Live Editor**（图表绘制）\n\n## 💡 **最佳实践**\n\n1. **保持简洁**：Markdown的精髓在于简单\n2. **使用空格**：元素前后加空格更易读\n3. **适当分段**：避免过长的段落\n4. **善用标题**：建立清晰的文档结构\n5. **预览习惯**：写作时经常预览效果\n\n## 🚀 **快速上手示例**\n\n```markdown\n# 项目报告\n\n## 项目概述\n这是一个**重要项目**，截止日期是 *下周五*。\n\n## 任务清单\n- [x] 需求分析\n- [ ] 设计阶段\n- [ ] 开发实现\n\n## 进度表格\n| 阶段 | 负责人 | 进度 |\n|------|--------|------|\n| 分析 | 张三 | 100% |\n| 设计 | 李四 | 50% |\n\n## 代码示例\n```python\ndef hello():\n    print(\"Hello Markdown!\")\n```\n\n> 提示：使用Markdown让文档更专业！\n```\n\n## 🌟 **各平台兼容性**\n- **完全支持**：GitHub、GitLab、Stack Overflow\n- **部分支持**：微信公众平台、知乎\n- **扩展语法**：Notion、Obsidian有自己的扩展\n\n**开始建议**：从简单的文档开始，逐渐尝试复杂格式，多写多练自然就熟练了！\n\n有什么特定的Markdown使用场景或问题吗？我可以提供更具体的指导。\n```\n\n[Privacy]\n\nwow\n\n[/Privacy]', NULL, 'admin', NULL, '项目案例', '笔记', 516, 1, 0, 0, '2025-12-02 19:21:11', '2025-12-02 19:21:11', '2026-07-27 05:48:56', '您看到信息的平台+你的账号ID  以及对网站的建议（由于监管要求，请认真填写来源信息，否则一律封禁账号以及所在地区IP段） 没进Q群和没抖音酷安关注的请勿申请', NULL, 1, 0, 0.00, 'manual_approval', 1, '下载的内容在填写表单之后会显示哦！\n温馨提示: <color:red>请您认真填写表单中的内容，后台均会审核，不认真填写将会导致封号</color>\n填写示例  抖音+XXX账号id（您的账号ID）  后面有建议可以填写如果没有就可以直接提交\n需要人工审核的哦\n没进Q群和没关注抖音(需要进粉丝群) 以及 酷安未关注和私信的 请勿申请  申请一律不同意', 'CC BY 4.0');
 
 -- --------------------------------------------------------
 
@@ -893,11 +849,6 @@ CREATE TABLE `website_config` (
   `epay_key` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '易支付商户密钥',
   `max_devices` int(11) DEFAULT '2' COMMENT '单用户最大同时在线设备数',
   `remember_duration` int(11) DEFAULT '30' COMMENT '记住我有效期（天）',
-  `ai_feature_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'AI摘要总开关',
-  `ai_max_input_chars` int(11) NOT NULL DEFAULT '12000',
-  `ai_max_output_tokens` int(11) NOT NULL DEFAULT '512',
-  `ai_temperature` decimal(4,2) NOT NULL DEFAULT '0.30',
-  `ai_summary_section_title` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT '文章摘要',
   `terms_content` longtext COLLATE utf8mb4_unicode_ci COMMENT '服务条款内容(支持HTML)',
   `privacy_content` longtext COLLATE utf8mb4_unicode_ci COMMENT '隐私政策内容(支持HTML)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作室配置表';
@@ -906,8 +857,8 @@ CREATE TABLE `website_config` (
 -- 转存表中的数据 `website_config`
 --
 
-INSERT INTO `website_config` (`id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`, `website_announcement`, `website_announcement_date`, `website_announcement_popup`, `website_announcement_enable`, `website_description`, `description`, `website_detail`, `robot_description`, `logo`, `favicon`, `home_bg_image`, `home_bg_video`, `use_bing_bg`, `contact_email`, `contact_qq`, `social_wechat`, `social_github`, `email_mode`, `updated_at`, `website_start_time`, `bing_api`, `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`, `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`, `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`, `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`, `newyear_enable`, `newyear_message`, `newyear_video`, `newyear_start_time`, `newyear_end_time`, `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`, `max_devices`, `remember_duration`, `ai_feature_enabled`, `ai_max_input_chars`, `ai_max_output_tokens`, `ai_temperature`, `ai_summary_section_title`, `terms_content`, `privacy_content`) VALUES
-(1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1, '', NULL, 0, 0, '', '', '', '', '', '/assets/images/favicon.png', '', '', 1, '', '', '', '', 'production', '2026-07-27 06:04:12', '2025-05-20 05:20:00', 'https://wallpaper.lygalaxy.cn/api/random.php?apikey=bk_26c54a517de0db0403836a53389c27375679a70e5a4a0e03e20f06591c9a5', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls', '', '43.129.255.54', 1785128559, 'qq.com', 0, '乙巳辞旧岁，丙午迎新春！愿你龙马精神，岁岁皆安。🎆🎆🎆', '/uploads/videos/20260216_140955_6992b4b3bdba2.mp4', NULL, '2026-04-08 21:28:00', 'Powered by LyGalaxy', '', '', '', '', 3, 20, 1, 12000, 512, 0.30, 'AI文章摘要', '1. 接受条款\r\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\r\n\r\n2. 网站描述\r\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\r\n\r\n3. 使用许可\r\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\r\n- 不得将网站用于任何非法或未经授权的目的\r\n- 不得干扰或破坏网站的正常运行\r\n- 不得试图获取未经授权的访问权限\r\n- 不得复制或重复使用网站内容，除非获得明确许可\r\n\r\n4. 内容所有权\r\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\r\n\r\n5. 用户责任\r\n作为用户，您同意：\r\n- 提供准确和真实的信息\r\n- 不发布虚假、误导性或违法内容\r\n- 尊重他人的知识产权和隐私权\r\n- 不从事任何可能损害网站声誉的活动\r\n\r\n6. 免责声明\r\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\r\n- 网站服务的连续性或无中断\r\n- 网站内容的准确性或完整性\r\n- 网站免受病毒或其他恶意组件的侵害\r\n- 因使用网站而导致的任何损失或损害\r\n\r\n7. 服务限制\r\n我们保留以下权利：\r\n- 随时修改或终止网站服务\r\n- 拒绝向任何人提供服务\r\n- 删除违反服务条款的内容\r\n- 暂停或终止违规用户的访问权限\r\n\r\n8. 第三方链接\r\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\r\n\r\n9. 争议解决\r\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\r\n\r\n10. 条款修改\r\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\r\n\r\n11. 联系我们\r\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日', '1. 信息收集\r\n我们可能收集以下类型的信息：\r\n- 您通过联系表单提供的姓名、电子邮件地址等信息\r\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\r\n- 通过Cookie收集的使用偏好信息\r\n\r\n2. 信息使用\r\n收集的信息可能用于：\r\n- 回复您的咨询和请求\r\n- 改善网站内容和用户体验\r\n- 发送重要的通知和更新\r\n- 网站分析和安全监控\r\n\r\n3. 信息共享\r\n我们不会向第三方出售、交易或转让您的个人信息，除非：\r\n- 获得您的明确同意\r\n- 法律要求或法律程序需要\r\n- 保护网站、用户或公众的权利、财产或安全\r\n\r\n4. 数据安全\r\n我们采取适当的安全措施来保护您的个人信息，包括：\r\n- 使用安全的服务器和加密技术\r\n- 限制对个人信息的访问权限\r\n- 定期更新安全协议\r\n\r\n5. Cookie使用\r\n本网站可能使用Cookie来：\r\n- 记住您的偏好设置\r\n- 分析网站流量和使用情况\r\n- 提供个性化的内容\r\n您可以通过浏览器设置控制Cookie的使用。\r\n\r\n6. 您的权利\r\n您有权：\r\n- 访问您的个人信息\r\n- 更正不准确的信息\r\n- 删除您的个人信息\r\n- 反对处理您的信息\r\n\r\n7. 政策更新\r\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\r\n\r\n8. 联系我们\r\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日');
+INSERT INTO `website_config` (`id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`, `website_announcement`, `website_announcement_date`, `website_announcement_popup`, `website_announcement_enable`, `website_description`, `description`, `website_detail`, `robot_description`, `logo`, `favicon`, `home_bg_image`, `home_bg_video`, `use_bing_bg`, `contact_email`, `contact_qq`, `social_wechat`, `social_github`, `email_mode`, `updated_at`, `website_start_time`, `bing_api`, `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`, `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`, `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`, `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`, `newyear_enable`, `newyear_message`, `newyear_video`, `newyear_start_time`, `newyear_end_time`, `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`, `max_devices`, `remember_duration`, `terms_content`, `privacy_content`) VALUES
+(1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1, '', NULL, 0, 0, '', '', '', '', '', '/assets/images/favicon.png', '', '', 1, '', '', '', '', 'production', '2026-07-27 06:04:12', '2025-05-20 05:20:00', 'https://wallpaper.lygalaxy.cn/api/random.php?apikey=bk_26c54a517de0db0403836a53389c27375679a70e5a4a0e03e20f06591c9a5', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls', '', '43.129.255.54', 1785128559, 'qq.com', 0, '乙巳辞旧岁，丙午迎新春！愿你龙马精神，岁岁皆安。🎆🎆🎆', '/uploads/videos/20260216_140955_6992b4b3bdba2.mp4', NULL, '2026-04-08 21:28:00', 'Powered by LyGalaxy', '', '', '', '', 3, 20, '1. 接受条款\r\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\r\n\r\n2. 网站描述\r\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\r\n\r\n3. 使用许可\r\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\r\n- 不得将网站用于任何非法或未经授权的目的\r\n- 不得干扰或破坏网站的正常运行\r\n- 不得试图获取未经授权的访问权限\r\n- 不得复制或重复使用网站内容，除非获得明确许可\r\n\r\n4. 内容所有权\r\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\r\n\r\n5. 用户责任\r\n作为用户，您同意：\r\n- 提供准确和真实的信息\r\n- 不发布虚假、误导性或违法内容\r\n- 尊重他人的知识产权和隐私权\r\n- 不从事任何可能损害网站声誉的活动\r\n\r\n6. 免责声明\r\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\r\n- 网站服务的连续性或无中断\r\n- 网站内容的准确性或完整性\r\n- 网站免受病毒或其他恶意组件的侵害\r\n- 因使用网站而导致的任何损失或损害\r\n\r\n7. 服务限制\r\n我们保留以下权利：\r\n- 随时修改或终止网站服务\r\n- 拒绝向任何人提供服务\r\n- 删除违反服务条款的内容\r\n- 暂停或终止违规用户的访问权限\r\n\r\n8. 第三方链接\r\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\r\n\r\n9. 争议解决\r\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\r\n\r\n10. 条款修改\r\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\r\n\r\n11. 联系我们\r\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日', '1. 信息收集\r\n我们可能收集以下类型的信息：\r\n- 您通过联系表单提供的姓名、电子邮件地址等信息\r\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\r\n- 通过Cookie收集的使用偏好信息\r\n\r\n2. 信息使用\r\n收集的信息可能用于：\r\n- 回复您的咨询和请求\r\n- 改善网站内容和用户体验\r\n- 发送重要的通知和更新\r\n- 网站分析和安全监控\r\n\r\n3. 信息共享\r\n我们不会向第三方出售、交易或转让您的个人信息，除非：\r\n- 获得您的明确同意\r\n- 法律要求或法律程序需要\r\n- 保护网站、用户或公众的权利、财产或安全\r\n\r\n4. 数据安全\r\n我们采取适当的安全措施来保护您的个人信息，包括：\r\n- 使用安全的服务器和加密技术\r\n- 限制对个人信息的访问权限\r\n- 定期更新安全协议\r\n\r\n5. Cookie使用\r\n本网站可能使用Cookie来：\r\n- 记住您的偏好设置\r\n- 分析网站流量和使用情况\r\n- 提供个性化的内容\r\n您可以通过浏览器设置控制Cookie的使用。\r\n\r\n6. 您的权利\r\n您有权：\r\n- 访问您的个人信息\r\n- 更正不准确的信息\r\n- 删除您的个人信息\r\n- 反对处理您的信息\r\n\r\n7. 政策更新\r\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\r\n\r\n8. 联系我们\r\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日');
 
 --
 -- 转储表的索引
@@ -940,22 +891,6 @@ ALTER TABLE `appeal_tokens`
   ADD UNIQUE KEY `uk_token` (`token`),
   ADD KEY `idx_user` (`user_id`),
   ADD KEY `idx_expires` (`expires_at`);
-
---
--- 表的索引 `blog_ai_models`
---
-ALTER TABLE `blog_ai_models`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_enabled` (`enabled`),
-  ADD KEY `idx_default` (`is_default`);
-
---
--- 表的索引 `blog_ai_usage_log`
---
-ALTER TABLE `blog_ai_usage_log`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_created` (`created_at`),
-  ADD KEY `idx_post` (`post_id`);
 
 --
 -- 表的索引 `blog_categories`
@@ -1253,18 +1188,6 @@ ALTER TABLE `appeals`
 -- 使用表AUTO_INCREMENT `appeal_tokens`
 --
 ALTER TABLE `appeal_tokens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- 使用表AUTO_INCREMENT `blog_ai_models`
---
-ALTER TABLE `blog_ai_models`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- 使用表AUTO_INCREMENT `blog_ai_usage_log`
---
-ALTER TABLE `blog_ai_usage_log`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --

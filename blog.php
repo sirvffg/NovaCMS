@@ -5,13 +5,11 @@ require_once 'config/functions.php';
 require_once 'config/comment_functions.php';
 require_once 'config/privacy_functions.php';
 require_once 'config/paid_functions.php';
-require_once 'config/ai_functions.php';
 
 // 静态资源版本号，更新后修改此处即可全局生效
 $blog_version = '20260630';
 
 $db = getDB();
-aiEnsureSchema($db);
 
 $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
 
@@ -518,15 +516,6 @@ if (isset($_GET['id'])) {
         }
     }
 
-    $showAiSummary = false;
-    $aiSummaryStale = false;
-    if (!empty($post['ai_summary'])) {
-        $aiSettingsRow = aiGetSiteAiSettings($db);
-        if (!empty($aiSettingsRow['ai_feature_enabled'])) {
-            $showAiSummary = true;
-            $aiSummaryStale = aiSummaryHashStale($db, $post);
-        }
-    }
     ?>
     <!DOCTYPE html>
     <html lang="zh-CN">
@@ -749,21 +738,7 @@ if (isset($_GET['id'])) {
                 </div>
                 <?php endif; ?>
 
-                <?php if ($showAiSummary): ?>
-                <div class="ai-article-summary card border-0 shadow-sm mb-2" style="border-left: 4px solid #6366f1 !important; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
-                    <div class="card-body py-1 px-3">
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                            <i class="bi bi-stars text-primary"></i>
-                            <strong class="text-dark"><?= e($config['ai_summary_section_title'] ?? '文章摘要') ?></strong>
-                            <?php if ($aiSummaryStale): ?>
-                            <span class="badge bg-warning text-dark">正文已变更，摘要可能未同步</span>
-                            <?php endif; ?>
-                        </div>
-                        <p id="ai-typing-text" class="mb-0 text-secondary typing-text" style="line-height: 1.4;" data-text="<?= htmlspecialchars($post['ai_summary'], ENT_QUOTES, 'UTF-8') ?>"></p>
-                    </div>
-                </div>
-                <?php endif; ?>
-                
+
                 <div class="post-content" id="post-content" data-markdown="<?= htmlspecialchars($processedContent) ?>">
                     <?= $processedContent ?>
                 </div>
@@ -2896,39 +2871,6 @@ function showCopyFeedback(element) {
 
 
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const el = document.getElementById("ai-typing-text");
-    if (!el) return;
-
-    let text = el.getAttribute("data-text") || "";
-    text = text.replace(/\n/g, "<br>");
-
-    let index = 0;
-    let speed = 25;
-
-    function type() {
-        if (index < text.length) {
-            if (text[index] === "<") {
-                let end = text.indexOf(">", index);
-                if (end !== -1) {
-                    el.innerHTML += text.substring(index, end + 1);
-                    index = end + 1;
-                }
-            } else {
-                el.innerHTML += text[index];
-                index++;
-            }
-            setTimeout(type, speed);
-        } else {
-            el.classList.add("typing-done");
-        }
-    }
-
-    type();
-});
-</script>
-
 </body>
     </html>
     <?php exit;
@@ -4171,39 +4113,6 @@ marked.setOptions({
 <?php require_once __DIR__ . '/vendor/footer.php'; ?>
 </div> <!-- 结束 page-wrapper -->
 
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const el = document.getElementById("ai-typing-text");
-    if (!el) return;
-
-    let text = el.getAttribute("data-text") || "";
-    text = text.replace(/\n/g, "<br>");
-
-    let index = 0;
-    let speed = 25;
-
-    function type() {
-        if (index < text.length) {
-            if (text[index] === "<") {
-                let end = text.indexOf(">", index);
-                if (end !== -1) {
-                    el.innerHTML += text.substring(index, end + 1);
-                    index = end + 1;
-                }
-            } else {
-                el.innerHTML += text[index];
-                index++;
-            }
-            setTimeout(type, speed);
-        } else {
-            el.classList.add("typing-done");
-        }
-    }
-
-    type();
-});
-</script>
 
 </script>
 

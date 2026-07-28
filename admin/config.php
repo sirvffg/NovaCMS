@@ -177,11 +177,6 @@ require_once 'includes/header.php';
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="tab-ai" data-bs-toggle="tab" data-bs-target="#content-ai" type="button" role="tab">
-                                        <i class="bi bi-stars me-2"></i> AI 管理
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="tab-advanced" data-bs-toggle="tab" data-bs-target="#content-advanced" type="button" role="tab">
                                         <i class="bi bi-sliders me-2"></i> 高级设置
                                     </button>
@@ -640,11 +635,6 @@ require_once 'includes/header.php';
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- AI 管理 -->
-                        <div class="tab-pane fade" id="content-ai" role="tabpanel" style="min-height: 600px;">
-                            <iframe src="ai_manage.php?embed=1" style="width: 100%; height: 90vh; border: none; display: block;" id="aiManageFrame"></iframe>
                         </div>
 
                         <!-- 高级设置 -->

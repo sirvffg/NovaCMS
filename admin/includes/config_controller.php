@@ -246,7 +246,7 @@ function handleConfigPage($db) {
 
             $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'terms_content'");
             if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN terms_content LONGTEXT COMMENT '服务条款内容(支持HTML)' AFTER ai_summary_section_title");
+                $db->exec("ALTER TABLE website_config ADD COLUMN terms_content LONGTEXT COMMENT '服务条款内容(支持HTML)' AFTER music_auto_pause");
             }
             $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'privacy_content'");
             if (!$checkStmt->fetch()) {

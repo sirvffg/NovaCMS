@@ -123,7 +123,6 @@ GET /v1/posts
         "created_at": "2026-07-24 12:00:00",
         "updated_at": "2026-07-24 12:00:00",
         "license": "CC BY-NC 4.0",
-        "ai_summary": null,
         "has_privacy_content": true,
         "has_paid_content": false,
         "current_user_id": 0,
@@ -160,7 +159,6 @@ GET /v1/posts
 | `data.items[].created_at` | string | 创建时间 |
 | `data.items[].updated_at` | string | 更新时间 |
 | `data.items[].license` | string/null | 许可协议 |
-| `data.items[].ai_summary` | string/null | AI 摘要 |
 | `data.items[].has_privacy_content` | bool | 是否包含隐私内容 |
 | `data.items[].has_paid_content` | bool | 是否包含付费内容 |
 | `data.items[].current_user_id` | int | 当前用户 ID（0=未登录） |

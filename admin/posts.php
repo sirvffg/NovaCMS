@@ -5,13 +5,11 @@ ob_start();
 session_start();
 require_once '../config/database.php';
 require_once '../config/functions.php';
-require_once '../config/ai_functions.php';
 require_once '../vendor/generate-rss.php';
 
 requireLogin();
 
 $db = getDB();
-aiEnsureSchema($db);
 
 // 自动添加支付相关字段
 try {
@@ -510,28 +508,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 ];
                 break;
 
-            case 'ai_generate_summary':
-                if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
-                    throw new Exception('安全验证失败，请刷新页面后重试');
-                }
-                $postId = (int)($_POST['post_id'] ?? 0);
-                $modelPick = isset($_POST['ai_model_id']) ? trim((string)$_POST['ai_model_id']) : '';
-                $modelOpt = $modelPick !== '' ? (int)$modelPick : null;
-                if ($postId <= 0) {
-                    throw new Exception('无效的文章 ID');
-                }
-                $adminId = (int)$_SESSION['admin_id'];
-                $gen = aiGeneratePostSummary($db, $postId, $adminId, $modelOpt);
-                if (!$gen['success']) {
-                    throw new Exception($gen['message']);
-                }
-                $response = [
-                    'success' => true,
-                    'message' => $gen['message'],
-                    'summary' => $gen['summary'] ?? '',
-                ];
-                break;
-                
             default:
                 throw new Exception('不支持的操作类型');
         }
@@ -648,13 +624,6 @@ if (isset($_GET['edit'])) {
     $stmt = $db->prepare("SELECT * FROM blog_posts WHERE id=?");
     $stmt->execute([$_GET['edit']]);
     $editPost = $stmt->fetch();
-}
-
-$aiModelsEnabled = [];
-try {
-    $aiModelsEnabled = $db->query("SELECT id, name, model_id, is_default FROM blog_ai_models WHERE enabled = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
-} catch (Exception $e) {
-    $aiModelsEnabled = [];
 }
 
 // 获取编辑的分类
@@ -998,38 +967,6 @@ require_once 'includes/header.php'; ?>
                                         <textarea name="content" id="post_content" class="form-control" rows="15"><?= e($editPost['content'] ?? '') ?></textarea>
                                         <div class="invalid-feedback">请填写文章内容</div>
                                         <small class="text-muted">支持Markdown语法，可直接上传图片</small>
-                                    </div>
-
-                                    <div class="card border-info mb-3">
-                                        <div class="card-header bg-light py-2"><i class="bi bi-stars"></i> AI 摘要（访客可见）</div>
-                                        <div class="card-body">
-                                            <p class="small text-muted mb-2">仅将公开正文发给模型；<code>[Paid]</code>、<code>[Privacy]</code> 区块已排除。保存文章修改后请重新生成以同步摘要。</p>
-                                            <div class="row g-2 align-items-end">
-                                                <div class="col-md-6">
-                                                    <label class="form-label small mb-1">选用模型</label>
-                                                    <select id="ai_model_select" class="form-select form-select-sm">
-                                                        <?php if (empty($aiModelsEnabled)): ?>
-                                                        <option value="">请先在「AI 管理」中添加模型</option>
-                                                        <?php endif; ?>
-                                                        <?php foreach ($aiModelsEnabled as $am): ?>
-                                                        <option value="<?= (int)$am['id'] ?>" <?= !empty($am['is_default']) ? 'selected' : '' ?>><?= e($am['name']) ?> (<?= e($am['model_id']) ?>)</option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <button type="button" class="btn btn-sm btn-primary" id="btnAiGenerateSummary"><i class="bi bi-magic"></i> 生成 / 重新生成摘要</button>
-                                                </div>
-                                            </div>
-                                            <?php if (!empty($editPost['ai_summary'])): ?>
-                                            <div class="mt-2 p-2 bg-light rounded small" id="aiSummaryPreviewBox">
-                                                <strong>当前摘要：</strong>
-                                                <span id="aiSummaryPreviewText"><?= nl2br(e($editPost['ai_summary'])) ?></span>
-                                            </div>
-                                            <?php else: ?>
-                                            <div class="mt-2 small text-muted" id="aiSummaryPreviewBox" style="display:none;"></div>
-                                            <?php endif; ?>
-                                            <div class="mt-2 small text-danger" id="aiSummaryError" style="display:none;"></div>
-                                        </div>
                                     </div>
 
                                     <!-- 支付内容设置区域 -->
@@ -2053,62 +1990,6 @@ require_once 'includes/header.php'; ?>
                 return response.json();
             });
         }
-
-        function escapeHtmlAi(s) {
-            const d = document.createElement('div');
-            d.textContent = s;
-            return d.innerHTML;
-        }
-
-        const btnAiGen = document.getElementById('btnAiGenerateSummary');
-        if (btnAiGen) {
-            btnAiGen.addEventListener('click', function() {
-                const postId = document.getElementById('postId').value;
-                if (!postId) {
-                    showToast('请先保存文章', 'danger');
-                    return;
-                }
-                const sel = document.getElementById('ai_model_select');
-                if (sel && !sel.value) {
-                    showToast('请先在「AI 管理」中添加并启用模型', 'danger');
-                    return;
-                }
-                const aiModelId = sel ? sel.value : '';
-                showLoading('正在请求 AI 生成摘要（可能需要数十秒）...');
-                const errEl = document.getElementById('aiSummaryError');
-                if (errEl) {
-                    errEl.style.display = 'none';
-                    errEl.textContent = '';
-                }
-                sendAjaxRequest({
-                    ajax: '1',
-                    action: 'ai_generate_summary',
-                    csrf_token: document.getElementById('csrf_token').value,
-                    post_id: postId,
-                    ai_model_id: aiModelId
-                }).then(res => {
-                    hideLoading();
-                    if (!res.success) {
-                        throw new Error(res.message || '生成失败');
-                    }
-                    showToast(res.message || '摘要已生成');
-                    const box = document.getElementById('aiSummaryPreviewBox');
-                    if (box) {
-                        box.style.display = '';
-                        box.className = 'mt-2 p-2 bg-light rounded small';
-                        box.innerHTML = '<strong>当前摘要：</strong><span id="aiSummaryPreviewText">' + escapeHtmlAi(res.summary || '').replace(/\n/g, '<br>') + '</span>';
-                    }
-                }).catch(err => {
-                    hideLoading();
-                    const eEl = document.getElementById('aiSummaryError');
-                    if (eEl) {
-                        eEl.style.display = 'block';
-                        eEl.textContent = err.message || '请求失败';
-                    }
-                    showToast(err.message || '请求失败', 'danger');
-                });
-            });
-        }
         
         // 保存文章
         postForm.addEventListener('submit', function(e) {
@@ -2454,26 +2335,6 @@ require_once 'includes/header.php'; ?>
                         paidConfigArea.style.display = 'block';
                     } else {
                         paidConfigArea.style.display = 'none';
-                    }
-                    
-                    // 加载 AI 摘要
-                    const aiSummaryBox = document.getElementById('aiSummaryPreviewBox');
-                    const aiSummaryError = document.getElementById('aiSummaryError');
-                    if (post.ai_summary) {
-                        if (aiSummaryBox) {
-                            aiSummaryBox.style.display = '';
-                            aiSummaryBox.className = 'mt-2 p-2 bg-light rounded small';
-                            aiSummaryBox.innerHTML = '<strong>当前摘要：</strong><span id="aiSummaryPreviewText">' + escapeHtmlAi(post.ai_summary || '').replace(/\n/g, '<br>') + '</span>';
-                        }
-                    } else {
-                        if (aiSummaryBox) {
-                            aiSummaryBox.style.display = 'none';
-                            aiSummaryBox.innerHTML = '';
-                        }
-                    }
-                    if (aiSummaryError) {
-                        aiSummaryError.style.display = 'none';
-                        aiSummaryError.textContent = '';
                     }
 
                     // 更新编辑器内容
