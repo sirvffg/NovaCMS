@@ -54,13 +54,7 @@ try {
 // 引入音乐播放器组件
 require_once 'config/music_player.php';
 
-// 引入图床映射类（前台只读版本）
-require_once 'config/image_mapper.php';
-
 $isMobile = isMobileDevice();
-
-// 图床配置
-$imageBedEnabled = !empty($config['image_bed_display_enabled']) && $config['image_bed_display_enabled'] == 1;
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -830,7 +824,7 @@ $imageBedEnabled = !empty($config['image_bed_display_enabled']) && $config['imag
             <h2 class="text-center mb-5 fw-bold text-white">最新文章</h2>
             <div class="cards-grid">
                 <?php foreach ($posts as $post): ?>
-                <?php $coverUrl = !empty($post['cover_image']) ? ImageMapper::getFinalUrl($post['cover_image'], $imageBedEnabled) : ''; ?>
+                <?php $coverUrl = !empty($post['cover_image']) ? $post['cover_image'] : ''; ?>
                 <div>
                     <div class="card h-100 border-0 shadow-sm hover-lift glass-card">
                         <?php if (!empty($coverUrl)): ?>

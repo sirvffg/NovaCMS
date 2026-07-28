@@ -980,7 +980,7 @@ function isDomainWhitelisted($url, $whitelistDomains) {
                             <p style="font-weight:600;color:#92400e;margin-bottom:8px;">友链相关须知</p>
                             <p class="notice-item">你提交的信息有可能被修改</p>
                             <p class="notice-item">为了友链相关页面和组件的统一性和美观性，可能会对你的昵称进行缩短处理</p>
-                            <p class="notice-item">为了图片加载速度和内容安全性考虑，头像实际展示图片均使用博客自己图床</p>
+                            <p class="notice-item">为了图片加载速度和内容安全性考虑，头像实际展示图片均使用博客本地存储</p>
                             <p style="font-weight:600;color:#92400e;margin:12px 0 8px;">申请条件</p>
                             <p class="notice-item">请在您的网站中添加本站的友链链接</p>
                             <p class="notice-item">网站内容需健康、合法</p>

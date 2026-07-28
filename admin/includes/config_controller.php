@@ -264,30 +264,6 @@ function handleConfigPage($db) {
                 $db->exec("ALTER TABLE website_config ADD COLUMN remember_duration INT DEFAULT 30 COMMENT '记住我有效期（天）' AFTER max_devices");
             } catch (Exception $e) {}
 
-            // 图床配置
-            $image_bed_enabled = isset($_POST['image_bed_enabled']) ? 1 : 0;
-            $image_bed_display_enabled = isset($_POST['image_bed_display_enabled']) ? 1 : 0;
-            $image_bed_api_url = $_POST['image_bed_api_url'] ?? '';
-            $image_bed_api_key = $_POST['image_bed_api_key'] ?? '';
-
-            // Check and add image_bed settings
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'image_bed_enabled'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN image_bed_enabled TINYINT(1) DEFAULT 0 COMMENT '是否启用图床上传' AFTER remember_duration");
-            }
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'image_bed_display_enabled'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN image_bed_display_enabled TINYINT(1) DEFAULT 0 COMMENT '前端是否使用图床照片显示' AFTER image_bed_enabled");
-            }
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'image_bed_api_url'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN image_bed_api_url VARCHAR(500) DEFAULT '' COMMENT '图床API地址' AFTER image_bed_display_enabled");
-            }
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'image_bed_api_key'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN image_bed_api_key VARCHAR(255) DEFAULT '' COMMENT '图床API密钥' AFTER image_bed_api_url");
-            }
-
             // 协议与政策配置
             $terms_content = $_POST['terms_content'] ?? '';
             $privacy_content = $_POST['privacy_content'] ?? '';
@@ -302,8 +278,8 @@ function handleConfigPage($db) {
             }
 
             // 保存数据库配置
-            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, music_enabled=?, music_playlist_id=?, music_song_id=?, music_position=?, music_embed=?, music_theme=?, music_default_minimized=?, music_lyric=?, music_autoplay=?, music_auto_pause=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, newyear_enable=?, newyear_message=?, newyear_video=?, newyear_start_time=?, newyear_end_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, image_bed_enabled=?, image_bed_display_enabled=?, image_bed_api_url=?, image_bed_api_key=?, terms_content=?, privacy_content=? WHERE id=1");
-            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $music_enabled, $music_playlist_id, $music_song_id, $music_position, $music_embed, $music_theme, $music_default_minimized, $music_lyric, $music_autoplay, $music_auto_pause, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $newyear_enable, $newyear_message, $newyear_video, $newyear_start_time, $newyear_end_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $image_bed_enabled, $image_bed_display_enabled, $image_bed_api_url, $image_bed_api_key, $terms_content, $privacy_content]);
+            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, music_enabled=?, music_playlist_id=?, music_song_id=?, music_position=?, music_embed=?, music_theme=?, music_default_minimized=?, music_lyric=?, music_autoplay=?, music_auto_pause=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, newyear_enable=?, newyear_message=?, newyear_video=?, newyear_start_time=?, newyear_end_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, terms_content=?, privacy_content=? WHERE id=1");
+            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $music_enabled, $music_playlist_id, $music_song_id, $music_position, $music_embed, $music_theme, $music_default_minimized, $music_lyric, $music_autoplay, $music_auto_pause, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $newyear_enable, $newyear_message, $newyear_video, $newyear_start_time, $newyear_end_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $terms_content, $privacy_content]);
             
             // 保存备案信息到配置文件
             $recordConfigPath = __DIR__ . '/../../config/RecordNumber.config';

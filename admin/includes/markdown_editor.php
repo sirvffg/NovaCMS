@@ -1,14 +1,6 @@
 <!-- Markdown 编辑器样式和脚本 -->
 <link rel="stylesheet" href="<?= getResourceUrl('/assets/css/easymde.min.css', 'https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css') ?>">
 <script src="<?= getResourceUrl('/assets/js/easymde.min.js', 'https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js') ?>"></script>
-<script>
-// 图床配置（从页面全局变量读取）
-var imageBedConfig = window.imageBedConfig || {
-    enabled: false,
-    apiUrl: 'https://image.lygalaxy.cn',  // 基础地址，上传时自动拼接 /api/external/upload
-    apiKey: ''
-};
-</script>
 
 <style>
 .editor-toolbar {
@@ -1224,8 +1216,7 @@ function uploadImage(editor) {
 
         uploadFileToServer(editor, file, 'image', '/admin/upload_image.php',
             (data) => {
-                // 映射表已由后端 upload_image.php 添加
-                // 直接插入本地URL，访问时通过 ImageMapper 自动转换
+                // 直接插入本地URL
                 const markdown = `![${file.name}](${data.url})`;
                 const cm = editor.codemirror;
                 const pos = cm.getCursor();
@@ -1234,106 +1225,6 @@ function uploadImage(editor) {
     };
 
     input.click();
-}
-
-// 保存到图片映射表
-function saveToImageMap(localPath, localUrl, filename) {
-    fetch('/admin/api/image_map.php?action=add', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            local_path: localPath,
-            local_url: localUrl,
-            filename: filename
-        })
-    }).catch(err => console.error('保存映射失败:', err));
-}
-
-// 更新图片映射表中的图床URL和ID
-function updateImageMap(localPath, imageBedUrl, imageBedId) {
-    fetch('/admin/api/image_map.php?action=update', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            local_path: localPath,
-            image_bed_url: imageBedUrl,
-            image_bed_id: imageBedId || 0
-        })
-    }).catch(err => console.error('更新映射失败:', err));
-}
-
-// 生成缩略图 (最大宽度250px)
-async function generateThumbnail(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 250;
-                if (img.width > MAX_WIDTH) {
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * (MAX_WIDTH / img.width);
-                } else {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                }
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', 0.6));
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// 上传到图床
-async function uploadToImageBed(file, callback) {
-    // 检查是否启用图床
-    if (!imageBedConfig.enabled || !imageBedConfig.apiUrl || !imageBedConfig.apiKey) {
-        callback(null, null);
-        return;
-    }
-
-    try {
-        // 生成缩略图
-        const thumbnailBase64 = await generateThumbnail(file);
-
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('thumbnail', thumbnailBase64);
-        formData.append('title', '来自博客系统的上传');
-
-        // 新API路径: /api/external/upload
-        const uploadUrl = imageBedConfig.apiUrl.replace(/\/$/, '') + '/api/external/upload';
-        
-        const response = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + imageBedConfig.apiKey
-            },
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        // 新API返回格式: {success: true, url: "..."}
-        if (data.success === true && data.url) {
-            callback(data.url, data.id || 0);
-        } else {
-            // 兼容旧格式
-            if (data.code === 200 && data.data && data.data.url) {
-                callback(data.data.url, data.data.id || 0);
-            } else {
-                console.warn('图床上传失败，使用本地图片:', data.message || data.error || '未知错误');
-                callback(null, null);
-            }
-        }
-    } catch(err) {
-        console.error('图床上传错误:', err);
-        callback(null, null);
-    }
 }
 
 // 上传视频

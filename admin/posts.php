@@ -6,7 +6,6 @@ session_start();
 require_once '../config/database.php';
 require_once '../config/functions.php';
 require_once '../config/ai_functions.php';
-require_once 'includes/image_mapper.php';
 require_once '../vendor/generate-rss.php';
 
 requireLogin();
@@ -55,9 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     $title = html_entity_decode($title, ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 }
 
-                // 数据库保持本地URL，访问时自动由 ImageMapper::convertContent 转换为图床URL
-                // 无需在此处做任何转换
-
+                // 数据库保持本地URL
                 $author = trim($_POST['author'] ?? '');
                 $category = trim($_POST['category'] ?? '');
                 $tags_input = trim($_POST['tags'] ?? '');
@@ -288,30 +285,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
                 // 删除相关文件
                 $deleted_files = [];
-                $deleted_images_result = [];
 
                 // 删除封面图片
                 if (!empty($post['cover_image'])) {
                     $cover_url = ltrim($post['cover_image'], '/');
-                    
+
                     // 检查封面是否被其他文章使用
-                    $coverUsageCount = ImageMapper::checkImageUsage($post['cover_image'], $db, $id);
-                    
-                    // 如果启用图床配置
-                    $imageBedApiUrl = $config['image_bed_api_url'] ?? '';
-                    $imageBedApiKey = $config['image_bed_api_key'] ?? '';
-                    
+                    $coverUsageStmt = $db->prepare("SELECT COUNT(*) as cnt FROM blog_posts WHERE content LIKE ? AND id != ?");
+                    $coverUsageStmt->execute(['%' . $post['cover_image'] . '%', $id]);
+                    $coverUsageCount = (int) $coverUsageStmt->fetch()['cnt'];
+
                     if ($coverUsageCount === 0) {
-                        // 封面只被这篇文章使用 → 完整删除（本地+图床+映射表）
-                        $coverDeleteResult = ImageMapper::deleteWithFiles($post['cover_image'], $imageBedApiUrl, $imageBedApiKey);
-                        $deleted_images_result[$post['cover_image']] = $coverDeleteResult;
-                        
-                        if ($coverDeleteResult['local_file_deleted']) {
+                        // 封面只被这篇文章使用，删除本地文件
+                        $coverPath = '../' . $cover_url;
+                        if (file_exists($coverPath) && unlink($coverPath)) {
                             $deleted_files[] = $post['cover_image'];
                         }
-                    } else {
-                        // 封面被其他文章使用，只删除映射表记录
-                        ImageMapper::delete($post['cover_image']);
                     }
                 }
 
@@ -334,10 +323,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 // 从文章内容中提取并删除本地图片/视频
                 $content = $post['content'] ?? '';
                 if (!empty($content)) {
-                    // 获取图床配置
-                    $imageBedApiUrl = $config['image_bed_api_url'] ?? '';
-                    $imageBedApiKey = $config['image_bed_api_key'] ?? '';
-
                     // 提取 Markdown 图片语法中的图片
                     preg_match_all('/!\[([^\]]*)\]\(([^)]+)\)/', $content, $md_img_matches);
 
@@ -354,20 +339,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                         // 只处理本地文件（uploads目录）
                         if (strpos($media_src, '/uploads/') !== false) {
                             // 检查图片是否被其他文章使用
-                            $usageCount = ImageMapper::checkImageUsage($media_src, $db, $id);
+                            $usageStmt = $db->prepare("SELECT COUNT(*) as cnt FROM blog_posts WHERE content LIKE ? AND id != ?");
+                            $usageStmt->execute(['%' . $media_src . '%', $id]);
+                            $usageCount = (int) $usageStmt->fetch()['cnt'];
 
-                            // 只有当图片只被这一篇文章使用时才删除
+                            // 只有当图片只被这一篇文章使用时才删除本地文件
                             if ($usageCount === 0) {
-                                // 获取图床配置
-                                $deleteResult = ImageMapper::deleteWithFiles($media_src, $imageBedApiUrl, $imageBedApiKey);
-                                $deleted_images_result[$media_src] = $deleteResult;
-
-                                if ($deleteResult['local_file_deleted']) {
+                                $mediaPath = '../' . ltrim($media_src, '/');
+                                if (file_exists($mediaPath) && unlink($mediaPath)) {
                                     $deleted_files[] = $media_src;
                                 }
-                            } else {
-                                // 图片被其他文章使用，只删除映射表记录
-                                ImageMapper::delete($media_src);
                             }
                         }
                     }
@@ -377,28 +358,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 $stmt = $db->prepare("DELETE FROM blog_posts WHERE id=?");
                 $stmt->execute([$id]);
 
-                // 统计删除结果
-                $imageBedDeleted = 0;
-                foreach ($deleted_images_result as $result) {
-                    if ($result['image_bed_deleted']) {
-                        $imageBedDeleted++;
-                    }
-                }
-
                 $message = '文章已删除';
                 if (count($deleted_files) > 0) {
                     $message .= '，已清理 ' . count($deleted_files) . ' 个本地文件';
-                }
-                if ($imageBedDeleted > 0) {
-                    $message .= '，' . $imageBedDeleted . ' 个图床图片';
                 }
 
                 $response = [
                     'success' => true,
                     'message' => $message,
                     'id' => $id,
-                    'deleted_files' => $deleted_files,
-                    'deleted_images_detail' => $deleted_images_result
+                    'deleted_files' => $deleted_files
                 ];
                 // 删除后重新生成 RSS
                 generateRssXml();
@@ -639,15 +608,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 }
                 
                 // 获取配置
-                $imageBedConfig = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
                 $localUrl = '/uploads/cover/' . $uniqueFileName;
-                $localPath = realpath($filePath);
-                
-                // 添加到映射表（不上传到图床，访问时按需转换）
-                if ($localPath) {
-                    ImageMapper::add($localPath, $localUrl, '', $uniqueFileName);
-                }
-                
+
                 $response = [
                     'success' => true,
                     'message' => '封面上传成功（本地存储）',
@@ -882,7 +844,6 @@ if (isset($_GET['edit'])) {
     $stmt = $db->prepare("SELECT * FROM blog_posts WHERE id=?");
     $stmt->execute([$_GET['edit']]);
     $editPost = $stmt->fetch();
-    // 保持原始内容，不进行URL转换（访问时由 ImageMapper::convertContent 动态转换）
 }
 
 $aiModelsEnabled = [];
@@ -1161,11 +1122,6 @@ require_once 'includes/header.php'; ?>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link <?= $activeTab === 'posts' ? 'active' : '' ?>" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts-content" type="button" role="tab">
                             <i class="bi bi-file-text"></i> 文章管理
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link <?= $activeTab === 'image_mapping' ? 'active' : '' ?>" id="image-mapping-tab" data-bs-toggle="tab" data-bs-target="#image-mapping-content" type="button" role="tab">
-                            <i class="bi bi-images"></i> 图片映射
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -1896,11 +1852,6 @@ require_once 'includes/header.php'; ?>
                 </div>
                     </div>
 
-                    <!-- 图片映射标签页 -->
-                    <div class="tab-pane fade <?= $activeTab === 'image_mapping' ? 'show active' : '' ?>" id="image-mapping-content" role="tabpanel" style="min-height: 600px;">
-                        <iframe src="upload_to_imagebed.php" style="width: 100%; height: 90vh; border: none; display: block;" id="imageMappingFrame"></iframe>
-                    </div>
-
                     <!-- 分类管理标签页 -->
                     <div class="tab-pane fade <?= $activeTab === 'categories' ? 'show active' : '' ?>" id="categories-content" role="tabpanel">
                         <!-- 添加/编辑分类表单 -->
@@ -2300,20 +2251,6 @@ require_once 'includes/header.php'; ?>
         <div class="mt-3" id="loadingText">正在处理，请稍候...</div>
     </div>
 
-    <?php
-    // 设置图床配置全局变量
-    $imageBedEnabled = !empty($config['image_bed_enabled']);
-    $imageBedApiUrl = $config['image_bed_api_url'] ?? 'https://image.lygalaxy.cn';
-    $imageBedApiKey = $config['image_bed_api_key'] ?? '';
-    ?>
-    <script>
-    // 图床配置（供 markdown_editor.php 使用）
-    window.imageBedConfig = {
-        enabled: <?= $imageBedEnabled ? 'true' : 'false' ?>,
-        apiUrl: <?= json_encode($imageBedApiUrl) ?>,
-        apiKey: <?= json_encode($imageBedApiKey) ?>
-    };
-    </script>
     <?php include 'includes/markdown_editor.php'; ?>
     
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>

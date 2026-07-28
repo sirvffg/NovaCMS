@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once '../config/database.php';
-require_once __DIR__ . '/includes/image_mapper.php';
 
 // 设置 JSON 响应头
 header('Content-Type: application/json');
@@ -137,10 +136,7 @@ if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
 
     $localUrl = '/uploads/' . $subDir . $dateDir . $filename;
     $localPath = str_replace('\\', '/', $uploadPath);
-    
-    // 添加到映射表（不上传到图床，访问时按需转换）
-    ImageMapper::add($localPath, $localUrl, '', $filename);
-    
+
     $response = [
         'success' => true,
         'url' => $localUrl,
@@ -149,7 +145,7 @@ if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
         'local_url' => $localUrl,
         'local_path' => $localPath
     ];
-    
+
     echo json_encode($response);
 } else {
     http_response_code(500);
