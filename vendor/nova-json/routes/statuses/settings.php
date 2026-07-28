@@ -68,15 +68,9 @@ function nova_get_settings($request) {
         }
     }
 
-    // 读取备案信息
-    $recordConfigPath = dirname(__DIR__, 4) . '/config/RecordNumber.config';
-    $beianConfig = [];
-    if (file_exists($recordConfigPath)) {
-        $beianConfig = parse_ini_file($recordConfigPath);
-    }
     // ── 备案信息 ──
-    $item['icp_record'] = $beianConfig['ICP_RECORD'] ?? '';
-    $item['public_security_record'] = $beianConfig['PUBLIC_SECURITY_RECORD'] ?? '';
+    $item['icp_record'] = $config['icp_record'] ?? '';
+    $item['public_security_record'] = $config['public_security_record'] ?? '';
 
     // ── 主页小站链接 ──
     try {

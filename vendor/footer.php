@@ -37,27 +37,17 @@
                     &copy; 2019-<?= date('Y') ?> <?= e($config['website_name']) ?>. All rights reserved.
                 </p>
                 <div class="d-flex flex-wrap align-items-center gap-2 footer-links">
-                    <?php
-                    // 读取备案信息配置文件
-                    // 假设当前文件在 vendor 目录下，config 在上一级目录
-                    $recordConfigPath = dirname(__DIR__) . '/config/RecordNumber.config';
-                    $beianConfig = [];
-                    if (file_exists($recordConfigPath)) {
-                        $beianConfig = parse_ini_file($recordConfigPath);
-                    }
-                    ?>
-
                     <!-- ICP备案号 -->
-                    <?php if (!empty($beianConfig['ICP_RECORD'])): ?>
+                    <?php if (!empty($config['icp_record'])): ?>
                     <a href="https://beian.miit.gov.cn/" target="_blank" title="工业和信息化部ICP/IP地址/域名信息备案管理系统">
-                        <i class="bi bi-file-earmark-text me-1"></i><?= e($beianConfig['ICP_RECORD']) ?>
+                        <i class="bi bi-file-earmark-text me-1"></i><?= e($config['icp_record']) ?>
                     </a>
                     <?php endif; ?>
 
                     <!-- 公安网备案号 -->
-                    <?php if (!empty($beianConfig['PUBLIC_SECURITY_RECORD'])): ?>
-                    <a href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=<?= urlencode(explode('备', $beianConfig['PUBLIC_SECURITY_RECORD'])[1] ?? '') ?>" target="_blank" title="公安部互联网站安全服务平台">
-                        <i class="bi bi-shield-check me-1"></i><?= e($beianConfig['PUBLIC_SECURITY_RECORD']) ?>
+                    <?php if (!empty($config['public_security_record'])): ?>
+                    <a href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=<?= urlencode(explode('备', $config['public_security_record'])[1] ?? '') ?>" target="_blank" title="公安部互联网站安全服务平台">
+                        <i class="bi bi-shield-check me-1"></i><?= e($config['public_security_record']) ?>
                     </a>
                     <?php endif; ?>
 

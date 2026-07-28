@@ -254,22 +254,9 @@ function handleConfigPage($db) {
             }
 
             // 保存数据库配置
-            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, newyear_enable=?, newyear_message=?, newyear_video=?, newyear_start_time=?, newyear_end_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, terms_content=?, privacy_content=? WHERE id=1");
-            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $newyear_enable, $newyear_message, $newyear_video, $newyear_start_time, $newyear_end_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $terms_content, $privacy_content]);
-            
-            // 保存备案信息到配置文件
-            $recordConfigPath = __DIR__ . '/../../config/RecordNumber.config';
-            $recordConfig = "; /config/RecordNumber.config\n";
-            $recordConfig .= "ICP_RECORD=" . trim($icp_record) . "\n";
-            $recordConfig .= "PUBLIC_SECURITY_RECORD=" . trim($public_security_record) . "\n";
-            
-            // 确保目录存在
-            if (!is_dir(dirname($recordConfigPath))) {
-                mkdir(dirname($recordConfigPath), 0755, true);
-            }
-            
-            file_put_contents($recordConfigPath, $recordConfig);
-            
+            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, newyear_enable=?, newyear_message=?, newyear_video=?, newyear_start_time=?, newyear_end_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, icp_record=?, public_security_record=?, terms_content=?, privacy_content=? WHERE id=1");
+            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $newyear_enable, $newyear_message, $newyear_video, $newyear_start_time, $newyear_end_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $icp_record, $public_security_record, $terms_content, $privacy_content]);
+
             $success = '配置已保存';
         } catch (Exception $e) {
             $error = '保存失败: ' . $e->getMessage();
@@ -279,12 +266,11 @@ function handleConfigPage($db) {
 
     $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
 
-    // 读取备案配置
-    $beianConfig = [];
-    $recordConfigPath = __DIR__ . '/../../config/RecordNumber.config';
-    if (file_exists($recordConfigPath)) {
-        $beianConfig = parse_ini_file($recordConfigPath);
-    }
+    // 从数据库读取备案配置
+    $beianConfig = [
+        'ICP_RECORD' => $config['icp_record'] ?? '',
+        'PUBLIC_SECURITY_RECORD' => $config['public_security_record'] ?? ''
+    ];
 
     return [
         'config' => $config,
