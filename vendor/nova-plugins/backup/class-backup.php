@@ -12,7 +12,7 @@ class Backup_Core {
     private $allowedUserAgent = 'BackupApp_lygalaxy.cn_2019_Galaxy';
 
     public function __construct() {
-        $this->backupDir = dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'Backup';
+        $this->backupDir = __DIR__ . DIRECTORY_SEPARATOR . 'backups';
         if (!is_dir($this->backupDir)) {
             @mkdir($this->backupDir, 0755, true);
         }
@@ -256,7 +256,7 @@ class Backup_Core {
 
         $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $downloadUrl = $protocol . '://' . $host . '/vendor/Backup/' . $backupFilename;
+        $downloadUrl = $protocol . '://' . $host . '/vendor/nova-plugins/backup/backups/' . $backupFilename;
 
         // 检查并删除旧备份
         $this->cleanupOldBackups();
@@ -282,7 +282,7 @@ class Backup_Core {
 
         foreach (glob($this->backupDir . DIRECTORY_SEPARATOR . 'backup_*.zip') as $file) {
             $filename = basename($file);
-            $downloadUrl = $protocol . '://' . $host . '/vendor/Backup/' . $filename;
+            $downloadUrl = $protocol . '://' . $host . '/vendor/nova-plugins/backup/backups/' . $filename;
             $backups[] = [
                 'filename' => $filename,
                 'size' => $this->formatBytes(filesize($file)),

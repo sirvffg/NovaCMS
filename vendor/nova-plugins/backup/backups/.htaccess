@@ -1,0 +1,10 @@
+# 禁止直接访问备份文件
+Order allow,deny
+Deny from all
+
+# 只允许特定User-Agent访问（备份客户端）
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTP_USER_AGENT} !BackupApp_lygalaxy.cn_2019_Galaxy
+RewriteRule .* - [F]
+</IfModule>
