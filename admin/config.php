@@ -172,11 +172,6 @@ require_once 'includes/header.php';
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="tab-newyear" data-bs-toggle="tab" data-bs-target="#content-newyear" type="button" role="tab">
-                                        <i class="bi bi-gift me-2"></i> 新年祝福
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="tab-advanced" data-bs-toggle="tab" data-bs-target="#content-advanced" type="button" role="tab">
                                         <i class="bi bi-sliders me-2"></i> 高级设置
                                     </button>
@@ -578,64 +573,7 @@ require_once 'includes/header.php';
                                     </div>
                         </div>
 
-                        <!-- 新年祝福设置 -->
-                        <div class="tab-pane fade" id="content-newyear" role="tabpanel">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5>新年祝福设置</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="form-check form-switch mb-3">
-                                        <input class="form-check-input" type="checkbox" name="newyear_enable" id="newyearEnable" value="1" <?= !empty($config['newyear_enable']) ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="newyearEnable">开启新年祝福弹窗</label>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">祝福语</label>
-                                        <textarea name="newyear_message" class="form-control" rows="3"><?= e($config['newyear_message'] ?? '祝大家新年快乐，万事如意！') ?></textarea>
-                                    </div>
 
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">开始时间</label>
-                                            <input type="datetime-local" name="newyear_start_time" class="form-control" 
-                                                   value="<?= !empty($config['newyear_start_time']) ? date('Y-m-d\TH:i', strtotime($config['newyear_start_time'])) : '' ?>">
-                                            <div class="form-text">设置祝福弹窗开始显示的时间，留空则立即开始。</div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">结束时间</label>
-                                            <input type="datetime-local" name="newyear_end_time" class="form-control" 
-                                                   value="<?= !empty($config['newyear_end_time']) ? date('Y-m-d\TH:i', strtotime($config['newyear_end_time'])) : '' ?>">
-                                            <div class="form-text">设置祝福弹窗结束显示的时间，留空则一直显示。</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">祝福视频</label>
-                                        <input type="hidden" name="newyear_video" id="newyearVideoUrl" value="<?= e($config['newyear_video'] ?? '') ?>">
-                                        <div class="preview-box mb-2" id="newyearVideoPreview" style="height: 150px;">
-                                            <?php if (!empty($config['newyear_video'])): ?>
-                                            <video src="<?= e($config['newyear_video']) ?>" style="width: 100%; height: 100%; object-fit: cover;" controls loading="lazy"></video>
-                                            <?php else: ?>
-                                            <div class="text-center text-muted">
-                                                <i class="bi bi-camera-video fs-1 d-block mb-1"></i>
-                                                <small>未设置</small>
-                                            </div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="d-flex gap-2">
-                                            <input type="file" id="newyearVideoInput" accept="video/*" class="d-none">
-                                            <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" onclick="document.getElementById('newyearVideoInput').click()">
-                                                上传视频
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-danger <?= empty($config['newyear_video']) ? 'd-none' : '' ?>" id="clearNewyearVideoBtn" onclick="clearNewyearVideo()">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                        <div class="form-text">支持 mp4, webm 等格式。上传新视频将覆盖旧视频。</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- 高级设置 -->
                         <div class="tab-pane fade" id="content-advanced" role="tabpanel">
@@ -1257,7 +1195,6 @@ require_once 'includes/header.php';
         handleUpload('logoInput', '/admin/upload_image.php', 'image', 'logoPreview', 'logoUrl', 'Logo上传成功');
         handleUpload('bgImageInput', '/admin/upload_image.php', 'image', 'bgImagePreview', 'bgImageUrl', '图片上传成功', 'image', 'clearBgImageBtn');
         handleUpload('bgVideoInput', '/admin/upload_video.php', 'video', 'bgVideoPreview', 'bgVideoUrl', '视频上传成功', 'video', 'clearBgVideoBtn');
-        handleUpload('newyearVideoInput', '/admin/upload_video.php', 'video', 'newyearVideoPreview', 'newyearVideoUrl', '新年视频上传成功', 'video', 'clearNewyearVideoBtn');
 
         // 进度条相关辅助函数
         function createProgressOverlay(fileName, fileSize) {
@@ -1346,14 +1283,7 @@ require_once 'includes/header.php';
                 document.getElementById('clearBgVideoBtn').classList.add('d-none');
             }
         }
-        function clearNewyearVideo() {
-            if(confirm('确定清除新年祝福视频？')) {
-                document.getElementById('newyearVideoUrl').value = '';
-                document.getElementById('newyearVideoPreview').innerHTML = '<div class="text-center text-muted"><i class="bi bi-camera-video fs-1 d-block mb-1"></i><small>未设置</small></div>';
-                document.getElementById('clearNewyearVideoBtn').classList.add('d-none');
-            }
-        }
-        
+
         // 邮件模式切换
         const emailModeSelect = document.getElementById('emailModeSelect');
         const smtpSettings = document.getElementById('smtpSettings');

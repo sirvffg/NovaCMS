@@ -76,74 +76,10 @@ function handleConfigPage($db) {
         $epay_pid = $_POST['epay_pid'] ?? '';
         $epay_key = $_POST['epay_key'] ?? '';
 
-        // 新年祝福配置
-        $newyear_enable = isset($_POST['newyear_enable']) ? 1 : 0;
-        $newyear_message = $_POST['newyear_message'] ?? '';
-        $newyear_video = '';
-        $newyear_start_time = !empty($_POST['newyear_start_time']) ? date('Y-m-d H:i:s', strtotime($_POST['newyear_start_time'])) : null;
-        $newyear_end_time = !empty($_POST['newyear_end_time']) ? date('Y-m-d H:i:s', strtotime($_POST['newyear_end_time'])) : null;
-
         // 登录安全配置
         $max_devices = max(1, min(10, intval($_POST['max_devices'] ?? 2)));
         $remember_duration = max(1, min(365, intval($_POST['remember_duration'] ?? 30)));
         try {
-            // Check and add newyear_video column if not exists
-            // This must be done BEFORE trying to SELECT or UPDATE it
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'newyear_video'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN newyear_video VARCHAR(255) DEFAULT '' COMMENT '新年祝福视频路径'");
-            }
-            
-            // Check and add newyear_enable
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'newyear_enable'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN newyear_enable TINYINT(1) DEFAULT 0 COMMENT '新年祝福开关'");
-            }
-
-            // Check and add newyear_message
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'newyear_message'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN newyear_message TEXT COMMENT '新年祝福语'");
-            }
-
-            // Check and add newyear_start_time
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'newyear_start_time'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN newyear_start_time DATETIME DEFAULT NULL COMMENT '新年祝福开始时间'");
-            }
-
-            // Check and add newyear_end_time
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'newyear_end_time'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN newyear_end_time DATETIME DEFAULT NULL COMMENT '新年祝福结束时间'");
-            }
-
-            // 处理新年祝福视频上传
-            $currentConfig = $db->query("SELECT newyear_video FROM website_config WHERE id=1")->fetch();
-            $newyear_video = $currentConfig['newyear_video'] ?? '';
-            
-            // 如果前端传来了 newyear_video 字段（隐藏域），说明是通过异步上传的，或者没有变化
-            if (isset($_POST['newyear_video'])) {
-                // 如果不是删除操作，且前端传来了新的视频路径，则更新
-                // 注意：如果 newyear_video 为空，可能是删除了，也可能是本来就没有
-                if (!isset($_POST['delete_newyear_video']) || $_POST['delete_newyear_video'] != '1') {
-                    $newyear_video = $_POST['newyear_video'];
-                }
-            }
-
-            if (isset($_POST['delete_newyear_video']) && $_POST['delete_newyear_video'] == '1') {
-                if (!empty($newyear_video)) {
-                    // 如果是删除，可能需要清理文件，但如果是异步上传替换的，旧文件可能已经被替换了
-                    // 这里为了安全，如果是异步上传模式，文件清理最好在上传接口做，或者这里只清空数据库字段
-                    $newyear_video = '';
-                }
-            }
-
-            // 兼容旧的同步上传方式 (虽然前端改了，但保留后端逻辑也没坏处，或者可以直接移除)
-            if (isset($_FILES['newyear_video_file']) && $_FILES['newyear_video_file']['error'] === UPLOAD_ERR_OK) {
-                // ... (旧的上传逻辑，如果前端不再使用 input type="file" 提交，这部分不会执行)
-            }
-
             // Check and add website_announcement
             $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'website_announcement'");
             if (!$checkStmt->fetch()) {
@@ -207,7 +143,7 @@ function handleConfigPage($db) {
             // Check and add footer_extra
             $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'footer_extra'");
             if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN footer_extra TEXT COMMENT '页脚附加信息' AFTER newyear_end_time");
+                $db->exec("ALTER TABLE website_config ADD COLUMN footer_extra TEXT COMMENT '页脚附加信息' AFTER epay_key");
             }
 
             // Check and add redirect_whitelist
@@ -254,8 +190,8 @@ function handleConfigPage($db) {
             }
 
             // 保存数据库配置
-            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, newyear_enable=?, newyear_message=?, newyear_video=?, newyear_start_time=?, newyear_end_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, icp_record=?, public_security_record=?, terms_content=?, privacy_content=? WHERE id=1");
-            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $newyear_enable, $newyear_message, $newyear_video, $newyear_start_time, $newyear_end_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $icp_record, $public_security_record, $terms_content, $privacy_content]);
+            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, icp_record=?, public_security_record=?, terms_content=?, privacy_content=? WHERE id=1");
+            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $icp_record, $public_security_record, $terms_content, $privacy_content]);
 
             $success = '配置已保存';
         } catch (Exception $e) {
