@@ -37,6 +37,9 @@ $activeTheme = !empty($config['active_theme']) ? preg_replace('/[^a-zA-Z0-9_-]/'
 $themePath = __DIR__ . '/vendor/nova-themes/' . $activeTheme;
 $themeUrl = '/vendor/nova-themes/' . $activeTheme;
 
+// 定义主题URL常量，供主题文件使用
+define('NOVA_THEME_URL', $themeUrl);
+
 // 404 页面
 function theme404() {
     global $themePath, $activeTheme;

@@ -22,7 +22,7 @@
     </footer>
 
     <script src="https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="/assets/js/theme.js"></script>
+    <script src="<?= NOVA_THEME_URL ?>/assets/js/theme.js"></script>
     <script>
     // 用户菜单
     fetch('/nova-json/v1/user/me')

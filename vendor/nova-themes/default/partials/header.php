@@ -31,8 +31,8 @@
     <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.staticfile.net/bootstrap/5.3.0/css/bootstrap.min.css') ?>" rel="stylesheet">
     <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.staticfile.net/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
     <link rel="stylesheet" href="<?= getResourceUrl('/assets/css/all.min.css', 'https://cdn.staticfile.net/font-awesome/6.5.1/css/all.min.css') ?>">
-    <link href="/assets/css/style.css" rel="stylesheet">
-    <link href="/assets/css/inline-extra.css?v=20260630" rel="stylesheet">
+    <link href="<?= NOVA_THEME_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= NOVA_THEME_URL ?>/assets/css/inline-extra.css?v=20260630" rel="stylesheet">
     <?php if (!empty($extraHead)) echo $extraHead; ?>
 </head>
 <body>
