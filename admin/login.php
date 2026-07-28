@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
-    <script src="/vendor/public/captcha/BehaviorAuth.js"></script>
+    <script src="/vendor/public/captcha/captcha.js"></script>
     <script>
     let loginCaptcha = null;
 
