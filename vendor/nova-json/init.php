@@ -261,9 +261,6 @@ $route_files = [
     'statuses/terms.php',     // 协议与政策
     'public/proxy.php',       // 代理请求（公网 + 内部）
     
-    // 功能路由
-    'public/hitokoto.php',    // 一言
-
 ];
 
 foreach ($route_files as $file) {

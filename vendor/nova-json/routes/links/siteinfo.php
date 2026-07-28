@@ -40,7 +40,7 @@ function nova_get_siteinfo($request) {
             'status'      => 200,
             'name'        => $config['website_name'] ?? '冷月笙寒的小窝',
             'url'         => $siteUrl,
-            'description' => $config['website_intro'] ?? '',
+            'description' => '',
             'rss_url'     => $rssUrl,
             'logo'        => $config['logo'] ?? '',
             'author'      => $config['website_author'] ?? '',

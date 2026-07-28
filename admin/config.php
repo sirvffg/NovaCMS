@@ -195,47 +195,7 @@ require_once 'includes/header.php';
                                                 <label class="form-label">站点所有者(Name)</label>
                                                 <input type="text" name="website_author" class="form-control" value="<?= e($config['website_author'] ?? '') ?>" placeholder="您的名字">
                                             </div>
-                                            
-                                            <div class="mb-3">
-                                                <label class="form-label">一言Api地址(也可以是一句话介绍)</label>
-                                                <input type="text" name="website_intro" class="form-control" value="<?= e($config['website_intro'] ?? '') ?>" placeholder="一言Api地址">
-                                            </div>
 
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input type="checkbox" class="form-check-input" id="use_local_hitokoto" name="use_local_hitokoto" value="1" <?= !empty($config['use_local_hitokoto']) ? 'checked' : '' ?>>
-                                                    <label class="form-check-label" for="use_local_hitokoto">使用本站一言</label>
-                                                    <small class="text-muted d-block">开启后优先使用后台添加的本站一言（需先在 <a href="hitokoto.php" target="_blank">一言管理</a> 中添加内容）</small>
-                                                </div>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">网站公告(支持Markdown)</label>
-                                                <textarea name="website_announcement" id="website_announcement" class="form-control" rows="4"><?= e($config['website_announcement'] ?? '') ?></textarea>
-                                            </div>
-
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">公告发布日期</label>
-                                                    <input type="datetime-local" name="website_announcement_date" class="form-control" value="<?= !empty($config['website_announcement_date']) ? date('Y-m-d\TH:i', strtotime($config['website_announcement_date'])) : '' ?>">
-                                                    <small class="text-muted">设置公告的发布时间，用于判断用户是否已查看</small>
-                                                </div>
-                                                <div class="col-md-6 mb-3 d-flex align-items-end">
-                                                    <div class="form-check">
-                                                        <input type="checkbox" class="form-check-input" id="website_announcement_popup" name="website_announcement_popup" value="1" <?= !empty($config['website_announcement_popup']) ? 'checked' : '' ?>>
-                                                        <label class="form-check-label" for="website_announcement_popup">弹窗展示公告</label>
-                                                        <small class="text-muted d-block">开启后用户首次访问首页时会弹窗显示公告</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <div class="form-check form-switch">
-                                                    <input type="checkbox" class="form-check-input" id="website_announcement_enable" name="website_announcement_enable" value="1" <?= !empty($config['website_announcement_enable']) ? 'checked' : '' ?>>
-                                                    <label class="form-check-label" for="website_announcement_enable">开启公告展示</label>
-                                                    <small class="text-muted d-block">关闭后首页不显示公告按钮和弹窗</small>
-                                                </div>
-                                            </div>
                                             
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
@@ -631,9 +591,6 @@ require_once 'includes/header.php';
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
 
     <script>
-        // 初始化 Markdown 编辑器
-        initMarkdownEditor('website_announcement');
-        
         // Robot描述字符计数
         const robotDescTextarea = document.querySelector('textarea[name="robot_description"]');
         const robotDescLength = document.getElementById('robotDescLength');

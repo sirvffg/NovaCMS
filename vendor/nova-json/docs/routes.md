@@ -2590,7 +2590,6 @@ PUT /v1/statuses/gallery/photos/1
 |------|------|------|
 | data.item.website_name | string | 站点名称 |
 | data.item.website_author | string | 站长 |
-| data.item.website_intro | string | 站点简介 |
 | data.item.robot_description | string | 搜索引擎描述 |
 | data.item.logo | string | Logo地址 |
 | data.item.favicon | string | 网站图标 |
@@ -2601,8 +2600,6 @@ PUT /v1/statuses/gallery/photos/1
 | data.item.social_github | string | GitHub |
 | data.item.social_bilibili | string | B站号 |
 | data.item.social_x | string | X (Twitter) |
-| data.item.website_announcement | string | 公告内容 |
-| data.item.website_announcement_enable | string | 是否启用公告 |
 | data.item.footer_extra | string | 页脚附加信息(HTML) |
 | data.item.icp_record | string | ICP备案号 |
 | data.item.public_security_record | string | 公安备案号 |
@@ -2618,14 +2615,12 @@ PUT /v1/statuses/gallery/photos/1
         "item": {
             "website_name": "冷月笙寒的小窝",
             "website_author": "冷月笙寒",
-            "website_intro": "个人博客，分享技术与生活",
             "logo": "/uploads/logo.png",
             "favicon": "/uploads/favicon.ico",
             "contact_email": "admin@example.com",
             "social_github": "https://github.com/example",
             "icp_record": "京ICP备xxxxxxxx号",
-            "website_announcement": "网站已全新改版上线！",
-            "website_announcement_enable": "1"
+            "footer_extra": ""
         }
     }
 }
@@ -2693,73 +2688,7 @@ GET /v1/statuses/terms?type=terms
 
 ## 10. Public - 公共模块
 
-### 10.1 获取一言
-
-`GET /v1/public/hitokoto`
-
-获取一言（随机句子）。
-
-**请求参数**
-
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| source | string | 否 | auto | auto(自动选择)/local(本站一言)/intro(简介) |
-
-**响应字段说明**
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| data.source | string | 数据来源(local/api/text) |
-| data.item | object | 一言数据(source=local时) |
-| data.item.hitokoto | string | 一言内容 |
-| data.item.from | string | 来源出处 |
-| data.item.from_who | string | 原作者 |
-| data.text | string | 文本内容(source=api/text时) |
-
-**示例请求**
-
-```
-GET /v1/public/hitokoto?source=local
-```
-
-**模拟响应（本地一言）**
-
-```json
-{
-    "code": "rest_ok",
-    "message": "获取成功",
-    "data": {
-        "status": 200,
-        "source": "local",
-        "item": {
-            "id": 1,
-            "hitokoto": "生活不止眼前的苟且，还有诗和远方的田野。",
-            "from": "生活",
-            "from_who": "高晓松",
-            "creator": "admin",
-            "created_at": "2026-01-01 00:00:00"
-        }
-    }
-}
-```
-
-**模拟响应（简介文本）**
-
-```json
-{
-    "code": "rest_ok",
-    "message": "获取成功",
-    "data": {
-        "status": 200,
-        "source": "text",
-        "text": "个人博客，分享技术与生活"
-    }
-}
-```
-
----
-
-### 10.2 公网代理
+### 10.1 公网代理
 
 `GET/POST /v1/public/proxy`
 
@@ -2808,7 +2737,7 @@ POST /v1/public/proxy
 
 ---
 
-### 10.3 内部代理
+### 10.2 内部代理
 
 `POST /v1/public/proxy/internal`
 

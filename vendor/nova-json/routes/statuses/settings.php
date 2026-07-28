@@ -27,7 +27,6 @@ function nova_get_settings($request) {
         // ── 基础信息 ──
         'website_name',             // 站点名称
         'website_author',           // 站长
-        'website_intro',            // 站点简介
         'robot_description',        // 搜索引擎描述
         'logo',                     // Logo 地址
         'favicon',                  // 网站图标
@@ -45,11 +44,6 @@ function nova_get_settings($request) {
         'social_x',                 // X (Twitter)
         'social_discord',           // Discord
         'social_youtube',           // YouTube
-        // ── 公告 ──
-        'website_announcement',              // 公告内容
-        'website_announcement_date',         // 公告发布日期
-        'website_announcement_popup',        // 是否弹窗展示公告
-        'website_announcement_enable',       // 是否启用公告
         // ── 页脚 ──
         'footer_extra',             // 页脚附加信息(HTML)
     ];

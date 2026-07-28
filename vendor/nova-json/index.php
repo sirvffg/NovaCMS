@@ -34,7 +34,6 @@
  *   POST   /v1/auth/verify                 验证码登录（第二步）
  *   GET    /v1/auth/me                     获取当前用户
  *   POST   /v1/auth/logout                 退出登录
- *   GET    /v1/public/hitokoto             一言/简介
  *   GET    /v1/statuses/settings           站点配置
  *   GET    /v1/statuses/shuoshuo           说说列表
  *   POST   /v1/statuses/shuoshuo           发布说说

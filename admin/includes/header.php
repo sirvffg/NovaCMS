@@ -47,7 +47,6 @@ Nova_Backend_Menu::add_menu('说说管理', 'shuoshuo', '/admin/shuoshuo.php', '
 Nova_Backend_Menu::add_menu('相册管理', 'gallery', '/admin/gallery.php', 'bi-images', 100);
 
 Nova_Backend_Menu::add_menu('更多工具', 'settings', '', 'bi-grid-3x3-gap', 130);
-Nova_Backend_Menu::add_submenu('settings', '一言管理', 'hitokoto', '/admin/hitokoto.php', 20, ['icon' => 'bi-quote']);
 Nova_Backend_Menu::add_submenu('settings', '文件管理', 'files', '/admin/files.php', 40, ['icon' => 'bi-folder2-open']);
 Nova_Backend_Menu::add_submenu('settings', '邮件测试', 'email_test', '/admin/email_test.php', 50, ['icon' => 'bi-envelope-check']);
 Nova_Backend_Menu::add_submenu('settings', 'SEO 工具集', 'seo_tools', '/admin/seo_tools.php', 60, ['icon' => 'bi-search']);

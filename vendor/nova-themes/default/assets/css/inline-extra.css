@@ -15,29 +15,6 @@
     font-weight: bold;
 }
 
-/* 公告按钮文字渐变效果 */
-.announcement-gradient {
-    background: linear-gradient(90deg, #f19e9e, #f1f58f, #8ef5ad, #81d0f7, #f66fc9);
-    background-size: 300% 300%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: gradient-animation 3s ease infinite;
-    font-weight: bold;
-}
-
-@keyframes gradient-animation {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
-}
-
 /* 优化 CLS: 为图片预留空间 */
 img {
     max-width: 100%;

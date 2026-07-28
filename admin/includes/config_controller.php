@@ -17,12 +17,6 @@ function handleConfigPage($db) {
         } else {
         $website_name = $_POST['website_name'] ?? '';
         $website_author = $_POST['website_author'] ?? '';
-        $website_intro = $_POST['website_intro'] ?? '';
-        $use_local_hitokoto = isset($_POST['use_local_hitokoto']) ? 1 : 0;
-        $website_announcement = $_POST['website_announcement'] ?? '';
-        $website_announcement_date = !empty($_POST['website_announcement_date']) ? date('Y-m-d H:i:s', strtotime($_POST['website_announcement_date'])) : null;
-        $website_announcement_popup = isset($_POST['website_announcement_popup']) ? 1 : 0;
-        $website_announcement_enable = isset($_POST['website_announcement_enable']) ? 1 : 0;
         $description = $_POST['description'] ?? '';
         $robot_description = $_POST['robot_description'] ?? '';
         $contact_email = $_POST['contact_email'] ?? '';
@@ -74,36 +68,6 @@ function handleConfigPage($db) {
         $max_devices = max(1, min(10, intval($_POST['max_devices'] ?? 2)));
         $remember_duration = max(1, min(365, intval($_POST['remember_duration'] ?? 30)));
         try {
-            // Check and add website_announcement
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'website_announcement'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN website_announcement TEXT COMMENT '网站公告(支持Markdown)' AFTER website_intro");
-            }
-
-            // Check and add website_announcement_date
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'website_announcement_date'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN website_announcement_date DATETIME DEFAULT NULL COMMENT '公告发布日期' AFTER website_announcement");
-            }
-
-            // Check and add website_announcement_popup
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'website_announcement_popup'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN website_announcement_popup TINYINT(1) DEFAULT 0 COMMENT '是否弹窗展示公告' AFTER website_announcement_date");
-            }
-
-            // Check and add website_announcement_enable
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'website_announcement_enable'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN website_announcement_enable TINYINT(1) DEFAULT 1 COMMENT '是否开启公告展示' AFTER website_announcement_popup");
-            }
-
-            // Check and add use_local_hitokoto
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'use_local_hitokoto'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN use_local_hitokoto TINYINT(1) DEFAULT 0 COMMENT '是否使用本站一言' AFTER website_intro");
-            }
-
             // Check and add social_whatsapp
             $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'social_whatsapp'");
             if (!$checkStmt->fetch()) {
@@ -178,8 +142,8 @@ function handleConfigPage($db) {
             }
 
             // 保存数据库配置
-            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, icp_record=?, public_security_record=?, terms_content=?, privacy_content=? WHERE id=1");
-            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $icp_record, $public_security_record, $terms_content, $privacy_content]);
+            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, icp_record=?, public_security_record=?, terms_content=?, privacy_content=? WHERE id=1");
+            $stmt->execute([$website_name, $website_author, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $icp_record, $public_security_record, $terms_content, $privacy_content]);
 
             $success = '配置已保存';
         } catch (Exception $e) {
