@@ -167,6 +167,18 @@ class Nova_Backend_Menu {
     }
 
     /**
+     * Render a menu icon. Bootstrap Icon class names are supported while
+     * preserving the original single-character plugin icon contract.
+     */
+    protected static function renderIcon($icon) {
+        $icon = trim((string)$icon);
+        if (preg_match('/^bi-[a-z0-9-]+$/', $icon)) {
+            return '<i class="bi ' . e($icon) . '" aria-hidden="true"></i>';
+        }
+        return e($icon);
+    }
+
+    /**
      * 排序菜单
      */
     protected static function sortMenus() {
@@ -217,10 +229,10 @@ class Nova_Backend_Menu {
                 $submenuOpen = self::hasActiveSubmenu($menu_id);
                 $activeClass = $submenuOpen ? ' open' : '';
                 $html .= '<li>';
-                $html .= '<a class="submenu-toggle' . $activeClass . '" onclick="toggleSubmenu(this)">';
-                $html .= '<span class="menu-icon">' . e($menu['icon']) . '</span>';
+                $html .= '<a class="submenu-toggle' . $activeClass . '" role="button" tabindex="0" aria-expanded="' . ($submenuOpen ? 'true' : 'false') . '" onclick="toggleSubmenu(this)">';
+                $html .= '<span class="menu-icon">' . self::renderIcon($menu['icon']) . '</span>';
                 $html .= '<span class="menu-text">' . e($menu['title']) . '</span>';
-                $html .= '<span class="submenu-arrow">▶</span>';
+                $html .= '<span class="submenu-arrow"><i class="bi bi-chevron-right" aria-hidden="true"></i></span>';
                 $html .= '</a>';
                 $html .= '<ul class="submenu">';
 
@@ -233,7 +245,7 @@ class Nova_Backend_Menu {
                         $badge = ' <span class="badge' . $bt . '">' . e($sub['options']['badge']) . '</span>';
                     }
                     $html .= '<li><a href="' . e($sub['url']) . '" class="' . $active . '">';
-                    $iconHtml = !empty($sub['options']['icon']) ? '<span class="menu-icon" style="width:24px;height:24px;font-size:11px;border-radius:6px;margin-right:8px;">' . e($sub['options']['icon']) . '</span>' : '<span style="display:inline-block;width:8px;margin-right:24px;"></span>';
+                    $iconHtml = !empty($sub['options']['icon']) ? '<span class="menu-icon menu-icon-sub">' . self::renderIcon($sub['options']['icon']) . '</span>' : '<span class="submenu-dot" aria-hidden="true"></span>';
                     $html .= $iconHtml;
                     $html .= '<span class="menu-text">' . e($sub['title']) . $badge . '</span>';
                     $html .= '</a></li>';
@@ -252,7 +264,7 @@ class Nova_Backend_Menu {
 
                 $html .= '<li>';
                 $html .= '<a href="' . e($menu['url']) . '" class="' . $active . '"' . $target . '>';
-                $html .= '<span class="menu-icon">' . e($menu['icon']) . '</span>';
+                $html .= '<span class="menu-icon">' . self::renderIcon($menu['icon']) . '</span>';
                 $html .= '<span class="menu-text">' . e($menu['title']) . $badge . '</span>';
                 $html .= '</a>';
                 $html .= '</li>';
