@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2026-07-27 22:48:22
+-- 生成日期： 2026-07-28 20:40:35
 -- 服务器版本： 5.7.44-log
 -- PHP 版本： 8.2.28
 
@@ -532,6 +532,25 @@ CREATE TABLE `license_version_updates` (
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `my_projects`
+--
+
+CREATE TABLE `my_projects` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL COMMENT '项目名称',
+  `description` text COMMENT '项目描述',
+  `url` varchar(255) DEFAULT NULL COMMENT '项目链接',
+  `icon` varchar(255) DEFAULT NULL COMMENT '图标(类名或图片路径)',
+  `tags` varchar(255) DEFAULT NULL COMMENT '标签(逗号分隔)',
+  `start_date` varchar(50) DEFAULT NULL COMMENT '开始时间',
+  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
+  `is_active` tinyint(1) DEFAULT '1' COMMENT '是否启用',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='我的项目表';
+
+-- --------------------------------------------------------
+
+--
 -- 表的结构 `notifications`
 --
 
@@ -678,7 +697,34 @@ CREATE TABLE `visit_stats` (
 
 INSERT INTO `visit_stats` (`id`, `ip_address`, `user_agent`, `page_url`, `visitor_username`, `visitor_email`, `referer`, `visit_time`, `country`, `province`, `city`, `isp`) VALUES
 (1, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-27 06:01:40', NULL, NULL, NULL, NULL),
-(2, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-27 06:01:42', NULL, NULL, NULL, NULL);
+(2, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-27 06:01:42', NULL, NULL, NULL, NULL),
+(3, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:47:15', NULL, NULL, NULL, NULL),
+(4, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:38', NULL, NULL, NULL, NULL),
+(5, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:38', NULL, NULL, NULL, NULL),
+(6, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:41', NULL, NULL, NULL, NULL),
+(7, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:41', NULL, NULL, NULL, NULL),
+(8, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:53', NULL, NULL, NULL, NULL),
+(9, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:53', NULL, NULL, NULL, NULL),
+(10, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:58', NULL, NULL, NULL, NULL),
+(11, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:49:58', NULL, NULL, NULL, NULL),
+(12, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:50:33', NULL, NULL, NULL, NULL),
+(13, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:50:33', NULL, NULL, NULL, NULL),
+(14, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:52:27', NULL, NULL, NULL, NULL),
+(15, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:53:03', NULL, NULL, NULL, NULL),
+(16, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:53:03', NULL, NULL, NULL, NULL),
+(17, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:58:24', NULL, NULL, NULL, NULL),
+(18, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 08:58:24', NULL, NULL, NULL, NULL),
+(19, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 09:38:20', NULL, NULL, NULL, NULL),
+(20, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 09:38:20', NULL, NULL, NULL, NULL),
+(21, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 09:38:21', NULL, NULL, NULL, NULL),
+(22, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 09:38:22', NULL, NULL, NULL, NULL),
+(23, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 09:38:22', NULL, NULL, NULL, NULL),
+(24, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 09:38:22', NULL, NULL, NULL, NULL),
+(25, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 11:05:38', NULL, NULL, NULL, NULL),
+(26, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 11:29:49', NULL, NULL, NULL, NULL),
+(27, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 11:29:51', NULL, NULL, NULL, NULL),
+(28, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 11:29:55', NULL, NULL, NULL, NULL),
+(29, '192.168.142.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '/', NULL, NULL, NULL, '2026-07-28 11:30:09', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -742,44 +788,23 @@ CREATE TABLE `website_config` (
 -- 转存表中的数据 `website_config`
 --
 
-INSERT INTO `website_config` (
-  `id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`,
-  `website_announcement`, `website_announcement_date`, `website_announcement_popup`,
-  `website_announcement_enable`, `description`,
-  `robot_description`, `logo`, `favicon`,
-  `contact_email`, `contact_qq`, `social_wechat`,
-  `social_github`, `email_mode`, `updated_at`, `website_start_time`,
-  `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`,
-  `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`,
-  `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`,
-  `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`,
-  `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`,
-  `max_devices`, `remember_duration`, `icp_record`, `public_security_record`,
-  `terms_content`, `privacy_content`, `active_theme`
-) VALUES (
-  1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1,
-  '', NULL, 0, 0, '', '', '', '/assets/images/favicon.png',
-  '', '', '', '', 'production',
-  '2026-07-27 06:04:12', '2025-05-20 05:20:00',
-  '', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls',
-  '', '43.129.255.54', 1785128559, 'qq.com', 'Powered by LyGalaxy',
-  '', '', '', '', 3, 20, '京ICP备20240428112号-1',
-  '京公网安备1101050201637号',
-  '1. 接受条款\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\n\n2. 网站描述\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\n\n3. 使用许可\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\n- 不得将网站用于任何非法或未经授权的目的\n- 不得干扰或破坏网站的正常运行\n- 不得试图获取未经授权的访问权限\n- 不得复制或重复使用网站内容，除非获得明确许可\n\n4. 内容所有权\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\n\n5. 用户责任\n作为用户，您同意：\n- 提供准确和真实的信息\n- 不发布虚假、误导性或违法内容\n- 尊重他人的知识产权和隐私权\n- 不从事任何可能损害网站声誉的活动\n\n6. 免责声明\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\n- 网站服务的连续性或无中断\n- 网站内容的准确性或完整性\n- 网站免受病毒或其他恶意组件的侵害\n- 因使用网站而导致的任何损失或损害\n\n7. 服务限制\n我们保留以下权利：\n- 随时修改或终止网站服务\n- 拒绝向任何人提供服务\n- 删除违反服务条款的内容\n- 暂停或终止违规用户的访问权限\n\n8. 第三方链接\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\n\n9. 争议解决\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\n\n10. 条款修改\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\n\n11. 联系我们\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\n邮箱：2648181326@qq.com\n\n最后更新：2026年7月20日',
-  '1. 信息收集\n我们可能收集以下类型的信息：\n- 您通过联系表单提供的姓名、电子邮件地址等信息\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\n- 通过Cookie收集的使用偏好信息\n\n2. 信息使用\n收集的信息可能用于：\n- 回复您的咨询和请求\n- 改善网站内容和用户体验\n- 发送重要的通知和更新\n- 网站分析和安全监控\n\n3. 信息共享\n我们不会向第三方出售、交易或转让您的个人信息，除非：\n- 获得您的明确同意\n- 法律要求或法律程序需要\n- 保护网站、用户或公众的权利、财产或安全\n\n4. 数据安全\n我们采取适当的安全措施来保护您的个人信息，包括：\n- 使用安全的服务器和加密技术\n- 限制对个人信息的访问权限\n- 定期更新安全协议\n\n5. Cookie使用\n本网站可能使用Cookie来：\n- 记住您的偏好设置\n- 分析网站流量和使用情况\n- 提供个性化的内容\n您可以通过浏览器设置控制Cookie的使用。\n\n6. 您的权利\n您有权：\n- 访问您的个人信息\n- 更正不准确的信息\n- 删除您的个人信息\n- 反对处理您的信息\n\n7. 政策更新\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\n\n8. 联系我们\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\n邮箱：2648181326@qq.com\n\n最后更新：2026年7月20日',
-  'default'
-);
-
--- --------------------------------------------------------
+INSERT INTO `website_config` (`id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`, `website_announcement`, `website_announcement_date`, `website_announcement_popup`, `website_announcement_enable`, `description`, `robot_description`, `logo`, `favicon`, `contact_email`, `contact_qq`, `social_wechat`, `social_github`, `email_mode`, `updated_at`, `website_start_time`, `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`, `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`, `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`, `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`, `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`, `max_devices`, `remember_duration`, `icp_record`, `public_security_record`, `terms_content`, `privacy_content`, `active_theme`) VALUES
+(1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1, '', NULL, 0, 0, '', '', '/assets/images/favicon.png', '', '', '', '', '', 'production', '2026-07-28 09:37:54', '2025-05-20 05:20:00', '', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls', '', '43.129.255.54', 1785128559, 'qq.com', 'Powered by LyGalaxy', '', '', '', '', 3, 20, '京ICP备20240428112号-1', '京公网安备1101050201637号', '1. 接受条款\r\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\r\n\r\n2. 网站描述\r\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\r\n\r\n3. 使用许可\r\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\r\n- 不得将网站用于任何非法或未经授权的目的\r\n- 不得干扰或破坏网站的正常运行\r\n- 不得试图获取未经授权的访问权限\r\n- 不得复制或重复使用网站内容，除非获得明确许可\r\n\r\n4. 内容所有权\r\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\r\n\r\n5. 用户责任\r\n作为用户，您同意：\r\n- 提供准确和真实的信息\r\n- 不发布虚假、误导性或违法内容\r\n- 尊重他人的知识产权和隐私权\r\n- 不从事任何可能损害网站声誉的活动\r\n\r\n6. 免责声明\r\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\r\n- 网站服务的连续性或无中断\r\n- 网站内容的准确性或完整性\r\n- 网站免受病毒或其他恶意组件的侵害\r\n- 因使用网站而导致的任何损失或损害\r\n\r\n7. 服务限制\r\n我们保留以下权利：\r\n- 随时修改或终止网站服务\r\n- 拒绝向任何人提供服务\r\n- 删除违反服务条款的内容\r\n- 暂停或终止违规用户的访问权限\r\n\r\n8. 第三方链接\r\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\r\n\r\n9. 争议解决\r\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\r\n\r\n10. 条款修改\r\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\r\n\r\n11. 联系我们\r\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日', '1. 信息收集\r\n我们可能收集以下类型的信息：\r\n- 您通过联系表单提供的姓名、电子邮件地址等信息\r\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\r\n- 通过Cookie收集的使用偏好信息\r\n\r\n2. 信息使用\r\n收集的信息可能用于：\r\n- 回复您的咨询和请求\r\n- 改善网站内容和用户体验\r\n- 发送重要的通知和更新\r\n- 网站分析和安全监控\r\n\r\n3. 信息共享\r\n我们不会向第三方出售、交易或转让您的个人信息，除非：\r\n- 获得您的明确同意\r\n- 法律要求或法律程序需要\r\n- 保护网站、用户或公众的权利、财产或安全\r\n\r\n4. 数据安全\r\n我们采取适当的安全措施来保护您的个人信息，包括：\r\n- 使用安全的服务器和加密技术\r\n- 限制对个人信息的访问权限\r\n- 定期更新安全协议\r\n\r\n5. Cookie使用\r\n本网站可能使用Cookie来：\r\n- 记住您的偏好设置\r\n- 分析网站流量和使用情况\r\n- 提供个性化的内容\r\n您可以通过浏览器设置控制Cookie的使用。\r\n\r\n6. 您的权利\r\n您有权：\r\n- 访问您的个人信息\r\n- 更正不准确的信息\r\n- 删除您的个人信息\r\n- 反对处理您的信息\r\n\r\n7. 政策更新\r\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\r\n\r\n8. 联系我们\r\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日', 'default');
 
 --
--- 表的索引
+-- 转储表的索引
 --
 
+--
+-- 表的索引 `admins`
+--
 ALTER TABLE `admins`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`);
 
+--
+-- 表的索引 `appeals`
+--
 ALTER TABLE `appeals`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_type` (`appeal_type`),
@@ -789,16 +814,25 @@ ALTER TABLE `appeals`
   ADD KEY `idx_email` (`contact_email`),
   ADD KEY `idx_created` (`created_at`);
 
+--
+-- 表的索引 `appeal_tokens`
+--
 ALTER TABLE `appeal_tokens`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_token` (`token`),
   ADD KEY `idx_user` (`user_id`),
   ADD KEY `idx_expires` (`expires_at`);
 
+--
+-- 表的索引 `blog_categories`
+--
 ALTER TABLE `blog_categories`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `slug` (`slug`);
 
+--
+-- 表的索引 `blog_comments`
+--
 ALTER TABLE `blog_comments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_post_id` (`post_id`),
@@ -807,15 +841,24 @@ ALTER TABLE `blog_comments`
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_created_at` (`created_at`);
 
+--
+-- 表的索引 `blog_paid_access`
+--
 ALTER TABLE `blog_paid_access`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `idx_trade_no` (`trade_no`),
   ADD KEY `idx_user_post` (`user_id`,`post_id`);
 
+--
+-- 表的索引 `blog_paid_access_temporary`
+--
 ALTER TABLE `blog_paid_access_temporary`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_trade_no` (`trade_no`);
 
+--
+-- 表的索引 `blog_posts`
+--
 ALTER TABLE `blog_posts`
   ADD PRIMARY KEY (`id`),
   ADD KEY `views` (`views`),
@@ -823,89 +866,155 @@ ALTER TABLE `blog_posts`
   ADD KEY `is_featured` (`is_featured`),
   ADD KEY `idx_list` (`is_published`,`category`,`created_at`);
 
+--
+-- 表的索引 `blog_privacy_access`
+--
 ALTER TABLE `blog_privacy_access`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_user_post` (`user_id`,`post_id`),
   ADD KEY `idx_post_access` (`post_id`,`access_granted`);
 
+--
+-- 表的索引 `bot_blacklist`
+--
 ALTER TABLE `bot_blacklist`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ip_address` (`ip_address`),
   ADD KEY `idx_ip` (`ip_address`);
 
+--
+-- 表的索引 `bot_whitelist_ip`
+--
 ALTER TABLE `bot_whitelist_ip`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ip_address` (`ip_address`),
   ADD KEY `idx_ip` (`ip_address`);
 
+--
+-- 表的索引 `bot_whitelist_ua`
+--
 ALTER TABLE `bot_whitelist_ua`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ua` (`ua_pattern`(191));
 
+--
+-- 表的索引 `captcha_sessions`
+--
 ALTER TABLE `captcha_sessions`
   ADD PRIMARY KEY (`token`),
   ADD KEY `idx_expire` (`expire_at`),
   ADD KEY `idx_ip` (`ip`,`created_at`);
 
+--
+-- 表的索引 `captcha_tokens`
+--
 ALTER TABLE `captcha_tokens`
   ADD PRIMARY KEY (`token`),
   ADD KEY `idx_expire` (`expire_at`);
 
+--
+-- 表的索引 `crawler_logs`
+--
 ALTER TABLE `crawler_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `visit_time` (`visit_time`),
   ADD KEY `crawler_name` (`crawler_name`),
   ADD KEY `status_code` (`status_code`);
 
+--
+-- 表的索引 `email_verification`
+--
 ALTER TABLE `email_verification`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email_purpose_unused` (`email`,`purpose`,`is_used`),
   ADD KEY `idx_email_expires` (`email`,`expires_at`);
 
+--
+-- 表的索引 `friend_links`
+--
 ALTER TABLE `friend_links`
   ADD PRIMARY KEY (`id`),
   ADD KEY `sort_order` (`sort_order`),
   ADD KEY `is_active` (`is_active`),
   ADD KEY `idx_category` (`category_id`);
 
+--
+-- 表的索引 `friend_link_applications`
+--
 ALTER TABLE `friend_link_applications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_created_at` (`created_at`);
 
+--
+-- 表的索引 `friend_link_categories`
+--
 ALTER TABLE `friend_link_categories`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_sort` (`sort_order`);
 
+--
+-- 表的索引 `guestbook`
+--
 ALTER TABLE `guestbook`
   ADD PRIMARY KEY (`id`);
 
+--
+-- 表的索引 `hitokoto`
+--
 ALTER TABLE `hitokoto`
   ADD PRIMARY KEY (`id`);
 
+--
+-- 表的索引 `honeypot_logs`
+--
 ALTER TABLE `honeypot_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ip` (`ip_address`),
   ADD KEY `idx_time` (`triggered_at`);
 
+--
+-- 表的索引 `ip_whitelist`
+--
 ALTER TABLE `ip_whitelist`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ip_address` (`ip_address`),
   ADD KEY `idx_ip` (`ip_address`);
 
+--
+-- 表的索引 `license_announcements`
+--
 ALTER TABLE `license_announcements`
   ADD PRIMARY KEY (`id`);
 
+--
+-- 表的索引 `license_keys`
+--
 ALTER TABLE `license_keys`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `key_code` (`key_code`);
 
+--
+-- 表的索引 `license_verification_logs`
+--
 ALTER TABLE `license_verification_logs`
   ADD PRIMARY KEY (`id`);
 
+--
+-- 表的索引 `license_version_updates`
+--
 ALTER TABLE `license_version_updates`
   ADD PRIMARY KEY (`id`);
 
+--
+-- 表的索引 `my_projects`
+--
+ALTER TABLE `my_projects`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- 表的索引 `notifications`
+--
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_user_id` (`user_id`),
@@ -913,26 +1022,44 @@ ALTER TABLE `notifications`
   ADD KEY `idx_is_read` (`is_read`),
   ADD KEY `idx_created_at` (`created_at`);
 
+--
+-- 表的索引 `photos`
+--
 ALTER TABLE `photos`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_album_id` (`album_id`);
 
+--
+-- 表的索引 `photo_albums`
+--
 ALTER TABLE `photo_albums`
   ADD PRIMARY KEY (`id`);
 
+--
+-- 表的索引 `rate_limits`
+--
 ALTER TABLE `rate_limits`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `idx_identifier_action` (`identifier`,`action`),
   ADD KEY `idx_last_attempt` (`last_attempt`),
   ADD KEY `idx_blocked_until` (`blocked_until`);
 
+--
+-- 表的索引 `shuoshuo`
+--
 ALTER TABLE `shuoshuo`
   ADD PRIMARY KEY (`id`);
 
+--
+-- 表的索引 `ua_whitelist`
+--
 ALTER TABLE `ua_whitelist`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ua` (`ua_pattern`(191));
 
+--
+-- 表的索引 `user_sessions`
+--
 ALTER TABLE `user_sessions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_user` (`user_id`),
@@ -945,6 +1072,9 @@ ALTER TABLE `user_sessions`
   ADD KEY `idx_status_loginat` (`status`,`login_at`),
   ADD KEY `idx_inactive_success` (`is_active`,`status`,`login_at`);
 
+--
+-- 表的索引 `visit_stats`
+--
 ALTER TABLE `visit_stats`
   ADD PRIMARY KEY (`id`),
   ADD KEY `ip_address` (`ip_address`),
@@ -957,122 +1087,235 @@ ALTER TABLE `visit_stats`
   ADD KEY `idx_visit_time` (`visit_time`),
   ADD KEY `idx_ip` (`ip_address`);
 
+--
+-- 表的索引 `website_config`
+--
 ALTER TABLE `website_config`
   ADD PRIMARY KEY (`id`);
 
 --
--- AUTO_INCREMENT
+-- 在导出的表使用AUTO_INCREMENT
 --
 
+--
+-- 使用表AUTO_INCREMENT `admins`
+--
 ALTER TABLE `admins`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '管理员ID', AUTO_INCREMENT=3381;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '管理员ID', AUTO_INCREMENT=3382;
 
+--
+-- 使用表AUTO_INCREMENT `appeals`
+--
 ALTER TABLE `appeals`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `appeal_tokens`
+--
 ALTER TABLE `appeal_tokens`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `blog_categories`
+--
 ALTER TABLE `blog_categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '分类ID', AUTO_INCREMENT=7;
 
+--
+-- 使用表AUTO_INCREMENT `blog_comments`
+--
 ALTER TABLE `blog_comments`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '评论ID';
 
+--
+-- 使用表AUTO_INCREMENT `blog_paid_access`
+--
 ALTER TABLE `blog_paid_access`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `blog_paid_access_temporary`
+--
 ALTER TABLE `blog_paid_access_temporary`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `blog_posts`
+--
 ALTER TABLE `blog_posts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '文章ID', AUTO_INCREMENT=2;
 
+--
+-- 使用表AUTO_INCREMENT `blog_privacy_access`
+--
 ALTER TABLE `blog_privacy_access`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '记录ID';
 
+--
+-- 使用表AUTO_INCREMENT `bot_blacklist`
+--
 ALTER TABLE `bot_blacklist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `bot_whitelist_ip`
+--
 ALTER TABLE `bot_whitelist_ip`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `bot_whitelist_ua`
+--
 ALTER TABLE `bot_whitelist_ua`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `crawler_logs`
+--
 ALTER TABLE `crawler_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `email_verification`
+--
 ALTER TABLE `email_verification`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '验证码ID';
 
+--
+-- 使用表AUTO_INCREMENT `friend_links`
+--
 ALTER TABLE `friend_links`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '链接ID';
 
+--
+-- 使用表AUTO_INCREMENT `friend_link_applications`
+--
 ALTER TABLE `friend_link_applications`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '申请ID';
 
+--
+-- 使用表AUTO_INCREMENT `friend_link_categories`
+--
 ALTER TABLE `friend_link_categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '分类ID', AUTO_INCREMENT=7;
 
+--
+-- 使用表AUTO_INCREMENT `guestbook`
+--
 ALTER TABLE `guestbook`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `hitokoto`
+--
 ALTER TABLE `hitokoto`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `honeypot_logs`
+--
 ALTER TABLE `honeypot_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `ip_whitelist`
+--
 ALTER TABLE `ip_whitelist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `license_announcements`
+--
 ALTER TABLE `license_announcements`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `license_keys`
+--
 ALTER TABLE `license_keys`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `license_verification_logs`
+--
 ALTER TABLE `license_verification_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `license_version_updates`
+--
 ALTER TABLE `license_version_updates`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `my_projects`
+--
+ALTER TABLE `my_projects`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `notifications`
+--
 ALTER TABLE `notifications`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '通知ID';
 
+--
+-- 使用表AUTO_INCREMENT `photos`
+--
 ALTER TABLE `photos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `photo_albums`
+--
 ALTER TABLE `photo_albums`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
+--
+-- 使用表AUTO_INCREMENT `rate_limits`
+--
 ALTER TABLE `rate_limits`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `shuoshuo`
+--
 ALTER TABLE `shuoshuo`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `ua_whitelist`
+--
 ALTER TABLE `ua_whitelist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `user_sessions`
+--
 ALTER TABLE `user_sessions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
+--
+-- 使用表AUTO_INCREMENT `visit_stats`
+--
 ALTER TABLE `visit_stats`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '记录ID', AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '记录ID', AUTO_INCREMENT=30;
 
+--
+-- 使用表AUTO_INCREMENT `website_config`
+--
 ALTER TABLE `website_config`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '配置ID', AUTO_INCREMENT=2;
 
 --
--- 外键约束
+-- 限制导出的表
 --
 
+--
+-- 限制表 `friend_links`
+--
 ALTER TABLE `friend_links`
   ADD CONSTRAINT `fk_friend_links_category` FOREIGN KEY (`category_id`) REFERENCES `friend_link_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
