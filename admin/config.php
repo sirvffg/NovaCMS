@@ -221,14 +221,16 @@ require_once 'includes/header.php';
                                                     </div>
                                                     <div>
                                                         <input type="file" id="faviconInput" accept=".ico,.png,.jpg,.jpeg,.gif" class="d-none">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2 me-2" onclick="document.getElementById('faviconInput').click()">
-                                                            <i class="bi bi-upload me-1"></i> 更换图标
-                                                        </button>
-                                                        <?php if (!empty($config['favicon'])): ?>
-                                                        <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="clearFavicon()">
-                                                            <i class="bi bi-trash me-1"></i> 清除图标
-                                                        </button>
-                                                        <?php endif; ?>
+                                                        <div id="faviconButtons">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-2 me-2" onclick="document.getElementById('faviconInput').click()">
+                                                                <i class="bi bi-upload me-1"></i> 更换图标
+                                                            </button>
+                                                            <?php if (!empty($config['favicon'])): ?>
+                                                            <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="clearFavicon()">
+                                                                <i class="bi bi-trash me-1"></i> 清除图标
+                                                            </button>
+                                                            <?php endif; ?>
+                                                        </div>
                                                         <div class="form-text">支持 ICO, PNG, JPG (推荐 32x32 或 64x64)</div>
                                                     </div>
                                                 </div>
@@ -246,14 +248,16 @@ require_once 'includes/header.php';
                                                     </div>
                                                     <div>
                                                         <input type="file" id="logoInput" accept="image/*" class="d-none">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-2 me-2" onclick="document.getElementById('logoInput').click()">
-                                                            <i class="bi bi-upload me-1"></i> 更换Logo
-                                                        </button>
-                                                        <?php if (!empty($config['logo'])): ?>
-                                                        <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="clearLogo()">
-                                                            <i class="bi bi-trash me-1"></i> 清除Logo
-                                                        </button>
-                                                        <?php endif; ?>
+                                                        <div id="logoButtons">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-2 me-2" onclick="document.getElementById('logoInput').click()">
+                                                                <i class="bi bi-upload me-1"></i> 更换Logo
+                                                            </button>
+                                                            <?php if (!empty($config['logo'])): ?>
+                                                            <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="clearLogo()">
+                                                                <i class="bi bi-trash me-1"></i> 清除Logo
+                                                            </button>
+                                                            <?php endif; ?>
+                                                        </div>
                                                         <div class="form-text">支持 PNG, JPG, ICO (推荐透明背景)</div>
                                                     </div>
                                                 </div>
@@ -273,7 +277,7 @@ require_once 'includes/header.php';
                                         <div class="card-body">
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label">QQ号(用于网站首页头像与联系方式)</label>
+                                                    <label class="form-label">QQ号</label>
                                                     <div class="input-group">
                                                         <span class="input-group-text"><i class="bi bi-tencent-qq"></i></span>
                                                         <input type="text" name="contact_qq" class="form-control" value="<?= e($config['contact_qq'] ?? '') ?>">
@@ -685,16 +689,26 @@ require_once 'includes/header.php';
                                     document.getElementById(urlInputId).value = data.url;
                                 }
                                 
-                                // 显示删除按钮
-                                if (clearBtnId) {
-                                    const clearBtn = document.getElementById(clearBtnId);
-                                    if (clearBtn) clearBtn.classList.remove('d-none');
+                                // 添加清除按钮（如果不存在）
+                                const buttonsContainer = document.getElementById(inputId === 'faviconInput' ? 'faviconButtons' : 'logoButtons');
+                                if (buttonsContainer) {
+                                    const existingClearBtn = buttonsContainer.querySelector('.btn-outline-danger');
+                                    if (!existingClearBtn) {
+                                        const clearBtn = document.createElement('button');
+                                        clearBtn.type = 'button';
+                                        clearBtn.className = 'btn btn-outline-danger btn-sm mb-2';
+                                        clearBtn.onclick = inputId === 'faviconInput' ? clearFavicon : clearLogo;
+                                        clearBtn.innerHTML = '<i class="bi bi-trash me-1"></i> ' + (inputId === 'faviconInput' ? '清除图标' : '清除Logo');
+                                        buttonsContainer.appendChild(clearBtn);
+                                    }
                                 }
                                 
-                                showUploadSuccess(progressOverlay, successMsg);
-                                // Favicon 特殊处理：刷新
+                                // Favicon 上传后刷新页面，Logo 只局部刷新
                                 if (inputId === 'faviconInput') {
+                                    showUploadSuccess(progressOverlay, '图标上传成功，正在刷新页面...');
                                     setTimeout(() => location.reload(), 1500);
+                                } else {
+                                    showUploadSuccess(progressOverlay, successMsg);
                                 }
                             } else {
                                 showUploadError(progressOverlay, data.error || '上传失败');
@@ -716,12 +730,15 @@ require_once 'includes/header.php';
         }
 
         // 初始化上传
-        handleUpload('faviconInput', '/admin/upload_favicon.php', 'favicon', 'faviconPreview', null, '图标上传成功');
-        handleUpload('logoInput', '/admin/upload_logo.php', 'logo', 'logoPreview', 'logoUrl', 'Logo上传成功');
+        handleUpload('faviconInput', '/admin/api/upload_icon.php?type=favicon', 'favicon', 'faviconPreview', null, '图标上传成功');
+        handleUpload('logoInput', '/admin/api/upload_icon.php?type=logo', 'logo', 'logoPreview', 'logoUrl', 'Logo上传成功');
 
         // 清除图标
         function clearFavicon() {
             if (!confirm('确定要清除网站图标吗？')) return;
+
+            // 保存按钮引用
+            const clearBtn = event.target;
 
             fetch('/admin/api/clear_image.php?type=favicon')
                 .then(response => response.json())
@@ -732,22 +749,28 @@ require_once 'includes/header.php';
                         previewBox.innerHTML = '<i class="bi bi-image text-muted fs-3"></i>';
 
                         // 移除清除按钮
-                        event.target.remove();
+                        clearBtn.remove();
 
                         // 提示成功
-                        alert('图标已清除');
+                        showNotification('success', '图标已清除，正在刷新页面...');
+                        
+                        // Favicon 清除后刷新页面以更新浏览器标签图标
+                        setTimeout(() => location.reload(), 1500);
                     } else {
-                        alert('清除失败: ' + (data.error || '未知错误'));
+                        showNotification('error', '清除失败: ' + (data.error || '未知错误'));
                     }
                 })
                 .catch(error => {
-                    alert('清除失败: ' + error.message);
+                    showNotification('error', '清除失败: ' + error.message);
                 });
         }
 
         // 清除Logo
         function clearLogo() {
             if (!confirm('确定要清除网站Logo吗？')) return;
+
+            // 保存按钮引用
+            const clearBtn = event.target;
 
             fetch('/admin/api/clear_image.php?type=logo')
                 .then(response => response.json())
@@ -762,17 +785,36 @@ require_once 'includes/header.php';
                         if (logoUrlInput) logoUrlInput.value = '';
 
                         // 移除清除按钮
-                        event.target.remove();
+                        clearBtn.remove();
 
                         // 提示成功
-                        alert('Logo已清除');
+                        showNotification('success', 'Logo已清除');
                     } else {
-                        alert('清除失败: ' + (data.error || '未知错误'));
+                        showNotification('error', '清除失败: ' + (data.error || '未知错误'));
                     }
                 })
                 .catch(error => {
-                    alert('清除失败: ' + error.message);
+                    showNotification('error', '清除失败: ' + error.message);
                 });
+        }
+
+        // 通知提示函数
+        function showNotification(type, message) {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
 
         // 进度条相关辅助函数

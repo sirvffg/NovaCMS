@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../config/database.php';
+require_once '../../config/database.php';
 
 // 设置 JSON 响应头
 header('Content-Type: application/json');
@@ -12,14 +12,23 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
+// 获取上传类型
+$type = $_GET['type'] ?? $_POST['type'] ?? '';
+
+if (!in_array($type, ['favicon', 'logo'])) {
+    http_response_code(400);
+    echo json_encode(['error' => '无效的上传类型']);
+    exit;
+}
+
 // 检查是否有文件上传
-if (!isset($_FILES['favicon'])) {
+if (!isset($_FILES[$type])) {
     http_response_code(400);
     echo json_encode(['error' => '没有上传文件']);
     exit;
 }
 
-$file = $_FILES['favicon'];
+$file = $_FILES[$type];
 
 // 检查上传错误
 if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -38,9 +47,18 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
     exit;
 }
 
-// 验证文件类型
-$allowedTypes = ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/jpeg', 'image/gif'];
-$allowedExtensions = ['ico', 'png', 'jpg', 'jpeg', 'gif'];
+// 根据类型设置不同的验证规则
+if ($type === 'favicon') {
+    $allowedExtensions = ['ico', 'png', 'jpg', 'jpeg', 'gif'];
+    $maxSize = 1 * 1024 * 1024; // 1MB
+    $typeLabel = '图标';
+    $oldFiles = ['favicon.ico', 'favicon.png', 'favicon.jpg', 'favicon.jpeg', 'favicon.gif'];
+} else {
+    $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    $typeLabel = 'Logo';
+    $oldFiles = ['logo.png', 'logo.jpg', 'logo.jpeg', 'logo.gif', 'logo.webp'];
+}
 
 // 获取文件扩展名
 $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -48,20 +66,21 @@ $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 // 检查扩展名
 if (!in_array($extension, $allowedExtensions)) {
     http_response_code(400);
-    echo json_encode(['error' => '只支持 ICO, PNG, JPG, GIF 格式']);
+    echo json_encode(['error' => $typeLabel . '只支持 ' . strtoupper(implode(', ', $allowedExtensions)) . ' 格式']);
     exit;
 }
 
-// 验证文件大小 (最大 1MB)
-if ($file['size'] > 1 * 1024 * 1024) {
+// 验证文件大小
+if ($file['size'] > $maxSize) {
+    $maxMB = $maxSize / (1024 * 1024);
     http_response_code(400);
-    echo json_encode(['error' => '文件大小不能超过 1MB']);
+    echo json_encode(['error' => '文件大小不能超过 ' . $maxMB . 'MB']);
     exit;
 }
 
 // 固定文件名
-$filename = 'favicon.' . $extension;
-$uploadDir = dirname(__DIR__) . '/assets/images/';
+$filename = $type . '.' . $extension;
+$uploadDir = dirname(__DIR__, 2) . '/assets/images/';
 $uploadPath = $uploadDir . $filename;
 
 // 确保上传目录存在
@@ -80,8 +99,8 @@ if (!is_writable($uploadDir)) {
     exit;
 }
 
-// 删除旧的 favicon 文件
-foreach (['favicon.ico', 'favicon.png', 'favicon.jpg', 'favicon.jpeg', 'favicon.gif'] as $oldFile) {
+// 删除旧的文件
+foreach ($oldFiles as $oldFile) {
     $oldPath = $uploadDir . $oldFile;
     if (file_exists($oldPath) && $oldFile !== $filename) {
         @unlink($oldPath);
@@ -92,18 +111,18 @@ foreach (['favicon.ico', 'favicon.png', 'favicon.jpg', 'favicon.jpeg', 'favicon.
 if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
     $url = '/assets/images/' . $filename;
     
-    // 更新数据库（如果有 favicon 字段）
+    // 更新数据库
     try {
         $db = getDB();
         // 检查字段是否存在
-        $columns = $db->query("SHOW COLUMNS FROM website_config LIKE 'favicon'")->fetchAll();
+        $columns = $db->query("SHOW COLUMNS FROM website_config LIKE '{$type}'")->fetchAll();
         if (count($columns) > 0) {
-            $stmt = $db->prepare("UPDATE website_config SET favicon=? WHERE id=1");
+            $stmt = $db->prepare("UPDATE website_config SET {$type}=? WHERE id=1");
             $stmt->execute([$url]);
         }
     } catch (Exception $e) {
         // 忽略数据库错误，文件已经上传成功
-        error_log("Favicon database update error: " . $e->getMessage());
+        error_log("{$type} database update error: " . $e->getMessage());
     }
     
     echo json_encode([
