@@ -33,7 +33,6 @@
     <link rel="stylesheet" href="<?= getResourceUrl('/assets/css/all.min.css', 'https://cdn.staticfile.net/font-awesome/6.5.1/css/all.min.css') ?>">
     <link href="/assets/css/style.css" rel="stylesheet">
     <link href="/assets/css/inline-extra.css?v=20260630" rel="stylesheet">
-    <?php renderMusicPlayerCSS($config); ?>
     <?php if (!empty($extraHead)) echo $extraHead; ?>
 </head>
 <body>

@@ -86,8 +86,6 @@ CREATE TABLE `appeal_tokens` (
 
 -- --------------------------------------------------------
 
--- --------------------------------------------------------
-
 --
 -- 表的结构 `blog_categories`
 --
@@ -196,7 +194,7 @@ CREATE TABLE `blog_posts` (
   `privacy_type` enum('fixed_answer','open_answer','manual_approval','login_only') COLLATE utf8mb4_unicode_ci DEFAULT 'fixed_answer' COMMENT '隐私内容验证类型: fixed_answer-固定答案, open_answer-开放答案, manual_approval-人工审核, login_only-仅需登录',
   `approval_required` tinyint(1) DEFAULT '0' COMMENT '开放答案是否需要管理员审核(0:自动授权 1:需要审核)',
   `privacy_custom_text` text COLLATE utf8mb4_unicode_ci,
-  `license` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'CC BY-NC-SA 4.0' COMMENT '文章许可协议: CC BY, CC BY-NC, CC BY-SA, CC BY-NC-SA, CC BY-ND, CC BY-NC-ND, CC0, MIT, Apache-2.0, GPL-3.0, LGPL-3.0, BSD-3-Clause, ODbL, GFDL, PLOS, ArXiv, OGL, 无协议'
+  `license` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'CC BY-NC-SA 4.0' COMMENT '文章许可协议'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='博客文章表';
 
 --
@@ -204,7 +202,7 @@ CREATE TABLE `blog_posts` (
 --
 
 INSERT INTO `blog_posts` (`id`, `title`, `content`, `summary`, `author`, `cover_image`, `category`, `tags`, `views`, `is_published`, `is_pinned`, `is_featured`, `published_at`, `created_at`, `updated_at`, `privacy_question`, `privacy_answer`, `has_privacy_content`, `has_paid_content`, `post_price`, `privacy_type`, `approval_required`, `privacy_custom_text`, `license`) VALUES
-(1, '如何使用Markdown写作', '我来为你详细介绍Markdown的使用方法，让你快速掌握这个轻量级标记语言。\n\n## 📝 **Markdown基础语法**\n\n### 1. **标题**\n```markdown\n# 一级标题\n## 二级标题\n### 三级标题\n#### 四级标题\n##### 五级标题\n###### 六级标题\n```\n\n### 2. **文本格式**\n```markdown\n**粗体文本** 或 __粗体文本__\n*斜体文本* 或 _斜体文本_\n~~删除线文本~~\n***粗斜体文本***\n```\n\n### 3. **列表**\n```markdown\n- 无序列表项\n* 另一种无序列表\n+ 第三种无序列表\n\n1. 有序列表第一项\n2. 有序列表第二项\n3. 有序列表第三项\n```\n\n### 4. **链接与图片**\n```markdown\n[链接文字](URL)\n![图片描述](图片URL)\n```\n\n### 5. **引用**\n```markdown\n> 引用文本\n> 多行引用\n>> 嵌套引用\n```\n\n### 6. **代码**\n- 行内代码：\\`code\\`\n- 代码块：\n\\`\\`\\`语言\n代码内容\n\\`\\`\\`\n\n### 7. **分割线**\n```markdown\n---\n***\n___\n```\n\n### 8. **表格**\n```markdown\n| 表头1 | 表头2 | 表头3 |\n|-------|-------|-------|\n| 内容1 | 内容2 | 内容3 |\n| 左对齐 | 居中对齐 | 右对齐 |\n```\n\n对齐方式：\n- 左对齐 `:---`\n- 居中对齐 `:---:`\n- 右对齐 `---:`\n\n## 🎯 **高级技巧**\n\n### 1. **任务列表**\n```markdown\n- [x] 已完成任务\n- [ ] 未完成任务\n- [ ] 另一个任务\n```\n\n### 2. **脚注**\n```markdown\n这是一段文字[^1]\n[^1]: 这是脚注内容\n```\n\n### 3. **数学公式（部分平台支持）**\n```markdown\n行内公式：$E = mc^2$\n\n块级公式：\n$$\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n$$\n```\n\n### 4. **目录（部分平台支持）**\n```markdown\n[TOC]\n```\n\n## 🔧 **实用工具推荐**\n\n### **编辑器：**\n- **VS Code** + Markdown插件\n- **Typora**（所见即所得）\n- **Obsidian**（知识管理）\n- **Notion**（在线协作）\n\n### **在线工具：**\n- **StackEdit**（在线编辑器）\n- **Markdown Table Generator**（表格生成）\n- **Mermaid Live Editor**（图表绘制）\n\n## 💡 **最佳实践**\n\n1. **保持简洁**：Markdown的精髓在于简单\n2. **使用空格**：元素前后加空格更易读\n3. **适当分段**：避免过长的段落\n4. **善用标题**：建立清晰的文档结构\n5. **预览习惯**：写作时经常预览效果\n\n## 🚀 **快速上手示例**\n\n```markdown\n# 项目报告\n\n## 项目概述\n这是一个**重要项目**，截止日期是 *下周五*。\n\n## 任务清单\n- [x] 需求分析\n- [ ] 设计阶段\n- [ ] 开发实现\n\n## 进度表格\n| 阶段 | 负责人 | 进度 |\n|------|--------|------|\n| 分析 | 张三 | 100% |\n| 设计 | 李四 | 50% |\n\n## 代码示例\n```python\ndef hello():\n    print(\"Hello Markdown!\")\n```\n\n> 提示：使用Markdown让文档更专业！\n```\n\n## 🌟 **各平台兼容性**\n- **完全支持**：GitHub、GitLab、Stack Overflow\n- **部分支持**：微信公众平台、知乎\n- **扩展语法**：Notion、Obsidian有自己的扩展\n\n**开始建议**：从简单的文档开始，逐渐尝试复杂格式，多写多练自然就熟练了！\n\n有什么特定的Markdown使用场景或问题吗？我可以提供更具体的指导。\n```\n\n[Privacy]\n\nwow\n\n[/Privacy]', NULL, 'admin', NULL, '项目案例', '笔记', 516, 1, 0, 0, '2025-12-02 19:21:11', '2025-12-02 19:21:11', '2026-07-27 05:48:56', '您看到信息的平台+你的账号ID  以及对网站的建议（由于监管要求，请认真填写来源信息，否则一律封禁账号以及所在地区IP段） 没进Q群和没抖音酷安关注的请勿申请', NULL, 1, 0, 0.00, 'manual_approval', 1, '下载的内容在填写表单之后会显示哦！\n温馨提示: <color:red>请您认真填写表单中的内容，后台均会审核，不认真填写将会导致封号</color>\n填写示例  抖音+XXX账号id（您的账号ID）  后面有建议可以填写如果没有就可以直接提交\n需要人工审核的哦\n没进Q群和没关注抖音(需要进粉丝群) 以及 酷安未关注和私信的 请勿申请  申请一律不同意', 'CC BY 4.0');
+(1, '如何使用Markdown写作', '我来为你详细介绍Markdown的使用方法...', NULL, 'admin', NULL, '项目案例', '笔记', 516, 1, 0, 0, '2025-12-02 19:21:11', '2025-12-02 19:21:11', '2026-07-27 05:48:56', '您看到信息的平台+你的账号ID  以及对网站的建议...', NULL, 1, 0, 0.00, 'manual_approval', 1, '下载的内容在填写表单之后会显示哦！...', 'CC BY 4.0');
 
 -- --------------------------------------------------------
 
@@ -405,22 +403,6 @@ INSERT INTO `friend_link_categories` (`id`, `name`, `description`, `sort_order`,
 -- --------------------------------------------------------
 
 --
--- 替换视图以便查看 `geo_visit_summary`
--- （参见下面的实际视图）
---
-CREATE TABLE `geo_visit_summary` (
-`country` varchar(50)
-,`province` varchar(50)
-,`city` varchar(50)
-,`total_visits` bigint(21)
-,`unique_ips` bigint(21)
-,`first_visit` timestamp
-,`last_visit` timestamp
-);
-
--- --------------------------------------------------------
-
---
 -- 表的结构 `guestbook`
 --
 
@@ -486,24 +468,6 @@ CREATE TABLE `honeypot_logs` (
   `trap_value` varchar(200) DEFAULT NULL,
   `triggered_at` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- 替换视图以便查看 `ip_visit_summary`
--- （参见下面的实际视图）
---
-CREATE TABLE `ip_visit_summary` (
-`ip_address` varchar(45)
-,`country` varchar(50)
-,`province` varchar(50)
-,`city` varchar(50)
-,`isp` varchar(100)
-,`total_visits` bigint(21)
-,`pages_visited` bigint(21)
-,`first_visit` timestamp
-,`last_visit` timestamp
-);
 
 -- --------------------------------------------------------
 
@@ -660,10 +624,6 @@ INSERT INTO `photo_albums` (`id`, `name`, `description`, `cover_image`, `sort_or
 
 -- --------------------------------------------------------
 
-
-
--- --------------------------------------------------------
-
 --
 -- 表的结构 `rate_limits`
 --
@@ -677,10 +637,6 @@ CREATE TABLE `rate_limits` (
   `last_attempt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后尝试时间',
   `blocked_until` timestamp NULL DEFAULT NULL COMMENT '封锁到期时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='速率限制表';
-
--- --------------------------------------------------------
-
-
 
 -- --------------------------------------------------------
 
@@ -732,31 +688,6 @@ CREATE TABLE `user_sessions` (
   `expires_at` datetime DEFAULT NULL COMMENT '过期时间',
   `deleted_by_user` tinyint(1) DEFAULT '0' COMMENT '用户是否主动删除: 1=是'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户会话与登录日志';
-
--- --------------------------------------------------------
-
---
--- 替换视图以便查看 `view_blog_stats`
--- （参见下面的实际视图）
---
-CREATE TABLE `view_blog_stats` (
-`total_posts` bigint(21)
-,`total_views` decimal(32,0)
-,`total_authors` bigint(21)
-,`latest_post_date` timestamp
-);
-
--- --------------------------------------------------------
-
---
--- 替换视图以便查看 `view_visit_summary`
--- （参见下面的实际视图）
---
-CREATE TABLE `view_visit_summary` (
-`visit_date` date
-,`total_visits` bigint(21)
-,`unique_visitors` bigint(21)
-);
 
 -- --------------------------------------------------------
 
@@ -855,23 +786,45 @@ CREATE TABLE `website_config` (
 -- 转存表中的数据 `website_config`
 --
 
-INSERT INTO `website_config` (`id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`, `website_announcement`, `website_announcement_date`, `website_announcement_popup`, `website_announcement_enable`, `website_description`, `description`, `website_detail`, `robot_description`, `logo`, `favicon`, `home_bg_image`, `home_bg_video`, `use_bing_bg`, `contact_email`, `contact_qq`, `social_wechat`, `social_github`, `email_mode`, `updated_at`, `website_start_time`, `bing_api`, `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`, `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`, `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`, `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`, `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`, `max_devices`, `remember_duration`, `icp_record`, `public_security_record`, `terms_content`, `privacy_content`) VALUES
-(1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1, '', NULL, 0, 0, '', '', '', '', '', '/assets/images/favicon.png', '', '', 1, '', '', '', '', 'production', '2026-07-27 06:04:12', '2025-05-20 05:20:00', 'https://wallpaper.lygalaxy.cn/api/random.php?apikey=bk_26c54a517de0db0403836a53389c27375679a70e5a4a0e03e20f06591c9a5', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls', '', '43.129.255.54', 1785128559, 'qq.com', 'Powered by LyGalaxy', '', '', '', '', 3, 20, '京ICP备20240428112号-1', '京公网安备1101050201637号', '1. 接受条款\r\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\r\n\r\n2. 网站描述\r\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\r\n\r\n3. 使用许可\r\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\r\n- 不得将网站用于任何非法或未经授权的目的\r\n- 不得干扰或破坏网站的正常运行\r\n- 不得试图获取未经授权的访问权限\r\n- 不得复制或重复使用网站内容，除非获得明确许可\r\n\r\n4. 内容所有权\r\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\r\n\r\n5. 用户责任\r\n作为用户，您同意：\r\n- 提供准确和真实的信息\r\n- 不发布虚假、误导性或违法内容\r\n- 尊重他人的知识产权和隐私权\r\n- 不从事任何可能损害网站声誉的活动\r\n\r\n6. 免责声明\r\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\r\n- 网站服务的连续性或无中断\r\n- 网站内容的准确性或完整性\r\n- 网站免受病毒或其他恶意组件的侵害\r\n- 因使用网站而导致的任何损失或损害\r\n\r\n7. 服务限制\r\n我们保留以下权利：\r\n- 随时修改或终止网站服务\r\n- 拒绝向任何人提供服务\r\n- 删除违反服务条款的内容\r\n- 暂停或终止违规用户的访问权限\r\n\r\n8. 第三方链接\r\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\r\n\r\n9. 争议解决\r\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\r\n\r\n10. 条款修改\r\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\r\n\r\n11. 联系我们\r\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日', '1. 信息收集\r\n我们可能收集以下类型的信息：\r\n- 您通过联系表单提供的姓名、电子邮件地址等信息\r\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\r\n- 通过Cookie收集的使用偏好信息\r\n\r\n2. 信息使用\r\n收集的信息可能用于：\r\n- 回复您的咨询和请求\r\n- 改善网站内容和用户体验\r\n- 发送重要的通知和更新\r\n- 网站分析和安全监控\r\n\r\n3. 信息共享\r\n我们不会向第三方出售、交易或转让您的个人信息，除非：\r\n- 获得您的明确同意\r\n- 法律要求或法律程序需要\r\n- 保护网站、用户或公众的权利、财产或安全\r\n\r\n4. 数据安全\r\n我们采取适当的安全措施来保护您的个人信息，包括：\r\n- 使用安全的服务器和加密技术\r\n- 限制对个人信息的访问权限\r\n- 定期更新安全协议\r\n\r\n5. Cookie使用\r\n本网站可能使用Cookie来：\r\n- 记住您的偏好设置\r\n- 分析网站流量和使用情况\r\n- 提供个性化的内容\r\n您可以通过浏览器设置控制Cookie的使用。\r\n\r\n6. 您的权利\r\n您有权：\r\n- 访问您的个人信息\r\n- 更正不准确的信息\r\n- 删除您的个人信息\r\n- 反对处理您的信息\r\n\r\n7. 政策更新\r\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\r\n\r\n8. 联系我们\r\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\r\n邮箱：2648181326@qq.com\r\n\r\n最后更新：2026年7月20日');
+INSERT INTO `website_config` (
+  `id`, `website_name`, `website_author`, `website_intro`, `use_local_hitokoto`,
+  `website_announcement`, `website_announcement_date`, `website_announcement_popup`,
+  `website_announcement_enable`, `website_description`, `description`,
+  `website_detail`, `robot_description`, `logo`, `favicon`, `home_bg_image`,
+  `home_bg_video`, `use_bing_bg`, `contact_email`, `contact_qq`, `social_wechat`,
+  `social_github`, `email_mode`, `updated_at`, `website_start_time`, `bing_api`,
+  `social_douyin`, `social_kuaishou`, `social_bilibili`, `social_xiaohongshu`,
+  `social_whatsapp`, `social_x`, `social_discord`, `social_youtube`,
+  `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_encryption`,
+  `smtp_from_name`, `smtp_ip_cache`, `smtp_ip_cache_time`, `allowed_email_domains`,
+  `footer_extra`, `redirect_whitelist`, `epay_url`, `epay_pid`, `epay_key`,
+  `max_devices`, `remember_duration`, `icp_record`, `public_security_record`,
+  `terms_content`, `privacy_content`, `active_theme`
+) VALUES (
+  1, '冷月笙寒的小窝', '冷月笙寒', 'https://api.fuchenboke.cn/api/shici.php', 1,
+  '', NULL, 0, 0, '', '', '', '', '/assets/images/favicon.png',
+  '', '', '', 1, '', '', '', '', 'production',
+  '2026-07-27 06:04:12', '2025-05-20 05:20:00',
+  'https://wallpaper.lygalaxy.cn/api/random.php?apikey=bk_26c54a517de0db0403836a53389c27375679a70e5a4a0e03e20f06591c9a5',
+  '', '', '', '', '', '', '', '', 'smtp.qq.com', 587, '', '', 'tls',
+  '', '43.129.255.54', 1785128559, 'qq.com', 'Powered by LyGalaxy',
+  '', '', '', '', 3, 20, '京ICP备20240428112号-1',
+  '京公网安备1101050201637号',
+  '1. 接受条款\n通过访问和使用本网站，您同意遵守这些服务条款。如果您不同意这些条款，请不要使用本网站。\n\n2. 网站描述\n本网站是一个展示个人作品、博客文章和相关服务的平台。我们致力于提供高质量的内容和良好的用户体验。\n\n3. 使用许可\n我们授予您有限的、非独占的、不可转让的许可来使用本网站，但您必须遵守以下条件：\n- 不得将网站用于任何非法或未经授权的目的\n- 不得干扰或破坏网站的正常运行\n- 不得试图获取未经授权的访问权限\n- 不得复制或重复使用网站内容，除非获得明确许可\n\n4. 内容所有权\n网站上的所有内容，包括但不限于文字、图片、代码、设计等，均受版权法和其他知识产权法保护。未经我们明确书面许可，您不得使用、复制或分发任何内容。\n\n5. 用户责任\n作为用户，您同意：\n- 提供准确和真实的信息\n- 不发布虚假、误导性或违法内容\n- 尊重他人的知识产权和隐私权\n- 不从事任何可能损害网站声誉的活动\n\n6. 免责声明\n本网站按\"现状\"提供，我们不对以下内容做任何保证：\n- 网站服务的连续性或无中断\n- 网站内容的准确性或完整性\n- 网站免受病毒或其他恶意组件的侵害\n- 因使用网站而导致的任何损失或损害\n\n7. 服务限制\n我们保留以下权利：\n- 随时修改或终止网站服务\n- 拒绝向任何人提供服务\n- 删除违反服务条款的内容\n- 暂停或终止违规用户的访问权限\n\n8. 第三方链接\n本网站可能包含指向第三方网站的链接。我们不对这些外部网站的内容、隐私政策或做法负责。访问第三方网站的风险由您自行承担。\n\n9. 争议解决\n这些服务条款受中国法律管辖。如发生争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向网站经营者所在地人民法院提起诉讼。\n\n10. 条款修改\n我们保留随时修改这些服务条款的权利。修改后的条款将在网站上发布，并立即生效。继续使用本网站即表示您接受修改后的条款。\n\n11. 联系我们\n如果您对这些服务条款有任何疑问，请通过以下方式联系我们：\n邮箱：2648181326@qq.com\n\n最后更新：2026年7月20日',
+  '1. 信息收集\n我们可能收集以下类型的信息：\n- 您通过联系表单提供的姓名、电子邮件地址等信息\n- 访问网站时的技术信息（IP地址、浏览器类型、访问时间等）\n- 通过Cookie收集的使用偏好信息\n\n2. 信息使用\n收集的信息可能用于：\n- 回复您的咨询和请求\n- 改善网站内容和用户体验\n- 发送重要的通知和更新\n- 网站分析和安全监控\n\n3. 信息共享\n我们不会向第三方出售、交易或转让您的个人信息，除非：\n- 获得您的明确同意\n- 法律要求或法律程序需要\n- 保护网站、用户或公众的权利、财产或安全\n\n4. 数据安全\n我们采取适当的安全措施来保护您的个人信息，包括：\n- 使用安全的服务器和加密技术\n- 限制对个人信息的访问权限\n- 定期更新安全协议\n\n5. Cookie使用\n本网站可能使用Cookie来：\n- 记住您的偏好设置\n- 分析网站流量和使用情况\n- 提供个性化的内容\n您可以通过浏览器设置控制Cookie的使用。\n\n6. 您的权利\n您有权：\n- 访问您的个人信息\n- 更正不准确的信息\n- 删除您的个人信息\n- 反对处理您的信息\n\n7. 政策更新\n我们可能会不时更新此隐私政策。重大变更时，我们会通过网站通知您。建议您定期查看此页面以获取最新信息。\n\n8. 联系我们\n如果您对此隐私政策有任何疑问或关注，请通过以下方式联系我们：\n邮箱：2648181326@qq.com\n\n最后更新：2026年7月20日',
+  'default'
+);
+
+-- --------------------------------------------------------
 
 --
--- 转储表的索引
+-- 表的索引
 --
 
---
--- 表的索引 `admins`
---
 ALTER TABLE `admins`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`);
 
---
--- 表的索引 `appeals`
---
 ALTER TABLE `appeals`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_type` (`appeal_type`),
@@ -881,25 +834,16 @@ ALTER TABLE `appeals`
   ADD KEY `idx_email` (`contact_email`),
   ADD KEY `idx_created` (`created_at`);
 
---
--- 表的索引 `appeal_tokens`
---
 ALTER TABLE `appeal_tokens`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_token` (`token`),
   ADD KEY `idx_user` (`user_id`),
   ADD KEY `idx_expires` (`expires_at`);
 
---
--- 表的索引 `blog_categories`
---
 ALTER TABLE `blog_categories`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `slug` (`slug`);
 
---
--- 表的索引 `blog_comments`
---
 ALTER TABLE `blog_comments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_post_id` (`post_id`),
@@ -908,24 +852,15 @@ ALTER TABLE `blog_comments`
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_created_at` (`created_at`);
 
---
--- 表的索引 `blog_paid_access`
---
 ALTER TABLE `blog_paid_access`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `idx_trade_no` (`trade_no`),
   ADD KEY `idx_user_post` (`user_id`,`post_id`);
 
---
--- 表的索引 `blog_paid_access_temporary`
---
 ALTER TABLE `blog_paid_access_temporary`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_trade_no` (`trade_no`);
 
---
--- 表的索引 `blog_posts`
---
 ALTER TABLE `blog_posts`
   ADD PRIMARY KEY (`id`),
   ADD KEY `views` (`views`),
@@ -933,161 +868,95 @@ ALTER TABLE `blog_posts`
   ADD KEY `is_featured` (`is_featured`),
   ADD KEY `idx_list` (`is_published`,`category`,`created_at`);
 
---
--- 表的索引 `blog_privacy_access`
---
 ALTER TABLE `blog_privacy_access`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_user_post` (`user_id`,`post_id`),
   ADD KEY `idx_post_access` (`post_id`,`access_granted`);
 
---
--- 表的索引 `bot_blacklist`
---
 ALTER TABLE `bot_blacklist`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ip_address` (`ip_address`),
   ADD KEY `idx_ip` (`ip_address`);
 
---
--- 表的索引 `bot_whitelist_ip`
---
 ALTER TABLE `bot_whitelist_ip`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ip_address` (`ip_address`),
   ADD KEY `idx_ip` (`ip_address`);
 
---
--- 表的索引 `bot_whitelist_ua`
---
 ALTER TABLE `bot_whitelist_ua`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ua` (`ua_pattern`(191));
 
---
--- 表的索引 `captcha_sessions`
---
 ALTER TABLE `captcha_sessions`
   ADD PRIMARY KEY (`token`),
   ADD KEY `idx_expire` (`expire_at`),
   ADD KEY `idx_ip` (`ip`,`created_at`);
 
---
--- 表的索引 `captcha_tokens`
---
 ALTER TABLE `captcha_tokens`
   ADD PRIMARY KEY (`token`),
   ADD KEY `idx_expire` (`expire_at`);
 
---
--- 表的索引 `crawler_logs`
---
 ALTER TABLE `crawler_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `visit_time` (`visit_time`),
   ADD KEY `crawler_name` (`crawler_name`),
   ADD KEY `status_code` (`status_code`);
 
---
--- 表的索引 `email_verification`
---
 ALTER TABLE `email_verification`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email_purpose_unused` (`email`,`purpose`,`is_used`),
   ADD KEY `idx_email_expires` (`email`,`expires_at`);
 
---
--- 表的索引 `friend_links`
---
 ALTER TABLE `friend_links`
   ADD PRIMARY KEY (`id`),
   ADD KEY `sort_order` (`sort_order`),
   ADD KEY `is_active` (`is_active`),
   ADD KEY `idx_category` (`category_id`);
 
---
--- 表的索引 `friend_link_applications`
---
 ALTER TABLE `friend_link_applications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_created_at` (`created_at`);
 
---
--- 表的索引 `friend_link_categories`
---
 ALTER TABLE `friend_link_categories`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_sort` (`sort_order`);
 
---
--- 表的索引 `guestbook`
---
 ALTER TABLE `guestbook`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `hitokoto`
---
 ALTER TABLE `hitokoto`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `home_links`
---
 ALTER TABLE `home_links`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `honeypot_logs`
---
 ALTER TABLE `honeypot_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ip` (`ip_address`),
   ADD KEY `idx_time` (`triggered_at`);
 
---
--- 表的索引 `ip_whitelist`
---
 ALTER TABLE `ip_whitelist`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ip_address` (`ip_address`),
   ADD KEY `idx_ip` (`ip_address`);
 
---
--- 表的索引 `license_announcements`
---
 ALTER TABLE `license_announcements`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `license_keys`
---
 ALTER TABLE `license_keys`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `key_code` (`key_code`);
 
---
--- 表的索引 `license_verification_logs`
---
 ALTER TABLE `license_verification_logs`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `license_version_updates`
---
 ALTER TABLE `license_version_updates`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `my_projects`
---
 ALTER TABLE `my_projects`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `notifications`
---
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_user_id` (`user_id`),
@@ -1095,44 +964,26 @@ ALTER TABLE `notifications`
   ADD KEY `idx_is_read` (`is_read`),
   ADD KEY `idx_created_at` (`created_at`);
 
---
--- 表的索引 `photos`
---
 ALTER TABLE `photos`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_album_id` (`album_id`);
 
---
--- 表的索引 `photo_albums`
---
 ALTER TABLE `photo_albums`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `rate_limits`
---
 ALTER TABLE `rate_limits`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `idx_identifier_action` (`identifier`,`action`),
   ADD KEY `idx_last_attempt` (`last_attempt`),
   ADD KEY `idx_blocked_until` (`blocked_until`);
 
---
--- 表的索引 `shuoshuo`
---
 ALTER TABLE `shuoshuo`
   ADD PRIMARY KEY (`id`);
 
---
--- 表的索引 `ua_whitelist`
---
 ALTER TABLE `ua_whitelist`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ua` (`ua_pattern`(191));
 
---
--- 表的索引 `user_sessions`
---
 ALTER TABLE `user_sessions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_user` (`user_id`),
@@ -1145,9 +996,6 @@ ALTER TABLE `user_sessions`
   ADD KEY `idx_status_loginat` (`status`,`login_at`),
   ADD KEY `idx_inactive_success` (`is_active`,`status`,`login_at`);
 
---
--- 表的索引 `visit_stats`
---
 ALTER TABLE `visit_stats`
   ADD PRIMARY KEY (`id`),
   ADD KEY `ip_address` (`ip_address`),
@@ -1160,278 +1008,128 @@ ALTER TABLE `visit_stats`
   ADD KEY `idx_visit_time` (`visit_time`),
   ADD KEY `idx_ip` (`ip_address`);
 
---
--- 表的索引 `website_config`
---
 ALTER TABLE `website_config`
   ADD PRIMARY KEY (`id`);
 
 --
--- 在导出的表使用AUTO_INCREMENT
+-- AUTO_INCREMENT
 --
 
---
--- 使用表AUTO_INCREMENT `admins`
---
 ALTER TABLE `admins`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '管理员ID', AUTO_INCREMENT=3381;
 
---
--- 使用表AUTO_INCREMENT `appeals`
---
 ALTER TABLE `appeals`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `appeal_tokens`
---
 ALTER TABLE `appeal_tokens`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `blog_categories`
---
 ALTER TABLE `blog_categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '分类ID', AUTO_INCREMENT=7;
 
---
--- 使用表AUTO_INCREMENT `blog_comments`
---
 ALTER TABLE `blog_comments`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '评论ID';
 
---
--- 使用表AUTO_INCREMENT `blog_paid_access`
---
 ALTER TABLE `blog_paid_access`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `blog_paid_access_temporary`
---
 ALTER TABLE `blog_paid_access_temporary`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `blog_posts`
---
 ALTER TABLE `blog_posts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '文章ID', AUTO_INCREMENT=2;
 
---
--- 使用表AUTO_INCREMENT `blog_privacy_access`
---
 ALTER TABLE `blog_privacy_access`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '记录ID';
 
---
--- 使用表AUTO_INCREMENT `bot_blacklist`
---
 ALTER TABLE `bot_blacklist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `bot_whitelist_ip`
---
 ALTER TABLE `bot_whitelist_ip`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `bot_whitelist_ua`
---
 ALTER TABLE `bot_whitelist_ua`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `crawler_logs`
---
 ALTER TABLE `crawler_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `email_verification`
---
 ALTER TABLE `email_verification`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '验证码ID';
 
---
--- 使用表AUTO_INCREMENT `friend_links`
---
 ALTER TABLE `friend_links`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '链接ID';
 
---
--- 使用表AUTO_INCREMENT `friend_link_applications`
---
 ALTER TABLE `friend_link_applications`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '申请ID';
 
---
--- 使用表AUTO_INCREMENT `friend_link_categories`
---
 ALTER TABLE `friend_link_categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '分类ID', AUTO_INCREMENT=7;
 
---
--- 使用表AUTO_INCREMENT `guestbook`
---
 ALTER TABLE `guestbook`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `hitokoto`
---
 ALTER TABLE `hitokoto`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `home_links`
---
 ALTER TABLE `home_links`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `honeypot_logs`
---
 ALTER TABLE `honeypot_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `ip_whitelist`
---
 ALTER TABLE `ip_whitelist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `license_announcements`
---
 ALTER TABLE `license_announcements`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `license_keys`
---
 ALTER TABLE `license_keys`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `license_verification_logs`
---
 ALTER TABLE `license_verification_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `license_version_updates`
---
 ALTER TABLE `license_version_updates`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `my_projects`
---
 ALTER TABLE `my_projects`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `notifications`
---
 ALTER TABLE `notifications`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '通知ID';
 
---
--- 使用表AUTO_INCREMENT `photos`
---
 ALTER TABLE `photos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `photo_albums`
---
 ALTER TABLE `photo_albums`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
---
--- 使用表AUTO_INCREMENT `rate_limits`
---
 ALTER TABLE `rate_limits`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
-
---
--- 使用表AUTO_INCREMENT `shuoshuo`
---
 ALTER TABLE `shuoshuo`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `ua_whitelist`
---
 ALTER TABLE `ua_whitelist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `user_sessions`
---
 ALTER TABLE `user_sessions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- 使用表AUTO_INCREMENT `visit_stats`
---
 ALTER TABLE `visit_stats`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '记录ID', AUTO_INCREMENT=3;
 
---
--- 使用表AUTO_INCREMENT `website_config`
---
 ALTER TABLE `website_config`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '配置ID', AUTO_INCREMENT=2;
 
--- --------------------------------------------------------
-
 --
--- 视图结构 `geo_visit_summary`
---
-DROP TABLE IF EXISTS `geo_visit_summary`;
-
-CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `geo_visit_summary`  AS SELECT `visit_stats`.`country` AS `country`, `visit_stats`.`province` AS `province`, `visit_stats`.`city` AS `city`, count(0) AS `total_visits`, count(distinct `visit_stats`.`ip_address`) AS `unique_ips`, min(`visit_stats`.`visit_time`) AS `first_visit`, max(`visit_stats`.`visit_time`) AS `last_visit` FROM `visit_stats` WHERE (`visit_stats`.`country` is not null) GROUP BY `visit_stats`.`country`, `visit_stats`.`province`, `visit_stats`.`city` ORDER BY `total_visits` DESC ;
-
--- --------------------------------------------------------
-
---
--- 视图结构 `ip_visit_summary`
---
-DROP TABLE IF EXISTS `ip_visit_summary`;
-
-CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `ip_visit_summary`  AS SELECT `visit_stats`.`ip_address` AS `ip_address`, `visit_stats`.`country` AS `country`, `visit_stats`.`province` AS `province`, `visit_stats`.`city` AS `city`, `visit_stats`.`isp` AS `isp`, count(0) AS `total_visits`, count(distinct `visit_stats`.`page_url`) AS `pages_visited`, min(`visit_stats`.`visit_time`) AS `first_visit`, max(`visit_stats`.`visit_time`) AS `last_visit` FROM `visit_stats` GROUP BY `visit_stats`.`ip_address`, `visit_stats`.`country`, `visit_stats`.`province`, `visit_stats`.`city`, `visit_stats`.`isp` ORDER BY `total_visits` DESC ;
-
--- --------------------------------------------------------
-
---
--- 视图结构 `view_blog_stats`
---
-DROP TABLE IF EXISTS `view_blog_stats`;
-
-CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `view_blog_stats`  AS SELECT count(0) AS `total_posts`, sum(`blog_posts`.`views`) AS `total_views`, count(distinct `blog_posts`.`author`) AS `total_authors`, max(`blog_posts`.`created_at`) AS `latest_post_date` FROM `blog_posts` WHERE (`blog_posts`.`is_published` = 1) ;
-
--- --------------------------------------------------------
-
---
--- 视图结构 `view_visit_summary`
---
-DROP TABLE IF EXISTS `view_visit_summary`;
-
-CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `view_visit_summary`  AS SELECT cast(`visit_stats`.`visit_time` as date) AS `visit_date`, count(0) AS `total_visits`, count(distinct `visit_stats`.`ip_address`) AS `unique_visitors` FROM `visit_stats` GROUP BY cast(`visit_stats`.`visit_time` as date) ORDER BY `visit_date` DESC ;
-
---
--- 限制导出的表
+-- 外键约束
 --
 
---
--- 限制表 `friend_links`
---
 ALTER TABLE `friend_links`
   ADD CONSTRAINT `fk_friend_links_category` FOREIGN KEY (`category_id`) REFERENCES `friend_link_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

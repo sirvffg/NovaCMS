@@ -257,46 +257,6 @@ class Nova_File {
     // ── 静态方法 ──
 
     /**
-     * 判断文件是否存在（静态）
-     * @param string $path
-     * @return bool
-     */
-    public static function exists($path) {
-        return file_exists($path) && is_file($path);
-    }
-
-    /**
-     * 复制文件（静态）
-     * @param string $source
-     * @param string $destination
-     * @return bool
-     */
-    public static function copy($source, $destination) {
-        $file = new self($source);
-        return $file->copy($destination);
-    }
-
-    /**
-     * 删除文件（静态）
-     * @param string $path
-     * @return bool
-     */
-    public static function delete($path) {
-        $file = new self($path);
-        return $file->delete();
-    }
-
-    /**
-     * 读取文件（静态）
-     * @param string $path
-     * @return string|false
-     */
-    public static function read($path) {
-        $file = new self($path);
-        return $file->read();
-    }
-
-    /**
      * 写入文件（静态）
      * @param string $path
      * @param string $content

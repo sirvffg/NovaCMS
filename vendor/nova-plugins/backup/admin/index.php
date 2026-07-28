@@ -153,15 +153,15 @@ function createBackup() {
         headers: {'Content-Type': 'application/json'}
     })
     .then(r => r.json())
-    .then(data => {
+    .then(res => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>创建备份';
 
-        if (data.success) {
-            alert('备份创建成功！\n文件: ' + data.file + '\n大小: ' + data.size);
+        if (res.code === 'rest_ok') {
+            alert('备份创建成功！\n文件: ' + res.data.file + '\n大小: ' + res.data.size);
             location.reload();
         } else {
-            alert('备份失败: ' + data.message);
+            alert('备份失败: ' + res.message);
         }
     })
     .catch(err => {
@@ -178,12 +178,12 @@ function deleteBackup(filename) {
         method: 'DELETE'
     })
     .then(r => r.json())
-    .then(data => {
-        if (data.success) {
+    .then(res => {
+        if (res.code === 'rest_ok') {
             alert('删除成功');
             location.reload();
         } else {
-            alert('删除失败: ' + data.message);
+            alert('删除失败: ' + res.message);
         }
     })
     .catch(err => alert('请求失败: ' + err));
@@ -196,12 +196,12 @@ function deleteAllBackups() {
         method: 'DELETE'
     })
     .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
+    .then(res => {
+        if (res.code === 'rest_ok') {
+            alert(res.message);
             location.reload();
         } else {
-            alert('删除失败: ' + data.message);
+            alert('删除失败: ' + res.message);
         }
     })
     .catch(err => alert('请求失败: ' + err));
