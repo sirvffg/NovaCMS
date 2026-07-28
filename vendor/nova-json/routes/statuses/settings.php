@@ -52,9 +52,6 @@ function nova_get_settings($request) {
         'social_x',                 // X (Twitter)
         'social_discord',           // Discord
         'social_youtube',           // YouTube
-        // ── 音乐 ──
-        'music_enabled',            // 是否启用音乐
-        'music_playlist_id',        // 歌单ID
         // ── 公告 ──
         'website_announcement',              // 公告内容
         'website_announcement_date',         // 公告发布日期

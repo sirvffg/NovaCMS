@@ -44,19 +44,7 @@ function handleConfigPage($db) {
         $home_bg_video = $_POST['home_bg_video'] ?? '';
         $use_bing_bg = isset($_POST['use_bing_bg']) ? 1 : 0;
         $bing_api = $_POST['bing_api'] ?? '';
-        
-        // 音乐播放器配置
-        $music_enabled = isset($_POST['music_enabled']) ? 1 : 0;
-        $music_playlist_id = $_POST['music_playlist_id'] ?? '';
-        $music_song_id = $_POST['music_song_id'] ?? '';
-        $music_position = $_POST['music_position'] ?? 'bottom-left';
-        $music_embed = isset($_POST['music_embed']) ? 1 : 0;
-        $music_theme = $_POST['music_theme'] ?? 'auto';
-        $music_default_minimized = isset($_POST['music_default_minimized']) ? 1 : 0;
-        $music_lyric = isset($_POST['music_lyric']) ? 1 : 0;
-        $music_autoplay = isset($_POST['music_autoplay']) ? 1 : 0;
-        $music_auto_pause = isset($_POST['music_auto_pause']) ? 1 : 0;
-        
+
         // 邮件配置
         $email_mode = $_POST['email_mode'] ?? 'test';
         $smtp_host = $_POST['smtp_host'] ?? 'smtp.qq.com';
@@ -216,18 +204,6 @@ function handleConfigPage($db) {
                 $db->exec("ALTER TABLE website_config ADD COLUMN social_youtube VARCHAR(255) DEFAULT '' AFTER social_discord");
             }
 
-            // Check and add music_default_minimized
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'music_default_minimized'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN music_default_minimized TINYINT(1) DEFAULT 0 COMMENT '默认最小化' AFTER music_theme");
-            }
-
-            // Check and add music_auto_pause
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'music_auto_pause'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN music_auto_pause TINYINT(1) DEFAULT 0 COMMENT '自动暂停' AFTER music_autoplay");
-            }
-
             // Check and add footer_extra
             $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'footer_extra'");
             if (!$checkStmt->fetch()) {
@@ -278,8 +254,8 @@ function handleConfigPage($db) {
             }
 
             // 保存数据库配置
-            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, music_enabled=?, music_playlist_id=?, music_song_id=?, music_position=?, music_embed=?, music_theme=?, music_default_minimized=?, music_lyric=?, music_autoplay=?, music_auto_pause=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, newyear_enable=?, newyear_message=?, newyear_video=?, newyear_start_time=?, newyear_end_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, terms_content=?, privacy_content=? WHERE id=1");
-            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $music_enabled, $music_playlist_id, $music_song_id, $music_position, $music_embed, $music_theme, $music_default_minimized, $music_lyric, $music_autoplay, $music_auto_pause, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $newyear_enable, $newyear_message, $newyear_video, $newyear_start_time, $newyear_end_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $terms_content, $privacy_content]);
+            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, website_intro=?, use_local_hitokoto=?, website_announcement=?, website_announcement_date=?, website_announcement_popup=?, website_announcement_enable=?, website_description=?, website_detail=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, home_bg_image=?, home_bg_video=?, use_bing_bg=?, bing_api=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, newyear_enable=?, newyear_message=?, newyear_video=?, newyear_start_time=?, newyear_end_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, terms_content=?, privacy_content=? WHERE id=1");
+            $stmt->execute([$website_name, $website_author, $website_intro, $use_local_hitokoto, $website_announcement, $website_announcement_date, $website_announcement_popup, $website_announcement_enable, $website_description, $website_detail, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $home_bg_image, $home_bg_video, $use_bing_bg, $bing_api, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $newyear_enable, $newyear_message, $newyear_video, $newyear_start_time, $newyear_end_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $terms_content, $privacy_content]);
             
             // 保存备案信息到配置文件
             $recordConfigPath = __DIR__ . '/../../config/RecordNumber.config';

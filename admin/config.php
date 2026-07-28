@@ -172,11 +172,6 @@ require_once 'includes/header.php';
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="tab-media" data-bs-toggle="tab" data-bs-target="#content-media" type="button" role="tab">
-                                        <i class="bi bi-music-note-beamed me-2"></i> 播放器设置
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="tab-newyear" data-bs-toggle="tab" data-bs-target="#content-newyear" type="button" role="tab">
                                         <i class="bi bi-gift me-2"></i> 新年祝福
                                     </button>
@@ -583,163 +578,6 @@ require_once 'includes/header.php';
                                             
                                             <div class="alert alert-light border small">
                                                 <i class="bi bi-info-circle me-1"></i> <strong>显示优先级：</strong> 背景视频 > 背景图片 > Bing每日图片 > 默认背景
-                                            </div>
-                                        </div>
-                                    </div>
-                        </div>
-
-                        <!-- 媒体设置 -->
-                        <div class="tab-pane fade" id="content-media" role="tabpanel">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>网易云音乐播放器</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="form-check form-switch mb-4">
-                                                <input class="form-check-input" type="checkbox" id="musicEnabled" name="music_enabled" value="1" <?= !empty($config['music_enabled']) ? 'checked' : '' ?>>
-                                                <label class="form-check-label fw-bold" for="musicEnabled">启用全局音乐播放器</label>
-                                            </div>
-                                            
-                                            <div class="alert alert-info border-0 bg-info bg-opacity-10 small mb-4">
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    <div>
-                                                        <i class="bi bi-info-circle-fill me-2"></i>
-                                                        播放器核心资源（CSS/JS）存储在本地 <code>/config/music_local/</code> 目录。
-                                                    </div>
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="updateMusicResources(this)">
-                                                        <i class="bi bi-cloud-download me-1"></i> 更新核心资源
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div id="musicSettings" class="<?= empty($config['music_enabled']) ? 'd-none' : '' ?>">
-                                                <div class="row g-3 mb-4">
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">歌单 ID</label>
-                                                        <input type="text" name="music_playlist_id" class="form-control" 
-                                                               value="<?= e($config['music_playlist_id'] ?? '14273792576') ?>"
-                                                               placeholder="例如: 14273792576">
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">单曲 ID (可选)</label>
-                                                        <input type="text" name="music_song_id" class="form-control" 
-                                                               value="<?= e($config['music_song_id'] ?? '') ?>"
-                                                               placeholder="例如: 1234567890">
-                                                    </div>
-                                                </div>
-
-                                                <div class="row g-3 mb-4">
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">显示位置</label>
-                                                        <select name="music_position" class="form-select">
-                                                            <option value="bottom-left" <?= ($config['music_position'] ?? 'bottom-left') === 'bottom-left' ? 'selected' : '' ?>>左下角</option>
-                                                            <option value="bottom-right" <?= ($config['music_position'] ?? '') === 'bottom-right' ? 'selected' : '' ?>>右下角</option>
-                                                            <option value="top-left" <?= ($config['music_position'] ?? '') === 'top-left' ? 'selected' : '' ?>>左上角</option>
-                                                            <option value="top-right" <?= ($config['music_position'] ?? '') === 'top-right' ? 'selected' : '' ?>>右上角</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">播放器主题</label>
-                                                        <select name="music_theme" class="form-select">
-                                                            <option value="auto" <?= ($config['music_theme'] ?? 'auto') === 'auto' ? 'selected' : '' ?>>自动（跟随系统）</option>
-                                                            <option value="light" <?= ($config['music_theme'] ?? '') === 'light' ? 'selected' : '' ?>>浅色</option>
-                                                            <option value="dark" <?= ($config['music_theme'] ?? '') === 'dark' ? 'selected' : '' ?>>深色</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                <div class="card bg-light border-0">
-                                                    <div class="card-body">
-                                                        <h6 class="card-title mb-3 fw-bold text-secondary"><i class="bi bi-toggles me-2"></i>功能开关</h6>
-                                                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-                                                            <!-- 嵌入模式 -->
-                                                            <div class="col">
-                                                                <div class="bg-white p-3 rounded shadow-sm h-100 d-flex align-items-center justify-content-between position-relative">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                                            <i class="bi bi-box-arrow-in-down-right fs-4"></i>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label class="d-block fw-bold text-dark mb-0 stretched-link" for="musicEmbed" style="cursor: pointer;">嵌入模式</label>
-                                                                            <small class="text-muted" style="font-size: 0.75rem;">仅对单曲有效</small>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="form-check form-switch mb-0" style="min-height: auto; padding-left: 0;">
-                                                                        <input class="form-check-input m-0" type="checkbox" name="music_embed" id="musicEmbed" value="1" <?= !empty($config['music_embed']) ? 'checked' : '' ?> style="width: 2.5em; height: 1.25em;">
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <!-- 默认最小化 -->
-                                                            <div class="col">
-                                                                <div class="bg-white p-3 rounded shadow-sm h-100 d-flex align-items-center justify-content-between position-relative">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="bg-warning bg-opacity-10 p-2 rounded me-3 text-warning d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                                            <i class="bi bi-dash-square fs-4"></i>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label class="d-block fw-bold text-dark mb-0 stretched-link" for="musicDefaultMinimized" style="cursor: pointer;">默认最小化</label>
-                                                                            <small class="text-muted" style="font-size: 0.75rem;">初始状态收起</small>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="form-check form-switch mb-0" style="min-height: auto; padding-left: 0;">
-                                                                        <input class="form-check-input m-0" type="checkbox" name="music_default_minimized" id="musicDefaultMinimized" value="1" <?= !empty($config['music_default_minimized']) ? 'checked' : '' ?> style="width: 2.5em; height: 1.25em;">
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <!-- 显示歌词 -->
-                                                            <div class="col">
-                                                                <div class="bg-white p-3 rounded shadow-sm h-100 d-flex align-items-center justify-content-between position-relative">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="bg-info bg-opacity-10 p-2 rounded me-3 text-info d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                                            <i class="bi bi-file-music fs-4"></i>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label class="d-block fw-bold text-dark mb-0 stretched-link" for="musicLyric" style="cursor: pointer;">显示歌词</label>
-                                                                            <small class="text-muted" style="font-size: 0.75rem;">开启歌词滚动</small>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="form-check form-switch mb-0" style="min-height: auto; padding-left: 0;">
-                                                                        <input class="form-check-input m-0" type="checkbox" name="music_lyric" id="musicLyric" value="1" <?= !empty($config['music_lyric']) ? 'checked' : '' ?> style="width: 2.5em; height: 1.25em;">
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <!-- 自动播放 -->
-                                                            <div class="col">
-                                                                <div class="bg-white p-3 rounded shadow-sm h-100 d-flex align-items-center justify-content-between position-relative">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="bg-success bg-opacity-10 p-2 rounded me-3 text-success d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                                            <i class="bi bi-play-circle fs-4"></i>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label class="d-block fw-bold text-dark mb-0 stretched-link" for="musicAutoplay" style="cursor: pointer;">自动播放</label>
-                                                                            <small class="text-muted" style="font-size: 0.75rem;">加载后自动播放</small>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="form-check form-switch mb-0" style="min-height: auto; padding-left: 0;">
-                                                                        <input class="form-check-input m-0" type="checkbox" name="music_autoplay" id="musicAutoplay" value="1" <?= !empty($config['music_autoplay']) ? 'checked' : '' ?> style="width: 2.5em; height: 1.25em;">
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <!-- 自动暂停 -->
-                                                            <div class="col">
-                                                                <div class="bg-white p-3 rounded shadow-sm h-100 d-flex align-items-center justify-content-between position-relative">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <div class="bg-danger bg-opacity-10 p-2 rounded me-3 text-danger d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                                            <i class="bi bi-pause-circle fs-4"></i>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label class="d-block fw-bold text-dark mb-0 stretched-link" for="musicAutoPause" style="cursor: pointer;">自动暂停</label>
-                                                                            <small class="text-muted" style="font-size: 0.75rem;">与其他媒体互斥</small>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="form-check form-switch mb-0" style="min-height: auto; padding-left: 0;">
-                                                                        <input class="form-check-input m-0" type="checkbox" name="music_auto_pause" id="musicAutoPause" value="1" <?= !empty($config['music_auto_pause']) ? 'checked' : '' ?> style="width: 2.5em; height: 1.25em;">
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1319,20 +1157,7 @@ require_once 'includes/header.php';
             updateRobotDescLength();
             robotDescTextarea.addEventListener('input', updateRobotDescLength);
         }
-        
-        // 音乐播放器开关控制
-        const musicEnabled = document.getElementById('musicEnabled');
-        const musicSettings = document.getElementById('musicSettings');
-        if (musicEnabled && musicSettings) {
-            musicEnabled.addEventListener('change', function() {
-                if (this.checked) {
-                    musicSettings.classList.remove('d-none');
-                } else {
-                    musicSettings.classList.add('d-none');
-                }
-            });
-        }
-        
+
         // Bing背景开关控制
         const useBingBg = document.getElementById('useBingBg');
         const bingApiContainer = document.getElementById('bingApiContainer');
@@ -1565,36 +1390,6 @@ require_once 'includes/header.php';
                 icon.classList.remove('bi-eye-slash');
                 icon.classList.add('bi-eye');
             }
-        }
-        
-        // 更新音乐播放器资源
-        function updateMusicResources(btn) {
-            if (!confirm('确定要从远程服务器更新播放器核心资源吗？\n这将覆盖本地的 /config/music_local/ 文件。')) {
-                return;
-            }
-            
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 更新中...';
-            
-            fetch('/admin/update_music_resources.php', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                } else {
-                    alert('更新失败: ' + data.error);
-                }
-            })
-            .catch(error => {
-                alert('请求出错: ' + error.message);
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            });
         }
 
     </script>

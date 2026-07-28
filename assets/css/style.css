@@ -894,18 +894,6 @@ footer .beian-item:hover {
     }
 }
 
-/* 音乐播放器样式（如果使用） */
-.music-player {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 10px;
-    padding: 10px;
-    color: white;
-}
-
 /* 加载动画 */
 .loading-spinner {
     display: inline-block;

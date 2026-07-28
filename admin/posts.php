@@ -102,17 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     $privacy_answer = null;
                 }
                 
-                // 音频相关参数
-                $data_music_file = $_POST['data_music_file'] ?? '';
-                $data_lyric_file = $_POST['data_lyric_file'] ?? '';
-                $data_music_enabled = isset($_POST['data_music_enabled']) ? 'true' : 'false';
-                $data_autoplay = $_POST['data_autoplay'] ?? 'false';
-                $data_position = $_POST['data_position'] ?? 'static';
-                $data_theme = $_POST['data_theme'] ?? 'auto';
-                $data_size = $_POST['data_size'] ?? 'normal';
-                $data_embed = isset($_POST['data_embed']) ? 'true' : 'false';
-                $data_cover_mode = isset($_POST['data_cover_mode']) ? 'true' : 'false';
-                
                 // 封面图片参数
                 $cover_image = $_POST['cover_image'] ?? '';
                 
@@ -141,8 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 }
                 
                 if ($id) {
-                    $stmt = $db->prepare("UPDATE blog_posts SET title=?, content=?, author=?, category=?, tags=?, is_pinned=?, is_featured=?, has_privacy_content=?, privacy_question=?, privacy_answer=?, privacy_type=?, approval_required=?, privacy_custom_text=?, has_paid_content=?, post_price=?, data_music_file=?, data_lyric_file=?, data_music_enabled=?, data_autoplay=?, data_position=?, data_theme=?, data_size=?, data_embed=?, data_cover_mode=?, cover_image=?, license=?, is_published=?, updated_at=NOW() WHERE id=?");
-                    $stmt->execute([$title, $content, $author, $category, $tags, $is_pinned, $is_featured, $has_privacy_content, $privacy_question, $privacy_answer, $privacy_type, $approval_required, $privacy_custom_text, $has_paid_content, $post_price, $data_music_file, $data_lyric_file, $data_music_enabled, $data_autoplay, $data_position, $data_theme, $data_size, $data_embed, $data_cover_mode, $cover_image, $license, $is_published, $id]);
+                    $stmt = $db->prepare("UPDATE blog_posts SET title=?, content=?, author=?, category=?, tags=?, is_pinned=?, is_featured=?, has_privacy_content=?, privacy_question=?, privacy_answer=?, privacy_type=?, approval_required=?, privacy_custom_text=?, has_paid_content=?, post_price=?, cover_image=?, license=?, is_published=?, updated_at=NOW() WHERE id=?");
+                    $stmt->execute([$title, $content, $author, $category, $tags, $is_pinned, $is_featured, $has_privacy_content, $privacy_question, $privacy_answer, $privacy_type, $approval_required, $privacy_custom_text, $has_paid_content, $post_price, $cover_image, $license, $is_published, $id]);
                     $response = [
                         'success' => true,
                         'message' => '文章已更新',
@@ -157,46 +146,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                         
                         // 完整的INSERT语句
                         $sql = "INSERT INTO blog_posts (
-                            id, 
-                            title, 
-                            content, 
-                            summary, 
-                            author, 
-                            cover_image, 
-                            category, 
-                            tags, 
-                            views, 
-                            is_published, 
-                            is_pinned, 
-                            is_featured, 
-                            published_at, 
-                            created_at, 
-                            updated_at, 
-                            data_music_file, 
-                            data_lyric_file, 
-                            data_music_enabled, 
-                            data_autoplay, 
-                            data_position, 
-                            data_theme, 
-                            data_size, 
-                            data_embed, 
-                            data_cover_mode, 
-                            privacy_question, 
-                            privacy_answer, 
-                            has_privacy_content, 
-                            privacy_type, 
-                            approval_required, 
+                            id,
+                            title,
+                            content,
+                            summary,
+                            author,
+                            cover_image,
+                            category,
+                            tags,
+                            views,
+                            is_published,
+                            is_pinned,
+                            is_featured,
+                            published_at,
+                            created_at,
+                            updated_at,
+                            privacy_question,
+                            privacy_answer,
+                            has_privacy_content,
+                            privacy_type,
+                            approval_required,
                             privacy_custom_text,
                             has_paid_content,
                             post_price,
                             license
                         ) VALUES (
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-                            ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?, 
                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                            ?, ?, ?
+                            ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?
                         )";
-                        
+
                         $params = [
                             $newId,                      // 1: id
                             $title,                      // 2: title
@@ -213,24 +192,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                             null,                        // 13: published_at
                             // 14: created_at - NOW()
                             // 15: updated_at - NOW()
-                            $data_music_file,            // 16: data_music_file
-                            $data_lyric_file,            // 17: data_lyric_file
-                            $data_music_enabled,         // 18: data_music_enabled
-                            $data_autoplay,              // 19: data_autoplay
-                            $data_position,              // 20: data_position
-                            $data_theme,                 // 21: data_theme
-                            $data_size,                  // 22: data_size
-                            $data_embed,                 // 23: data_embed
-                            $data_cover_mode,            // 24: data_cover_mode
-                            $privacy_question,           // 25: privacy_question
-                            $privacy_answer,             // 26: privacy_answer
-                            $has_privacy_content,        // 27: has_privacy_content
-                            $privacy_type,               // 28: privacy_type
-                            $approval_required,          // 29: approval_required
-                            $privacy_custom_text,        // 30: privacy_custom_text
-                            $has_paid_content,           // 31: has_paid_content
-                            $post_price,                 // 32: post_price
-                            $license                     // 33: license
+                            $privacy_question,           // 16: privacy_question
+                            $privacy_answer,             // 17: privacy_answer
+                            $has_privacy_content,        // 18: has_privacy_content
+                            $privacy_type,               // 19: privacy_type
+                            $approval_required,          // 20: approval_required
+                            $privacy_custom_text,        // 21: privacy_custom_text
+                            $has_paid_content,           // 22: has_paid_content
+                            $post_price,                 // 23: post_price
+                            $license                     // 24: license
                         ];
                         
                         // 执行INSERT
@@ -301,22 +271,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                         if (file_exists($coverPath) && unlink($coverPath)) {
                             $deleted_files[] = $post['cover_image'];
                         }
-                    }
-                }
-
-                // 删除音频文件
-                if (!empty($post['data_music_file'])) {
-                    $audio_path = '../' . $post['data_music_file'];
-                    if (file_exists($audio_path) && unlink($audio_path)) {
-                        $deleted_files[] = $post['data_music_file'];
-                    }
-                }
-
-                // 删除歌词文件
-                if (!empty($post['data_lyric_file'])) {
-                    $lyric_path = '../' . $post['data_lyric_file'];
-                    if (file_exists($lyric_path) && unlink($lyric_path)) {
-                        $deleted_files[] = $post['data_lyric_file'];
                     }
                 }
 
@@ -393,157 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     throw new Exception('文章不存在');
                 }
                 break;
-                
-            case 'upload_audio':
-                // 上传音频文件
-                if (!isset($_FILES['audio_file'])) {
-                    throw new Exception('没有上传文件');
-                }
-                
-                $file = $_FILES['audio_file'];
-                $uploadDir = '../uploads/audio/';
-                $fileName = $file['name'];
-                
-                // 检查目录是否存在，不存在则创建
-                if (!file_exists($uploadDir)) {
-                    if (!mkdir($uploadDir, 0755, true)) {
-                        throw new Exception('无法创建上传目录');
-                    }
-                }
-                
-                // 检查目录是否可写
-                if (!is_writable($uploadDir)) {
-                    throw new Exception('上传目录不可写');
-                }
-                
-                // 检查文件类型
-                $allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/m4a', 'audio/ogg'];
-                if (!in_array($file['type'], $allowedTypes)) {
-                    throw new Exception('不支持的音频格式，请上传 MP3、WAV、M4A 或 OGG 格式');
-                }
-                
-                // 检查文件大小 (20MB)
-                if ($file['size'] > 20 * 1024 * 1024) {
-                    throw new Exception('音频文件大小不能超过 20MB');
-                }
-                
-                // 检查上传错误
-                if ($file['error'] !== UPLOAD_ERR_OK) {
-                    $uploadErrors = [
-                        UPLOAD_ERR_INI_SIZE => '文件大小超过 php.ini 中设置的限制',
-                        UPLOAD_ERR_FORM_SIZE => '文件大小超过表单中设置的限制',
-                        UPLOAD_ERR_PARTIAL => '文件只有部分被上传',
-                        UPLOAD_ERR_NO_FILE => '没有文件被上传',
-                        UPLOAD_ERR_NO_TMP_DIR => '找不到临时文件夹',
-                        UPLOAD_ERR_CANT_WRITE => '文件写入失败'
-                    ];
-                    $errorMsg = $uploadErrors[$file['error']] ?? '未知上传错误';
-                    throw new Exception('上传错误: ' . $errorMsg);
-                }
-                
-                // 检查是否已存在同名文件
-                if (file_exists($uploadDir . $fileName)) {
-                    $response = [
-                        'success' => true,
-                        'message' => '音频文件已存在，直接使用',
-                        'file_path' => 'uploads/audio/' . $fileName,
-                        'file_name' => $fileName,
-                        'exists' => true
-                    ];
-                } else {
-                    // 上传新文件
-                    if (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
-                        throw new Exception('文件上传失败，可能是权限问题');
-                    }
-                    
-                    $response = [
-                        'success' => true,
-                        'message' => '音频上传成功',
-                        'file_path' => 'uploads/audio/' . $fileName,
-                        'file_name' => $fileName,
-                        'exists' => false
-                    ];
-                }
-                break;
-                
-            case 'upload_lyric':
-                // 上传歌词文件
-                if (!isset($_FILES['lyric_file'])) {
-                    throw new Exception('没有上传歌词文件');
-                }
-                
-                $file = $_FILES['lyric_file'];
-                $uploadDir = '../uploads/audio/';
-                $fileName = $file['name'];
-                
-                // 检查目录是否存在，不存在则创建
-                if (!file_exists($uploadDir)) {
-                    if (!mkdir($uploadDir, 0755, true)) {
-                        throw new Exception('无法创建上传目录');
-                    }
-                }
-                
-                // 检查目录是否可写
-                if (!is_writable($uploadDir)) {
-                    throw new Exception('上传目录不可写');
-                }
-                
-                // 检查文件类型
-                $allowedTypes = ['text/plain', 'application/octet-stream'];
-                if (!in_array($file['type'], $allowedTypes)) {
-                    throw new Exception('歌词文件必须是 .lrc 或 .txt 格式');
-                }
-                
-                // 检查文件扩展名
-                $fileInfo = pathinfo($file['name']);
-                if (!in_array(strtolower($fileInfo['extension']), ['lrc', 'txt'])) {
-                    throw new Exception('歌词文件必须是 .lrc 或 .txt 格式');
-                }
-                
-                // 检查文件大小 (1MB)
-                if ($file['size'] > 1024 * 1024) {
-                    throw new Exception('歌词文件大小不能超过 1MB');
-                }
-                
-                // 检查上传错误
-                if ($file['error'] !== UPLOAD_ERR_OK) {
-                    $uploadErrors = [
-                        UPLOAD_ERR_INI_SIZE => '文件大小超过 php.ini 中设置的限制',
-                        UPLOAD_ERR_FORM_SIZE => '文件大小超过表单中设置的限制',
-                        UPLOAD_ERR_PARTIAL => '文件只有部分被上传',
-                        UPLOAD_ERR_NO_FILE => '没有文件被上传',
-                        UPLOAD_ERR_NO_TMP_DIR => '找不到临时文件夹',
-                        UPLOAD_ERR_CANT_WRITE => '文件写入失败'
-                    ];
-                    $errorMsg = $uploadErrors[$file['error']] ?? '未知上传错误';
-                    throw new Exception('上传错误: ' . $errorMsg);
-                }
-                
-                // 检查是否已存在同名文件
-                if (file_exists($uploadDir . $fileName)) {
-                    $response = [
-                        'success' => true,
-                        'message' => '歌词文件已存在，直接使用',
-                        'file_path' => 'uploads/audio/' . $fileName,
-                        'file_name' => $fileName,
-                        'exists' => true
-                    ];
-                } else {
-                    // 上传新文件
-                    if (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
-                        throw new Exception('歌词文件上传失败，可能是权限问题');
-                    }
-                    
-                    $response = [
-                        'success' => true,
-                        'message' => '歌词上传成功',
-                        'file_path' => 'uploads/audio/' . $fileName,
-                        'file_name' => $fileName,
-                        'exists' => false
-                    ];
-                }
-                break;
-                
+
             case 'upload_cover':
                 // 上传封面图片
                 if (!isset($_FILES['cover_image_file'])) {
@@ -1062,13 +866,6 @@ $extra_css = <<<'CSS'
     text-align: center;
     padding: 20px;
 }
-.music-config-card {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-}
-.music-config-card .card-body {
-    padding: 1.25rem;
-}
 @media (max-width: 768px) {
     .col-md-3 {
         margin-bottom: 1rem;
@@ -1234,134 +1031,7 @@ require_once 'includes/header.php'; ?>
                                             <div class="mt-2 small text-danger" id="aiSummaryError" style="display:none;"></div>
                                         </div>
                                     </div>
-                                    
-                                    <!-- 音乐配置区域 - 移动到主要内容区域 -->
-                                    <div class="mb-3">
-                                        <label class="form-label">
-                                            <i class="bi bi-music-note-beamed"></i> 背景音乐
-                                        </label>
-                                        
-                                        <!-- 是否启用音乐播放器 -->
-                                        <div class="mb-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="data_music_enabled" id="data_music_enabled" 
-                                                       value="true" <?= ($editPost['data_music_enabled'] ?? 'false') === 'true' ? 'checked' : '' ?>>
-                                                <label class="form-check-label" for="data_music_enabled">
-                                                    <i class="bi bi-music-note-beamed"></i> 启用音乐播放器
-                                                </label>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- 音乐配置区域 -->
-                                        <div id="musicConfigArea" class="card music-config-card" style="<?= ($editPost['data_music_enabled'] ?? 'false') === 'true' ? '' : 'display: none;' ?>">
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <!-- 音频文件上传 -->
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label text-muted small">音频文件 *</label>
-                                                        <div class="input-group">
-                                                            <input type="text" name="data_music_file" id="data_music_file" 
-                                                                   class="form-control" 
-                                                                   value="<?= e($editPost['data_music_file'] ?? '') ?>"
-                                                                   placeholder="上传音频文件或输入路径"
-                                                           readonly>
-                                                            <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
-                                                            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('audioFileInput').click()">
-                                                                <i class="bi bi-upload"></i> 上传
-                                                            </button>
-                                                            <button type="button" class="btn btn-outline-danger" onclick="clearAudioFile()">
-                                                                <i class="bi bi-x"></i> 清除
-                                                            </button>
-                                                        </div>
-                                                        <small class="text-muted">支持 MP3、WAV、M4A、OGG 格式，最大 20MB</small>
-                                                        
-                                                        <!-- 音频预览 -->
-                                                        <div id="audioPreview" class="mt-2" style="display: none;">
-                                                            <audio controls class="w-100" style="height: 32px;"></audio>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <!-- 歌词文件上传 -->
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label text-muted small">歌词文件 (可选)</label>
-                                                        <div class="input-group">
-                                                            <input type="text" name="data_lyric_file" id="data_lyric_file" 
-                                                                   class="form-control" 
-                                                                   value="<?= e($editPost['data_lyric_file'] ?? '') ?>"
-                                                                   placeholder="上传歌词文件或输入路径"
-                                                           readonly>
-                                                            <input type="file" id="lyricFileInput" accept=".lrc,.txt" style="display: none;">
-                                                            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('lyricFileInput').click()">
-                                                                <i class="bi bi-file-text"></i> 上传
-                                                            </button>
-                                                            <button type="button" class="btn btn-outline-danger" onclick="clearLyricFile()">
-                                                                <i class="bi bi-x"></i> 清除
-                                                            </button>
-                                                        </div>
-                                                        <small class="text-muted">支持 .lrc 和 .txt 格式，最大 1MB</small>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- 播放器设置 -->
-                                                <div class="border-top pt-3 mt-3">
-                                                    <label class="form-label text-muted small">播放器设置</label>
-                                                    
-                                                    <div class="row g-3 mb-3">
-                                                        <div class="col-md-3">
-                                                            <label class="form-label small">播放器位置</label>
-                                                            <select name="data_position" class="form-select form-select-sm">
-                                                                <option value="static" <?= ($editPost['data_position'] ?? 'static') === 'static' ? 'selected' : '' ?>>静态定位</option>
-                                                                <option value="top-left" <?= ($editPost['data_position'] ?? 'static') === 'top-left' ? 'selected' : '' ?>>左上角</option>
-                                                                <option value="top-right" <?= ($editPost['data_position'] ?? 'static') === 'top-right' ? 'selected' : '' ?>>右上角</option>
-                                                                <option value="bottom-left" <?= ($editPost['data_position'] ?? 'static') === 'bottom-left' ? 'selected' : '' ?>>左下角</option>
-                                                                <option value="bottom-right" <?= ($editPost['data_position'] ?? 'static') === 'bottom-right' ? 'selected' : '' ?>>右下角</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <label class="form-label small">主题模式</label>
-                                                            <select name="data_theme" class="form-select form-select-sm">
-                                                                <option value="auto" <?= ($editPost['data_theme'] ?? 'auto') === 'auto' ? 'selected' : '' ?>>自动主题</option>
-                                                                <option value="light" <?= ($editPost['data_theme'] ?? 'auto') === 'light' ? 'selected' : '' ?>>浅色主题</option>
-                                                                <option value="dark" <?= ($editPost['data_theme'] ?? 'auto') === 'dark' ? 'selected' : '' ?>>深色主题</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <label class="form-label small">播放器尺寸</label>
-                                                            <select name="data_size" class="form-select form-select-sm">
-                                                                <option value="compact" <?= ($editPost['data_size'] ?? 'normal') === 'compact' ? 'selected' : '' ?>>紧凑</option>
-                                                                <option value="normal" <?= ($editPost['data_size'] ?? 'normal') === 'normal' ? 'selected' : '' ?>>正常</option>
-                                                                <option value="large" <?= ($editPost['data_size'] ?? 'normal') === 'large' ? 'selected' : '' ?>>大尺寸</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <label class="form-label small">自动播放</label>
-                                                            <select name="data_autoplay" id="data_autoplay" class="form-select form-select-sm" onchange="handleAutoplayChange()">
-                                                                <option value="false" <?= ($editPost['data_autoplay'] ?? 'false') === 'false' ? 'selected' : '' ?>>手动播放</option>
-                                                                <option value="true" <?= ($editPost['data_autoplay'] ?? 'false') === 'true' ? 'selected' : '' ?>>自动播放</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div class="form-check form-check-inline">
-                                                        <input class="form-check-input" type="checkbox" name="data_embed" id="data_embed" 
-                                                               value="true" <?= ($editPost['data_embed'] ?? 'false') === 'true' ? 'checked' : '' ?>
-                                                               onchange="handleMusicModeChange()">
-                                                        <label class="form-check-label small" for="data_embed">
-                                                            嵌入模式
-                                                        </label>
-                                                    </div>
-                                                    <div class="form-check form-check-inline">
-                                                        <input class="form-check-input" type="checkbox" name="data_cover_mode" id="data_cover_mode" 
-                                                               value="true" <?= ($editPost['data_cover_mode'] ?? 'false') === 'true' ? 'checked' : '' ?>>
-                                                        <label class="form-check-label small" for="data_cover_mode">
-                                                            黑胶唱片模式
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
+
                                     <!-- 支付内容设置区域 -->
                                     <div class="mb-3">
                                         <label class="form-label">
@@ -2650,26 +2320,7 @@ require_once 'includes/header.php'; ?>
             if (isPublishedSelect) {
                 isPublishedSelect.value = '1';
             }
-            
-            // 重置音频字段
-            document.getElementById('data_music_file').value = '';
-            document.getElementById('data_lyric_file').value = '';
-            document.getElementById('audioPreview').style.display = 'none';
-            document.getElementById('audioFileInput').value = '';
-            document.getElementById('lyricFileInput').value = '';
-            
-            // 设置音频字段默认值
-            document.getElementById('data_music_enabled').checked = false;
-            document.querySelector('select[name="data_position"]').value = 'static';
-            document.querySelector('select[name="data_theme"]').value = 'auto';
-            document.querySelector('select[name="data_size"]').value = 'normal';
-            document.querySelector('select[name="data_autoplay"]').value = 'false';
-            document.getElementById('data_embed').checked = false;
-            document.getElementById('data_cover_mode').checked = false;
-            
-            // 隐藏音乐配置区域
-            document.getElementById('musicConfigArea').style.display = 'none';
-            
+
             // 重置封面图片
             document.getElementById('cover_image').value = '';
             document.getElementById('coverPreview').style.display = 'none';
@@ -2772,27 +2423,7 @@ require_once 'includes/header.php'; ?>
                     } else {
                         document.getElementById('coverPreview').style.display = 'none';
                     }
-                    
-                    // 填充音频字段
-                    document.getElementById('data_music_file').value = post.data_music_file || '';
-                    document.getElementById('data_lyric_file').value = post.data_lyric_file || '';
-                    document.getElementById('data_music_enabled').checked = (post.data_music_enabled || 'false') === 'true';
-                    document.querySelector('select[name="data_position"]').value = post.data_position || 'static';
-                    document.querySelector('select[name="data_theme"]').value = post.data_theme || 'auto';
-                    document.querySelector('select[name="data_size"]').value = post.data_size || 'normal';
-                    document.querySelector('select[name="data_autoplay"]').value = post.data_autoplay || 'false';
-                    document.getElementById('data_embed').checked = (post.data_embed || 'false') === 'true';
-                    document.getElementById('data_cover_mode').checked = (post.data_cover_mode || 'false') === 'true';
-                    
-                    // 根据音乐播放器开关状态显示/隐藏配置区域
-                    const musicConfigArea = document.getElementById('musicConfigArea');
-                    const musicEnabled = (post.data_music_enabled || 'false') === 'true';
-                    if (musicEnabled) {
-                        musicConfigArea.style.display = 'block';
-                    } else {
-                        musicConfigArea.style.display = 'none';
-                    }
-                    
+
                     // 加载隐私设置
                     const privacyConfigArea = document.getElementById('privacyConfigArea');
                     const hasPrivacyContent = (post.has_privacy_content || 0) == 1;
@@ -2844,14 +2475,7 @@ require_once 'includes/header.php'; ?>
                         aiSummaryError.style.display = 'none';
                         aiSummaryError.textContent = '';
                     }
-                    
-                    // 显示音频预览
-                    if (post.data_music_file) {
-                        showAudioPreview(post.data_music_file);
-                    } else {
-                        document.getElementById('audioPreview').style.display = 'none';
-                    }
-                    
+
                     // 更新编辑器内容
                     const editor = document.querySelector('.CodeMirror');
                     if (editor && editor.CodeMirror) {
@@ -3041,87 +2665,7 @@ require_once 'includes/header.php'; ?>
             const tagsArray = tags.split(',').filter(tag => tag.trim() !== '');
             return tagsArray.length > 0 ? '#' + tagsArray.join('#') : '';
         }
-        
-        // 音频上传相关函数
-        function uploadAudioFile(file) {
-            const formData = new FormData();
-            formData.append('ajax', '1');
-            formData.append('action', 'upload_audio');
-            formData.append('audio_file', file);
-            
-            showLoading('正在上传音频文件...');
-            
-            return fetch('posts.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    document.getElementById('data_music_file').value = data.file_path;
-                    showAudioPreview(data.file_path);
-                    showToast(data.message, 'success');
-                } else {
-                    showToast(data.message, 'danger');
-                }
-                return data;
-            })
-            .catch(error => {
-                hideLoading();
-                showToast('音频上传失败: ' + error.message, 'danger');
-                console.error('Error:', error);
-            });
-        }
-        
-        function uploadLyricFile(file) {
-            const formData = new FormData();
-            formData.append('ajax', '1');
-            formData.append('action', 'upload_lyric');
-            formData.append('lyric_file', file);
-            
-            showLoading('正在上传歌词文件...');
-            
-            return fetch('posts.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    document.getElementById('data_lyric_file').value = data.file_path;
-                    showToast(data.message, 'success');
-                } else {
-                    showToast(data.message, 'danger');
-                }
-                return data;
-            })
-            .catch(error => {
-                hideLoading();
-                showToast('歌词上传失败: ' + error.message, 'danger');
-                console.error('Error:', error);
-            });
-        }
-        
-        function showAudioPreview(filePath) {
-            const preview = document.getElementById('audioPreview');
-            const audio = preview.querySelector('audio');
-            audio.src = '/' + filePath;
-            preview.style.display = 'block';
-        }
-        
-        function clearAudioFile() {
-            document.getElementById('data_music_file').value = '';
-            document.getElementById('audioPreview').style.display = 'none';
-            document.getElementById('audioFileInput').value = '';
-        }
-        
-        function clearLyricFile() {
-            document.getElementById('data_lyric_file').value = '';
-            document.getElementById('lyricFileInput').value = '';
-        }
-        
+
         // 封面图片相关函数
         document.getElementById('coverImageFileInput').addEventListener('change', function() {
             const file = this.files[0];
@@ -3177,57 +2721,11 @@ require_once 'includes/header.php'; ?>
             document.getElementById('coverPreview').style.display = 'none';
             document.getElementById('coverImageFileInput').value = '';
         }
-        
-        // 处理音乐模式互斥逻辑
-        function handleMusicModeChange() {
-            const embedCheckbox = document.getElementById('data_embed');
-            const autoplaySelect = document.getElementById('data_autoplay');
-            
-            if (embedCheckbox && autoplaySelect) {
-                if (embedCheckbox.checked) {
-                    // 如果选择嵌入模式，自动设置为手动播放
-                    autoplaySelect.value = 'false';
-                    showToast('嵌入模式下已自动关闭自动播放', 'info');
-                }
-            }
-        }
-        
-        function handleAutoplayChange() {
-            const embedCheckbox = document.getElementById('data_embed');
-            const autoplaySelect = document.getElementById('data_autoplay');
-            
-            if (embedCheckbox && autoplaySelect) {
-                if (autoplaySelect.value === 'true') {
-                    // 如果选择自动播放，自动关闭嵌入模式
-                    embedCheckbox.checked = false;
-                    showToast('自动播放模式下已自动关闭嵌入模式', 'info');
-                }
-            }
-        }
-        
+
         // 页面初始化
         document.addEventListener('DOMContentLoaded', function() {
             updateTagsPreview();
-            
-            // 音乐播放器开关事件
-            document.getElementById('data_music_enabled').addEventListener('change', function(e) {
-                const musicConfigArea = document.getElementById('musicConfigArea');
-                if (e.target.checked) {
-                    musicConfigArea.style.display = 'block';
-                } else {
-                    musicConfigArea.style.display = 'none';
-                }
-            });
-            
-            // 初始化音乐配置区域显示状态
-            const musicEnabled = document.getElementById('data_music_enabled').checked;
-            const musicConfigArea = document.getElementById('musicConfigArea');
-            if (musicEnabled) {
-                musicConfigArea.style.display = 'block';
-            } else {
-                musicConfigArea.style.display = 'none';
-            }
-            
+
             // 隐私内容设置切换
             document.getElementById('has_privacy_content').addEventListener('change', function() {
                 const privacyConfigArea = document.getElementById('privacyConfigArea');
@@ -3246,23 +2744,7 @@ require_once 'includes/header.php'; ?>
             } else {
                 privacyConfigArea.style.display = 'none';
             }
-            
-            // 音频文件上传事件
-            document.getElementById('audioFileInput').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    uploadAudioFile(file);
-                }
-            });
-            
-            // 歌词文件上传事件
-            document.getElementById('lyricFileInput').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    uploadLyricFile(file);
-                }
-            });
-            
+
             // 支付设置切换函数
             window.togglePaidSettings = function() {
                 const isChecked = document.getElementById('has_paid_content').checked;
@@ -3321,13 +2803,7 @@ require_once 'includes/header.php'; ?>
                     if (questionRequiredStar) questionRequiredStar.style.display = 'inline';
                 }
             }
-            
-            // 初始化音频预览
-            const audioPath = document.getElementById('data_music_file').value;
-            if (audioPath) {
-                showAudioPreview(audioPath);
-            }
-            
+
             // 初始化隐私字段显示状态
             togglePrivacyAnswerField();
             

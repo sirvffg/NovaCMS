@@ -39,9 +39,6 @@ if (!empty($from)) {
 $Parsedown = new Parsedown();
 $announcementHtml = $Parsedown->text($announcement);
 
-// 引入音乐播放器组件
-require_once '../config/music_player.php';
-
 $isMobile = isMobileDevice();
 ?>
 <!DOCTYPE html>

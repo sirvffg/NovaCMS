@@ -51,9 +51,6 @@ try {
     // Table might not exist yet
 }
 
-// 引入音乐播放器组件
-require_once 'config/music_player.php';
-
 $isMobile = isMobileDevice();
 ?>
 <!DOCTYPE html>
@@ -159,7 +156,6 @@ $isMobile = isMobileDevice();
     <link rel="stylesheet" href="<?= getResourceUrl('/assets/css/all.min.css', 'https://cdn.staticfile.net/font-awesome/6.5.1/css/all.min.css') ?>">
     <link href="/assets/css/style.css" rel="stylesheet">
     <!-- 引入艺术字体 (本地) -->
-    <?php renderMusicPlayerCSS($config); ?>
     
     <!-- 从 index.php 提取的静态 CSS，外部化后可被浏览器缓存 -->
     <link href="/assets/css/inline-extra.css?v=20260630" rel="stylesheet">
@@ -1261,7 +1257,6 @@ $isMobile = isMobileDevice();
         </div>
     </div>
 
-    <?php renderMusicPlayer($config); ?>
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
     <script src="<?= getResourceUrl('/assets/js/marked.min.js', 'https://cdn.staticfile.net/marked/11.1.1/marked.min.js') ?>"></script>
     

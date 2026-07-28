@@ -2,7 +2,6 @@
 session_start();
 require_once 'config/database.php';
 require_once 'config/functions.php';
-require_once 'config/music_player.php';
 require_once 'config/comment_functions.php';
 require_once 'config/privacy_functions.php';
 require_once 'config/paid_functions.php';
@@ -638,11 +637,6 @@ if (isset($_GET['id'])) {
         <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
         <link rel="shortcut icon" href="<?= e($config['favicon']) ?>">
         <?php endif; ?>
-        
-        <?php if (!empty($post['data_music_enabled']) && $post['data_music_enabled'] === 'true'): ?>
-        <!-- 音乐播放器 CSS -->
-        <link rel="stylesheet" href="<?= getMusicPlayerUrl('css') ?>">
-        <?php endif; ?>
 
     </head>
     <body>
@@ -817,22 +811,6 @@ if (isset($_GET['id'])) {
                     <?php endif; ?>
                 </div>
 
-                <?php if (!empty($post['data_music_enabled']) && $post['data_music_enabled'] === 'true'): ?>
-                <!-- 音乐播放器 -->
-                <div class="mt-5 pt-4 border-top">
-                    <h5 class="mb-3"><i class="bi bi-music-note-beamed"></i> 文章音乐</h5>
-                    <div class="netease-mini-player"
-                        data-music-file="<?= htmlspecialchars($post['data_music_file'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                        data-lyric-file="<?= htmlspecialchars($post['data_lyric_file'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                        data-autoplay="<?= htmlspecialchars($post['data_autoplay'] ?? 'false', ENT_QUOTES, 'UTF-8') ?>"
-                        data-position="<?= htmlspecialchars($post['data_position'] ?? 'static', ENT_QUOTES, 'UTF-8') ?>"
-                        data-theme="<?= htmlspecialchars($post['data_theme'] ?? 'auto', ENT_QUOTES, 'UTF-8') ?>"
-                        data-size="<?= htmlspecialchars($post['data_size'] ?? 'normal', ENT_QUOTES, 'UTF-8') ?>"
-                        data-embed="<?= htmlspecialchars($post['data_embed'] ?? 'false', ENT_QUOTES, 'UTF-8') ?>"
-                        data-cover-mode="<?= htmlspecialchars($post['data_cover_mode'] ?? 'false', ENT_QUOTES, 'UTF-8') ?>">
-                    </div>
-                </div>
-                <?php endif; ?>
 
 
             </article>
@@ -2595,12 +2573,7 @@ if (isset($_GET['id'])) {
             setupExternalLinks();
         });
         </script>
-        
-        <?php if (!empty($post['data_music_enabled']) && $post['data_music_enabled'] === 'true'): ?>
-        <!-- 音乐播放器 JS -->
-        <script src="<?= getMusicPlayerUrl('js') ?>"></script>
-        <?php endif; ?>
-        
+
         <!-- 页脚 -->
         <?php require_once __DIR__ . '/vendor/footer.php'; ?>
         </div> <!-- 结束 page-wrapper -->
@@ -3049,7 +3022,6 @@ if ($maxIdResult && $maxIdResult['max_id']) {
 <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
 <link rel="shortcut icon" href="<?= e($config['favicon']) ?>">
 <?php endif; ?>
-<?php renderMusicPlayerCSS($config); ?>
 </head>
 <body>
 <div class="page-wrapper">
@@ -3466,7 +3438,6 @@ if ($maxIdResult && $maxIdResult['max_id']) {
     </div>
 </div>
 
-<?php renderMusicPlayer($config); ?>
 <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
 <script src="<?= getResourceUrl('/assets/js/marked.min.js', 'https://cdn.staticfile.net/marked/11.1.1/marked.min.js') ?>"></script>
 

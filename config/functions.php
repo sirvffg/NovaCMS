@@ -47,43 +47,6 @@ function getResourceUrl($localPath, $cdnPath = '') {
 }
 
 /**
- * 获取音乐播放器资源URL (在线/离线自动切换)
- * @param string $type 资源类型: 'css' 或 'js'
- * @return string 最终使用的链接
- */
-function getMusicPlayerUrl($type = 'js') {
-    static $cdnConfig = null;
-    if ($cdnConfig === null) {
-        $configPath = __DIR__ . '/cdn_config.php';
-        if (file_exists($configPath)) {
-            $cdnConfig = include $configPath;
-        } else {
-            $cdnConfig = ['use_cdn' => false];
-        }
-    }
-    
-    // 根据类型设置本地路径和CDN配置键
-    if ($type === 'css') {
-        $localPath = '/vendor/public/music/music.css';
-        $cdnConfigKey = 'music_css_cdn';
-    } else {
-        $localPath = '/vendor/public/music/music.js';
-        $cdnConfigKey = 'music_js_cdn';
-    }
-    
-    // 获取版本号（可以是文件修改时间或手动设置的版本）
-    $version = 'v20260413_3'; // 手动设置版本号，已修复边下载边播放等待问题
-    
-    // 如果开启了CDN并且配置了音乐播放器CDN链接，则使用CDN链接
-    if (!empty($cdnConfig['use_cdn']) && !empty($cdnConfig[$cdnConfigKey])) {
-        return $cdnConfig[$cdnConfigKey] . '?' . $version;
-    }
-    
-    // 否则使用本地离线资源
-    return $localPath . '?' . $version;
-}
-
-/**
  * 获取当前资源加载模式（用于调试输出）
  * @return string '在线资源(CDN)' 或 '离线资源(Local)'
  */
