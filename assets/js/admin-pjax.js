@@ -1,0 +1,386 @@
+(function () {
+    'use strict';
+
+    var CONTAINER_SELECTOR = '#pjax-container';
+    var PAGE_SCRIPTS_SELECTOR = '#page-scripts';
+
+    var container = document.querySelector(CONTAINER_SELECTOR);
+    if (!container) return;
+
+    var isLoading = false;
+    var currentXhr = null;
+
+    // Pages that must always do a full reload (login state changes, etc.)
+    var skipPatterns = [
+        /\/admin\/login\.php(\b|$|\?)/,
+        /\/admin\/logout\.php(\b|$|\?)/
+    ];
+
+    function absUrl(url) {
+        try {
+            return new URL(url, window.location.href).href;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function isSameOrigin(url) {
+        var parsed = absUrl(url);
+        if (!parsed) return false;
+        return parsed.indexOf(window.location.origin) === 0;
+    }
+
+    function isInternalAdminLink(url) {
+        if (!isSameOrigin(url)) return false;
+        var parsed = absUrl(url);
+        if (!parsed) return false;
+        var path = new URL(parsed).pathname;
+        return path.indexOf('/admin/') === 0 || path === '/admin';
+    }
+
+    function shouldSkipUrl(url) {
+        var parsed = absUrl(url);
+        if (!parsed) return true;
+        for (var i = 0; i < skipPatterns.length; i++) {
+            if (skipPatterns[i].test(parsed)) return true;
+        }
+        return false;
+    }
+
+    function shouldIntercept(link, event) {
+        if (event.button !== 0) return false;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+
+        var href = link.getAttribute('href');
+        if (!href) return false;
+        if (href.charAt(0) === '#') return false;
+        if (href === 'javascript:void(0)' || href.indexOf('javascript:') === 0) return false;
+
+        if (link.hasAttribute('data-no-pjax')) return false;
+        if (link.getAttribute('target') === '_blank') return false;
+        if (link.hasAttribute('download')) return false;
+        if (link.classList.contains('submenu-toggle')) return false;
+
+        if (!isInternalAdminLink(href)) return false;
+        if (shouldSkipUrl(href)) return false;
+
+        return true;
+    }
+
+    function showLoading() {
+        var el = document.getElementById('loading-overlay');
+        if (!el) return;
+        var label = el.querySelector('[data-loading-text]');
+        if (label) label.textContent = '正在加载…';
+        el.classList.add('active');
+        el.setAttribute('aria-hidden', 'false');
+    }
+
+    function hideLoading() {
+        var el = document.getElementById('loading-overlay');
+        if (!el) return;
+        el.classList.remove('active');
+        el.setAttribute('aria-hidden', 'true');
+    }
+
+    function closeCommandDialog() {
+        var dialog = document.querySelector('[data-command-dialog]');
+        if (dialog && typeof dialog.close === 'function' && dialog.open) dialog.close();
+    }
+
+    function findComment(parent, text) {
+        for (var i = 0; i < parent.childNodes.length; i++) {
+            var node = parent.childNodes[i];
+            if (node.nodeType === 8 && node.nodeValue === text) return node;
+        }
+        return null;
+    }
+
+    function removeRange(start, end) {
+        if (!start || !end) return;
+        var node = start.nextSibling;
+        while (node && node !== end) {
+            var next = node.nextSibling;
+            node.parentNode.removeChild(node);
+            node = next;
+        }
+    }
+
+    // Replace page-specific <style> tags marked with data-pjax-style
+    function replacePjaxStyles(newDoc) {
+        document.head.querySelectorAll('style[data-pjax-style]').forEach(function (el) {
+            el.remove();
+        });
+        newDoc.head.querySelectorAll('style[data-pjax-style]').forEach(function (el) {
+            document.head.appendChild(el.cloneNode(true));
+        });
+    }
+
+    // Remove old head_scripts block content (between comment markers)
+    function clearHeadBlock() {
+        var oldStart = findComment(document.head, 'nova-head-start');
+        var oldEnd = findComment(document.head, 'nova-head-end');
+        removeRange(oldStart, oldEnd);
+    }
+
+    // Collect head_scripts nodes from the response. Returns {links, scripts}.
+    function collectHeadNodes(newDoc) {
+        var result = { links: [], scripts: [] };
+        var newStart = findComment(newDoc.head, 'nova-head-start');
+        var newEnd = findComment(newDoc.head, 'nova-head-end');
+        if (!newStart || !newEnd) return result;
+        var node = newStart.nextSibling;
+        while (node && node !== newEnd) {
+            if (node.nodeName === 'LINK') {
+                result.links.push(node);
+            } else if (node.nodeName === 'SCRIPT') {
+                result.scripts.push(node);
+            }
+            node = node.nextSibling;
+        }
+        return result;
+    }
+
+    // Re-execute <script> tags. External scripts (with src) are loaded
+    // sequentially so inline scripts that depend on them (e.g. jQuery) work.
+    // Each queue item is {node, parent}: node is the source script element
+    // (may be detached), parent is where to append if node is not in the DOM.
+    var scriptGeneration = 0;
+
+    function executeScriptsInOrder(queue, onComplete) {
+        var generation = ++scriptGeneration;
+
+        function done() {
+            if (generation === scriptGeneration && onComplete) onComplete();
+        }
+
+        function loadNext(index) {
+            if (generation !== scriptGeneration) return; // superseded by newer navigation
+            if (index >= queue.length) { done(); return; }
+
+            var item = queue[index];
+            var oldScript = item.node;
+            var newScript = document.createElement('script');
+            for (var i = 0; i < oldScript.attributes.length; i++) {
+                var attr = oldScript.attributes[i];
+                newScript.setAttribute(attr.name, attr.value);
+            }
+            newScript.textContent = oldScript.textContent;
+
+            // Attach load handlers BEFORE inserting to avoid any race condition
+            var isExternal = newScript.hasAttribute('src');
+            if (isExternal) {
+                newScript.onload = function () { loadNext(index + 1); };
+                newScript.onerror = function () { loadNext(index + 1); };
+            }
+
+            // Only use replaceChild if the old script lives in the LIVE document.
+            // Head scripts come from a DOMParser result (detached document) and
+            // must be appended to the target parent instead.
+            try {
+                if (oldScript.ownerDocument === document && oldScript.parentNode) {
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                } else if (item.parent) {
+                    item.parent.appendChild(newScript);
+                }
+            } catch (e) {
+                console.error('PJAX script insert error:', e);
+            }
+
+            if (!isExternal) {
+                loadNext(index + 1);
+            }
+        }
+
+        loadNext(0);
+    }
+
+    // Update the active state on the persistent sidebar
+    function updateActiveMenu(url) {
+        var sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        var targetPath;
+        try {
+            targetPath = new URL(url, window.location.href).pathname;
+        } catch (e) {
+            return;
+        }
+        sidebar.querySelectorAll('a[href]').forEach(function (link) {
+            var href = link.getAttribute('href');
+            if (!href || href.charAt(0) === '#') {
+                link.classList.remove('active');
+                return;
+            }
+            var linkPath;
+            try {
+                linkPath = new URL(href, window.location.href).pathname;
+            } catch (e) {
+                link.classList.remove('active');
+                return;
+            }
+            link.classList.toggle('active', linkPath === targetPath);
+        });
+    }
+
+    // Update the topbar heading and body data-admin-page from the new document
+    function updateShell(newDoc) {
+        var newHeading = newDoc.querySelector('.topbar-context strong');
+        var currentHeading = document.querySelector('.topbar-context strong');
+        if (newHeading && currentHeading) {
+            currentHeading.textContent = newHeading.textContent;
+        }
+        var newBody = newDoc.body;
+        if (newBody) {
+            var page = newBody.getAttribute('data-admin-page');
+            if (page) document.body.setAttribute('data-admin-page', page);
+        }
+    }
+
+    function applyResponse(url, html, pushState) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+
+        var newContainer = doc.querySelector(CONTAINER_SELECTOR);
+        if (!newContainer) {
+            hideLoading();
+            window.location.href = url;
+            return;
+        }
+
+        if (doc.title) document.title = doc.title;
+
+        replacePjaxStyles(doc);
+        updateShell(doc);
+
+        // Head scripts: remove old block, inject CSS links immediately,
+        // and queue script tags for sequential execution (before body scripts).
+        clearHeadBlock();
+        var headNodes = collectHeadNodes(doc);
+        headNodes.links.forEach(function (link) {
+            document.head.appendChild(document.importNode(link, true));
+        });
+
+        // Swap container content
+        container.innerHTML = newContainer.innerHTML;
+
+        // Swap page scripts content
+        var pageScriptsEl = document.querySelector(PAGE_SCRIPTS_SELECTOR);
+        if (pageScriptsEl) {
+            var newScripts = doc.querySelector(PAGE_SCRIPTS_SELECTOR);
+            pageScriptsEl.innerHTML = newScripts ? newScripts.innerHTML : '';
+        }
+
+        // Build unified script queue: head scripts → container scripts → page-scripts.
+        // External scripts load sequentially so dependencies (jQuery, Vue, etc.) are ready
+        // before inline scripts that use them execute.
+        var queue = [];
+        headNodes.scripts.forEach(function (s) { queue.push({ node: s, parent: document.head }); });
+        container.querySelectorAll('script').forEach(function (s) { queue.push({ node: s, parent: null }); });
+        if (pageScriptsEl) {
+            pageScriptsEl.querySelectorAll('script').forEach(function (s) { queue.push({ node: s, parent: null }); });
+        }
+        // Hide the loading overlay only after ALL scripts have loaded and executed,
+        // so the page is fully ready before the user sees it.
+        executeScriptsInOrder(queue, hideLoading);
+
+        updateActiveMenu(url);
+
+        if (pushState) {
+            window.history.pushState({ pjax: true, url: url }, '', url);
+        }
+
+        window.scrollTo(0, 0);
+
+        window.dispatchEvent(new CustomEvent('pjax:complete', { detail: { url: url } }));
+    }
+
+    function navigate(url, pushState) {
+        if (isLoading && currentXhr) {
+            currentXhr.abort();
+        }
+        // Cancel any pending script loads from the previous page
+        scriptGeneration++;
+        closeCommandDialog();
+        isLoading = true;
+        showLoading();
+
+        var xhr = new XMLHttpRequest();
+        currentXhr = xhr;
+        xhr.open('GET', url, true);
+        xhr.setRequestHeader('X-PJAX', 'true');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.timeout = 15000;
+
+        xhr.onload = function () {
+            isLoading = false;
+            currentXhr = null;
+            // NOTE: do NOT hideLoading() here — the loading overlay stays visible
+            // until all page scripts have finished loading/executing (see
+            // applyResponse → executeScriptsInOrder callback).
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    applyResponse(url, xhr.responseText, pushState !== false);
+                } catch (e) {
+                    console.error('PJAX error:', e);
+                    hideLoading();
+                    window.location.href = url;
+                }
+            } else {
+                hideLoading();
+                window.location.href = url;
+            }
+        };
+
+        xhr.onerror = function () {
+            isLoading = false;
+            currentXhr = null;
+            hideLoading();
+            window.location.href = url;
+        };
+
+        xhr.ontimeout = function () {
+            isLoading = false;
+            currentXhr = null;
+            hideLoading();
+            window.location.href = url;
+        };
+
+        xhr.send();
+    }
+
+    // Intercept link clicks within the document
+    document.addEventListener('click', function (event) {
+        var link = event.target.closest ? event.target.closest('a') : null;
+        if (!link) return;
+        if (!shouldIntercept(link, event)) return;
+
+        event.preventDefault();
+
+        var fullUrl = absUrl(link.getAttribute('href'));
+        if (!fullUrl) return;
+
+        // Same page (ignoring hash) — let the browser handle it
+        try {
+            var current = new URL(window.location.href);
+            var target = new URL(fullUrl);
+            if (current.pathname === target.pathname && current.search === target.search) return;
+        } catch (e) {
+            return;
+        }
+
+        navigate(fullUrl, true);
+    });
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', function (event) {
+        var url = window.location.href;
+        if (shouldSkipUrl(url)) {
+            window.location.reload();
+            return;
+        }
+        navigate(url, false);
+    });
+
+    // Mark the initial state so popstate works correctly
+    window.history.replaceState({ pjax: true, url: window.location.href }, '', window.location.href);
+})();

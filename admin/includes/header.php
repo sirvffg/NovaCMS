@@ -82,12 +82,12 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
     <link href="<?= getResourceUrl('/assets/css/harmonyos-sans.css') ?>" rel="stylesheet">
 
     <?php if (!empty($extra_css)): ?>
-    <style><?= $extra_css ?></style>
+    <style data-pjax-style><?= $extra_css ?></style>
     <?php endif; ?>
     <link href="/assets/css/admin.css?v=<?= e($adminCssVersion) ?>" rel="stylesheet">
 
     <?php if (!empty($head_scripts)): ?>
-    <?= $head_scripts ?>
+<!--nova-head-start--><?= $head_scripts ?><!--nova-head-end-->
     <?php endif; ?>
 </head>
 <body class="admin-shell" data-admin-page="<?= e($currentAdminPage) ?>">
@@ -200,3 +200,5 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
                     <span><kbd>Enter</kbd> 打开</span>
                 </div>
             </dialog>
+
+            <div id="pjax-container" data-pjax-container>

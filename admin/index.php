@@ -91,6 +91,56 @@ require_once __DIR__ . '/includes/header.php';
         </article>
     </section>
 
+    <section class="dashboard-lower-grid" aria-label="实时状态与快捷操作">
+        <article class="dashboard-panel">
+            <header class="dashboard-panel-head">
+                <div class="dashboard-panel-title">
+                    <h2><i class="bi bi-broadcast" aria-hidden="true"></i>实时访客</h2>
+                    <p>最近 15 分钟的站内活动</p>
+                </div>
+                <div class="dashboard-live-summary">
+                    <span class="dashboard-live-metric"><i class="dashboard-live-dot" aria-hidden="true"></i>在线 <strong>{{ realtime.online_count }}</strong></span>
+                    <span class="dashboard-live-metric">今日 <strong>{{ formatNumber(realtime.total_today) }}</strong></span>
+                </div>
+            </header>
+            <div v-if="realtimeLoading" class="dashboard-empty"><span class="loading-spinner" aria-hidden="true"></span><p>正在读取访客状态…</p></div>
+            <div v-else-if="realtimeError" class="dashboard-error"><i class="bi bi-wifi-off" aria-hidden="true"></i><p>{{ realtimeError }}</p></div>
+            <div v-else-if="realtime.visits.length === 0" class="dashboard-empty"><i class="bi bi-person-slash" aria-hidden="true"></i><p>当前没有活跃访客</p></div>
+            <div v-else class="dashboard-visitor-list">
+                <div v-for="(visit, index) in visibleVisits" :key="visit.ip_address + '-' + visit.page_url + '-' + index" class="dashboard-visitor">
+                    <span class="dashboard-device-icon" aria-hidden="true"><i class="bi" :class="deviceIcon(visit.user_agent)"></i></span>
+                    <div class="dashboard-visitor-primary">
+                        <strong>{{ visit.visitor_username || visit.ip_address || '匿名访客' }}</strong>
+                        <small>{{ visit.visitor_email || (visit.visitor_username ? visit.ip_address : '访客') }}</small>
+                    </div>
+                    <div class="dashboard-visitor-secondary">
+                        <strong>{{ locationLabel(visit.location) }}</strong>
+                        <small>{{ compactUserAgent(visit.user_agent) }}</small>
+                    </div>
+                    <a class="dashboard-visitor-page" :href="safePageHref(visit.page_url)" target="_blank" rel="noopener" :title="visit.page_url">{{ displayPath(visit.page_url) }}</a>
+                    <span class="dashboard-presence" :class="{ 'is-online': visit.status === 'online' }">
+                        {{ visit.status === 'online' ? '在线' : visit.time_ago }}
+                    </span>
+                </div>
+            </div>
+        </article>
+
+        <aside class="dashboard-panel">
+            <header class="dashboard-panel-head">
+                <div class="dashboard-panel-title">
+                    <h2><i class="bi bi-lightning-charge" aria-hidden="true"></i>快捷操作</h2>
+                    <p>常用管理入口</p>
+                </div>
+            </header>
+            <div class="dashboard-quick-grid">
+                <a v-for="action in quickActions" :key="action.href" class="dashboard-quick-link" :href="action.href">
+                    <i class="bi" :class="action.icon" aria-hidden="true"></i>
+                    <span>{{ action.label }}</span>
+                </a>
+            </div>
+        </aside>
+    </section>
+
     <section class="dashboard-main-grid" aria-label="流量概览">
         <article class="dashboard-panel">
             <header class="dashboard-panel-head">
@@ -130,56 +180,6 @@ require_once __DIR__ . '/includes/header.php';
                 </li>
             </ol>
         </article>
-    </section>
-
-    <section class="dashboard-lower-grid" aria-label="实时状态与快捷操作">
-        <article class="dashboard-panel">
-            <header class="dashboard-panel-head">
-                <div class="dashboard-panel-title">
-                    <h2><i class="bi bi-broadcast" aria-hidden="true"></i>实时访客</h2>
-                    <p>最近 15 分钟的站内活动</p>
-                </div>
-                <div class="dashboard-live-summary">
-                    <span class="dashboard-live-metric"><i class="dashboard-live-dot" aria-hidden="true"></i>在线 <strong>{{ realtime.online_count }}</strong></span>
-                    <span class="dashboard-live-metric">今日 <strong>{{ formatNumber(realtime.total_today) }}</strong></span>
-                </div>
-            </header>
-            <div v-if="realtimeLoading" class="dashboard-empty"><span class="loading-spinner" aria-hidden="true"></span><p>正在读取访客状态…</p></div>
-            <div v-else-if="realtimeError" class="dashboard-error"><i class="bi bi-wifi-off" aria-hidden="true"></i><p>{{ realtimeError }}</p></div>
-            <div v-else-if="realtime.visits.length === 0" class="dashboard-empty"><i class="bi bi-person-slash" aria-hidden="true"></i><p>当前没有活跃访客</p></div>
-            <div v-else class="dashboard-visitor-list">
-                <div v-for="(visit, index) in visibleVisits" :key="visit.ip_address + '-' + visit.page_url + '-' + index" class="dashboard-visitor">
-                    <span class="dashboard-device-icon" aria-hidden="true"><i class="bi" :class="deviceIcon(visit.user_agent)"></i></span>
-                    <div class="dashboard-visitor-primary">
-                        <strong>{{ visit.visitor_username || visit.ip_address || '匿名访客' }}</strong>
-                        <small>{{ visit.visitor_email || visit.ip_address || '未知地址' }}</small>
-                    </div>
-                    <div class="dashboard-visitor-secondary">
-                        <strong>{{ locationLabel(visit.location) }}</strong>
-                        <small>{{ compactUserAgent(visit.user_agent) }}</small>
-                    </div>
-                    <a class="dashboard-visitor-page" :href="safePageHref(visit.page_url)" target="_blank" rel="noopener" :title="visit.page_url">{{ displayPath(visit.page_url) }}</a>
-                    <span class="dashboard-presence" :class="{ 'is-online': visit.status === 'online' }">
-                        {{ visit.status === 'online' ? '在线' : visit.time_ago }}
-                    </span>
-                </div>
-            </div>
-        </article>
-
-        <aside class="dashboard-panel">
-            <header class="dashboard-panel-head">
-                <div class="dashboard-panel-title">
-                    <h2><i class="bi bi-lightning-charge" aria-hidden="true"></i>快捷操作</h2>
-                    <p>常用管理入口</p>
-                </div>
-            </header>
-            <div class="dashboard-quick-grid">
-                <a v-for="action in quickActions" :key="action.href" class="dashboard-quick-link" :href="action.href">
-                    <i class="bi" :class="action.icon" aria-hidden="true"></i>
-                    <span>{{ action.label }}</span>
-                </a>
-            </div>
-        </aside>
     </section>
 </div>
 
