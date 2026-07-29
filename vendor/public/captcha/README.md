@@ -15,7 +15,7 @@ captcha_tokens    — 业务令牌表（验证通过后生成）
 
 | 属性 | 默认值 | 说明 |
 |------|--------|------|
-| `$tokenSecret` | `your_secret_key_change_me` | HMAC 签名密钥，**必须更换** |
+| `$tokenSecret` | `your_secret_key_change_me` | HMAC 签名密钥 |
 | `$imageApiUrl` | `https://picsum.photos/300/150` | 拼图背景图源 |
 | `$defaultDifficulty` | `5` | POW 难度（前导零个数） |
 | `$sessionTTL` | `45` | 验证会话有效期（秒） |
@@ -27,9 +27,9 @@ captcha_tokens    — 业务令牌表（验证通过后生成）
 ```php
 <?php
 return [
-    'tokenSecret' => '你的随机密钥',
+    'tokenSecret' => '你的签名密钥',
     'imageApiUrl' => 'https://picsum.photos/300/150',
-    'defaultDifficulty' => 5,
+    'defaultDifficulty' => 5(生产环境建议添加风控系统),
 ];
 ```
 
@@ -42,19 +42,19 @@ return [
 <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4/dist/sha256.umd.min.js"></script>
 
 <!-- 必须：验证码核心 -->
-<script src="/vendor/captcha/BehaviorAuth.js"></script>
+<script src="/vendor/captcha/captcha.js"></script>//默认经混淆的js
 ```
 
 ### 3.2 创建容器
 
 ```html
-<div id="auth-container"></div>
+<div id="你的容器名"></div>
 ```
 
 ### 3.3 初始化
 
 ```javascript
-const auth = new BehaviorAuth('auth-container', '/vendor/captcha/AuthApi.php');
+const auth = new BehaviorAuth('你的容器名', '/vendor/captcha/AuthApi.php');
 ```
 
 参数说明：
