@@ -114,16 +114,6 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
                 <?php Nova_Backend_Menu::render(); ?>
             </ul>
         </nav>
-
-        <div class="sidebar-footer">
-            <div class="sidebar-profile">
-                <span class="sidebar-avatar" aria-hidden="true"><?= e(strtoupper($adminInitial ?: 'A')) ?></span>
-                <span class="sidebar-profile-copy">
-                    <strong><?= e($adminUsername) ?></strong>
-                    <small>管理员</small>
-                </span>
-            </div>
-        </div>
     </aside>
 
     <div class="main-content">

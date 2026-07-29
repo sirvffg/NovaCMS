@@ -54,8 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         } else {
             $error = $response['message'];
+            // 必须退出，不再继续处理
+            // 不再继续处理后续操作，直接跳转到输出部分
         }
-        // 不再继续处理
     } else {
         // CSRF 验证通过，继续处理各操作
         if ($_POST['action'] === 'add') {
@@ -1377,7 +1378,7 @@ require_once 'includes/header.php'; ?>
     <div class="modal fade" id="addAdminModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="addAdminForm">
+                <form id="addAdminForm" method="POST" action="">
                     <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                     <input type="hidden" name="action" value="add">
                     <div class="modal-header">
@@ -1428,7 +1429,7 @@ require_once 'includes/header.php'; ?>
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="editAdminForm">
+                <form id="editAdminForm" method="POST" action="">
                     <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="id" id="edit_id">
@@ -1481,7 +1482,7 @@ require_once 'includes/header.php'; ?>
     <div class="modal fade" id="changePasswordModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="changePwdForm">
+                <form id="changePwdForm" method="POST" action="">
                     <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                     <input type="hidden" name="action" value="change_password">
                     <input type="hidden" name="id" id="change_password_id">
