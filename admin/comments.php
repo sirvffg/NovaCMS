@@ -18,6 +18,12 @@ $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
 
 // 处理删除操作
 if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['comment_id'])) {
+    // CSRF 验证
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = '安全验证失败，请刷新页面后重试';
+        header('Location: comments.php');
+        exit;
+    }
     $comment_id = $_POST['comment_id'];
     deleteComment($comment_id);
     $_SESSION['success'] = '评论已删除';
@@ -27,6 +33,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['co
 
 // 处理批准/拒绝操作
 if (isset($_POST['action']) && ($_POST['action'] === 'approve' || $_POST['action'] === 'reject') && isset($_POST['comment_id'])) {
+    // CSRF 验证
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = '安全验证失败，请刷新页面后重试';
+        header('Location: comments.php');
+        exit;
+    }
     $comment_id = $_POST['comment_id'];
     $status = $_POST['action'] === 'approve' ? 'approved' : 'rejected';
     $stmt = $db->prepare("UPDATE blog_comments SET status = ? WHERE id = ?");
@@ -276,6 +288,7 @@ require_once 'includes/header.php'; ?>
                                             <div class="btn-group btn-group-sm" role="group">
                                                 <?php if ($comment['status'] === 'pending'): ?>
                                                 <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                                                     <input type="hidden" name="action" value="approve">
                                                     <input type="hidden" name="comment_id" value="<?= $comment['id'] ?>">
                                                     <button type="submit" class="btn btn-success" title="批准">
@@ -283,6 +296,7 @@ require_once 'includes/header.php'; ?>
                                                     </button>
                                                 </form>
                                                 <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                                                     <input type="hidden" name="action" value="reject">
                                                     <input type="hidden" name="comment_id" value="<?= $comment['id'] ?>">
                                                     <button type="submit" class="btn btn-warning" title="拒绝">
@@ -291,6 +305,7 @@ require_once 'includes/header.php'; ?>
                                                 </form>
                                                 <?php endif; ?>
                                                 <form method="POST" style="display: inline;" onsubmit="return confirm('确定要删除这条评论吗？')">
+                                                    <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="comment_id" value="<?= $comment['id'] ?>">
                                                     <button type="submit" class="btn btn-danger" title="删除">

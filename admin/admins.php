@@ -45,7 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     $response = ['success' => false, 'message' => ''];
 
-    if ($_POST['action'] === 'add') {
+    // CSRF 验证 - 所有 POST 操作都需要验证
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $response['message'] = '安全验证失败，请刷新页面后重试';
+        if ($isAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
+            exit;
+        } else {
+            $error = $response['message'];
+        }
+        // 不再继续处理
+    } else {
+        // CSRF 验证通过，继续处理各操作
+        if ($_POST['action'] === 'add') {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         $email = trim($_POST['email'] ?? '');
@@ -1047,7 +1060,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
     }
-    
+    } // end of CSRF validation else block
+
     if ($isAjax) {
         header('Content-Type: application/json');
         echo json_encode($response);
@@ -1364,6 +1378,7 @@ require_once 'includes/header.php'; ?>
         <div class="modal-dialog">
             <div class="modal-content">
                 <form id="addAdminForm">
+                    <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                     <input type="hidden" name="action" value="add">
                     <div class="modal-header">
                         <h5 class="modal-title">添加新管理员</h5>
@@ -1414,6 +1429,7 @@ require_once 'includes/header.php'; ?>
         <div class="modal-dialog">
             <div class="modal-content">
                 <form id="editAdminForm">
+                    <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="id" id="edit_id">
                     <div class="modal-header">
@@ -1466,6 +1482,7 @@ require_once 'includes/header.php'; ?>
         <div class="modal-dialog">
             <div class="modal-content">
                 <form id="changePwdForm">
+                    <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
                     <input type="hidden" name="action" value="change_password">
                     <input type="hidden" name="id" id="change_password_id">
                     <div class="modal-header">
@@ -1692,6 +1709,7 @@ require_once 'includes/header.php'; ?>
     function deleteAdmin(id, username) {
         if (confirm('确定要删除管理员 "' + username + '" 吗？\n\n此操作不可恢复，请谨慎操作！')) {
             const formData = new FormData();
+            formData.append('csrf_token', getCsrfToken());
             formData.append('action', 'delete');
             formData.append('id', id);
             
@@ -1734,6 +1752,7 @@ require_once 'includes/header.php'; ?>
 
             // 获取用户历史 IP
             const formData = new FormData();
+            formData.append('csrf_token', getCsrfToken());
             formData.append('action', 'get_user_ban_ips');
             formData.append('user_id', id);
             fetch(location.pathname, { method:'POST', body:formData, headers:{'X-Requested-With':'XMLHttpRequest'} })
@@ -1815,6 +1834,7 @@ require_once 'includes/header.php'; ?>
         if (modal) modal.hide();
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'toggle_ban');
         formData.append('id', id);
         formData.append('status', status);
@@ -1846,6 +1866,7 @@ require_once 'includes/header.php'; ?>
         document.getElementById('sessionLogsUserId').value = userId;
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'get_user_sessions');
         formData.append('user_id', userId);
 
@@ -1932,9 +1953,16 @@ require_once 'includes/header.php'; ?>
         return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
     }
 
+    // 获取 CSRF Token
+    function getCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
     function adminRemoveDevice(sessionId, userId) {
         if (!confirm('确定强制下线此设备？')) return;
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'admin_remove_device');
         formData.append('session_id', sessionId);
         fetch(location.pathname, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -1952,6 +1980,7 @@ require_once 'includes/header.php'; ?>
         const username = document.getElementById('sessionLogsUsername').textContent;
         if (!confirm('确定强制下线用户 "' + username + '" 的所有设备？')) return;
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'admin_remove_all_devices');
         formData.append('user_id', userId);
         fetch(location.pathname, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -1971,6 +2000,7 @@ require_once 'includes/header.php'; ?>
         document.getElementById('userRecordsContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-warning" role="status"></div><p class="mt-2 text-muted">加载中...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'get_user_records');
         formData.append('user_id', userId);
 
@@ -2139,6 +2169,7 @@ require_once 'includes/header.php'; ?>
         panel.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-danger" role="status"></div><p class="mt-2 text-muted">加载中...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'get_banned_users');
         formData.append('page', bannedUsersPage);
 
@@ -2186,6 +2217,7 @@ require_once 'includes/header.php'; ?>
     function quickUnbanUser(id, username) {
         if (!confirm('确定解封用户 "' + username + '" 吗？')) return;
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'quick_unban_user');
         formData.append('id', id);
         fetch(location.pathname, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -2209,6 +2241,7 @@ require_once 'includes/header.php'; ?>
         panel.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-warning" role="status"></div><p class="mt-2 text-muted">加载中...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'get_banned_ips');
         formData.append('page', bannedIpsPage);
         formData.append('search', bannedIpsSearch);
@@ -2269,6 +2302,7 @@ require_once 'includes/header.php'; ?>
     function unbanIp(id, ip) {
         if (!confirm('确定解封 IP "' + ip + '" 吗？')) return;
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'unban_ip');
         formData.append('ip_id', id);
         fetch(location.pathname, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -2291,6 +2325,7 @@ require_once 'includes/header.php'; ?>
         panel.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-success" role="status"></div><p class="mt-2 text-muted">加载中...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'get_whitelist');
         formData.append('page', whitelistPage);
         formData.append('search', whitelistSearch);
@@ -2354,6 +2389,7 @@ require_once 'includes/header.php'; ?>
         if (!ip) { showAlert('请输入IP地址', 'danger'); return; }
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'add_whitelist');
         formData.append('ip', ip);
         formData.append('reason', reason);
@@ -2374,6 +2410,7 @@ require_once 'includes/header.php'; ?>
     function removeWhitelist(id, ip) {
         if (!confirm('确定将 IP "' + ip + '" 从白名单移除吗？')) return;
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'remove_whitelist');
         formData.append('ip_id', id);
         fetch(location.pathname, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -2396,6 +2433,7 @@ require_once 'includes/header.php'; ?>
         panel.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-info" role="status"></div><p class="mt-2 text-muted">加载中...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'get_bot_whitelist_ua');
         formData.append('page', uaWhitelistPage);
         formData.append('search', uaWhitelistSearch);
@@ -2458,6 +2496,7 @@ require_once 'includes/header.php'; ?>
         if (!uaPattern) { showAlert('请输入UA标识', 'danger'); return; }
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'add_bot_whitelist_ua');
         formData.append('ua_pattern', uaPattern);
         formData.append('reason', reason);
@@ -2478,6 +2517,7 @@ require_once 'includes/header.php'; ?>
     function removeUaWhitelist(id) {
         if (!confirm('确定移除该UA白名单吗？')) return;
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'remove_bot_whitelist_ua');
         formData.append('id', id);
         fetch(location.pathname, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -2535,6 +2575,7 @@ require_once 'includes/header.php'; ?>
         panel.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">加载中...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'get_appeals');
         formData.append('page', appealsPage);
         formData.append('filter_status', appealsFilterStatus);
@@ -2637,6 +2678,7 @@ require_once 'includes/header.php'; ?>
         panel.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">加载中...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'ip_query');
         formData.append('page', ipQueryPage);
         formData.append('search', ipQuerySearch);
@@ -2721,6 +2763,7 @@ require_once 'includes/header.php'; ?>
         panel.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">加载IP详情...</p></div>';
 
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'ip_detail');
         formData.append('ip', ip);
 
@@ -2852,6 +2895,7 @@ require_once 'includes/header.php'; ?>
     function unbanIpDirect(id) {
         if (!confirm('确定要解封此IP吗？')) return;
         const formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
         formData.append('action', 'unban_ip');
         formData.append('ip_id', id);
 

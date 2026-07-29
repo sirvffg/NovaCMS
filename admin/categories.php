@@ -10,51 +10,60 @@ $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
 $success = '';
 $error = '';
 
-// 删除分类
-if (isset($_GET['delete'])) {
-    $deleteId = (int)$_GET['delete'];
-    if ($deleteId > 0) {
-        $db->prepare("DELETE FROM blog_categories WHERE id=?")->execute([$deleteId]);
-        $success = '分类已删除';
+// 删除分类 - 改用 POST + CSRF 验证
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_category'])) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = '安全验证失败，请刷新页面后重试';
     } else {
-        $error = '无效的分类ID';
+        $deleteId = (int)$_POST['delete_category'];
+        if ($deleteId > 0) {
+            $db->prepare("DELETE FROM blog_categories WHERE id=?")->execute([$deleteId]);
+            $success = '分类已删除';
+        } else {
+            $error = '无效的分类ID';
+        }
     }
 }
 
 // 添加/编辑分类
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = $_POST['id'] ?? null;
-    $name = $_POST['name'] ?? '';
-    $slug = $_POST['slug'] ?? '';
-    $description = $_POST['description'] ?? '';
-    $sort_order = intval($_POST['sort_order'] ?? 0);
-    $color = $_POST['color'] ?? '#007bff'; // 新增颜色字段
-    
-    // 生成slug
-    if (empty($slug)) {
-        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name));
-    }
-    
-    // 检查重复
-    if ($id) {
-        $check = $db->prepare("SELECT id FROM blog_categories WHERE slug=? AND id!=?");
-        $check->execute([$slug, $id]);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_category'])) {
+    // CSRF 验证
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = '安全验证失败，请刷新页面后重试';
     } else {
-        $check = $db->prepare("SELECT id FROM blog_categories WHERE slug=?");
-        $check->execute([$slug]);
-    }
-    
-    if ($check->fetch()) {
-        $error = '分类别名已存在';
-    } else {
+        $id = $_POST['id'] ?? null;
+        $name = $_POST['name'] ?? '';
+        $slug = $_POST['slug'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $sort_order = intval($_POST['sort_order'] ?? 0);
+        $color = $_POST['color'] ?? '#007bff';
+
+        // 生成slug
+        if (empty($slug)) {
+            $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name));
+        }
+
+        // 检查重复
         if ($id) {
-            $stmt = $db->prepare("UPDATE blog_categories SET name=?, slug=?, description=?, sort_order=?, color=? WHERE id=?");
-            $stmt->execute([$name, $slug, $description, $sort_order, $color, $id]);
-            $success = '分类已更新';
+            $check = $db->prepare("SELECT id FROM blog_categories WHERE slug=? AND id!=?");
+            $check->execute([$slug, $id]);
         } else {
-            $stmt = $db->prepare("INSERT INTO blog_categories (name, slug, description, sort_order, color) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $slug, $description, $sort_order, $color]);
-            $success = '分类已添加';
+            $check = $db->prepare("SELECT id FROM blog_categories WHERE slug=?");
+            $check->execute([$slug]);
+        }
+
+        if ($check->fetch()) {
+            $error = '分类别名已存在';
+        } else {
+            if ($id) {
+                $stmt = $db->prepare("UPDATE blog_categories SET name=?, slug=?, description=?, sort_order=?, color=? WHERE id=?");
+                $stmt->execute([$name, $slug, $description, $sort_order, $color, $id]);
+                $success = '分类已更新';
+            } else {
+                $stmt = $db->prepare("INSERT INTO blog_categories (name, slug, description, sort_order, color) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $slug, $description, $sort_order, $color]);
+                $success = '分类已添加';
+            }
         }
     }
 }
@@ -148,15 +157,16 @@ require_once 'includes/header.php'; ?>
                                         <td><?= e($category['description'] ?? '-') ?></td>
                                         <td><?= date('Y-m-d H:i', strtotime($category['created_at'])) ?></td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-primary" 
+                                            <button type="button" class="btn btn-sm btn-primary"
                                                     data-bs-toggle="modal" data-bs-target="#categoryModal"
                                                     onclick="editCategory(<?= htmlspecialchars(json_encode($category), ENT_QUOTES, 'UTF-8') ?>)">
                                                 编辑
                                             </button>
-                                            <a href="?delete=<?= $category['id'] ?>" class="btn btn-sm btn-danger" 
-                                               onclick="return confirm('确定删除此分类？')">
-                                                删除
-                                            </a>
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('确定删除此分类？');">
+                                                <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
+                                                <input type="hidden" name="delete_category" value="<?= $category['id'] ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                                            </form>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -176,6 +186,7 @@ require_once 'includes/header.php'; ?>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" id="categoryForm">
+                    <?= csrfField() ?>
                     <div class="modal-body">
                         <input type="hidden" name="id" id="categoryId" value="<?= $editCategory['id'] ?? '' ?>">
                         
