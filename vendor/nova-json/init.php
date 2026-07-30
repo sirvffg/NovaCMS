@@ -48,6 +48,7 @@ require_once $baseDir . '/config/database.php';
 require_once $baseDir . '/config/functions.php';
 require_once $baseDir . '/config/privacy_functions.php';
 require_once $baseDir . '/config/paid_functions.php';
+require_once $baseDir . '/config/content_module_functions.php';
 
 // 加载邮件配置（可能导致 HTML 输出并终止脚本，需要保护）
 if (!defined('EMAIL_CONFIG_SILENT_FAILURE')) {
@@ -261,6 +262,9 @@ $route_files = [
     'statuses/terms.php',     // 协议与政策
     'public/proxy.php',       // 代理请求（公网 + 内部）
     
+    // 内容功能路由
+    'content/content.php',    // 页面、文档、订阅与智能问答
+
 ];
 
 foreach ($route_files as $file) {

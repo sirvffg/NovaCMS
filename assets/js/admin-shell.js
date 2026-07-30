@@ -18,15 +18,63 @@
     var commandItems = [];
     var commandFiltered = [];
     var commandSelectedIndex = 0;
+    var lastSidebarLayout = null;
 
     function isMobile() {
         return window.innerWidth <= desktopBreakpoint;
     }
 
+    function updateSidebarControls() {
+        var mobile = isMobile();
+        var mobileOpen = body.classList.contains('mobile-open');
+        var collapsed = !mobile && body.classList.contains('collapsed');
+
+        toggleButtons.forEach(function (button) {
+            button.setAttribute('aria-expanded', mobile ? (mobileOpen ? 'true' : 'false') : (collapsed ? 'false' : 'true'));
+        });
+
+        if (overlay) {
+            overlay.setAttribute('aria-hidden', mobileOpen ? 'false' : 'true');
+        }
+        if (sidebar) {
+            if (mobile && !mobileOpen) {
+                sidebar.setAttribute('aria-hidden', 'true');
+                sidebar.setAttribute('inert', '');
+            } else {
+                sidebar.removeAttribute('aria-hidden');
+                sidebar.removeAttribute('inert');
+            }
+
+            sidebar.querySelectorAll('.menu-item > [data-menu-label]').forEach(function (control) {
+                if (collapsed) {
+                    control.setAttribute('title', control.getAttribute('data-menu-label') || '');
+                    control.setAttribute('data-collapse-title', 'true');
+                } else if (control.getAttribute('data-collapse-title') === 'true') {
+                    control.removeAttribute('title');
+                    control.removeAttribute('data-collapse-title');
+                }
+            });
+
+            sidebar.querySelectorAll('.submenu-toggle').forEach(function (control) {
+                var submenuId = control.getAttribute('aria-controls');
+                var submenu = submenuId ? document.getElementById(submenuId) : control.nextElementSibling;
+                var isOpen = control.classList.contains('open') && !collapsed;
+                control.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                if (submenu) {
+                    submenu.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+                    submenu.toggleAttribute('inert', !isOpen);
+                }
+            });
+        }
+    }
+
     function syncSidebarState() {
-        if (isMobile()) {
+        var mobile = isMobile();
+        if (mobile) {
             body.classList.remove('collapsed');
-            body.classList.remove('mobile-open');
+            if (lastSidebarLayout !== 'mobile') body.classList.remove('mobile-open');
+            lastSidebarLayout = 'mobile';
+            updateSidebarControls();
             return;
         }
 
@@ -36,34 +84,49 @@
         } catch (error) {
             body.classList.remove('collapsed');
         }
+        lastSidebarLayout = 'desktop';
+        updateSidebarControls();
     }
 
     function toggleSidebar(forceOpen) {
         if (isMobile()) {
             var shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !body.classList.contains('mobile-open');
             body.classList.toggle('mobile-open', shouldOpen);
-            toggleButtons.forEach(function (button) {
-                button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-            });
+            updateSidebarControls();
             return;
         }
 
         body.classList.toggle('collapsed');
         var collapsed = body.classList.contains('collapsed');
-        toggleButtons.forEach(function (button) {
-            button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-        });
         try {
             localStorage.setItem('admin_sidebar_collapsed', collapsed ? 'true' : 'false');
         } catch (error) {
             // Storage can be unavailable in privacy modes; visual state still works.
         }
+        updateSidebarControls();
+    }
+
+    function setSubmenuState(element, isOpen) {
+        if (!element) return;
+        element.classList.toggle('open', isOpen);
+        updateSidebarControls();
     }
 
     function toggleSubmenu(element) {
         if (!element) return;
-        var isOpen = element.classList.toggle('open');
-        element.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+        var expandedFromCollapsed = !isMobile() && body.classList.contains('collapsed');
+        if (expandedFromCollapsed) {
+            body.classList.remove('collapsed');
+            try {
+                localStorage.setItem('admin_sidebar_collapsed', 'false');
+            } catch (error) {
+                // The expanded state remains valid for the current page.
+            }
+            updateSidebarControls();
+        }
+
+        setSubmenuState(element, expandedFromCollapsed || !element.classList.contains('open'));
     }
 
     function getTheme() {
@@ -294,8 +357,12 @@
     });
 
     document.querySelectorAll('.submenu-toggle').forEach(function (element) {
+        setSubmenuState(element, element.classList.contains('open'));
+        element.addEventListener('click', function () {
+            toggleSubmenu(element);
+        });
         element.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter' || event.key === ' ') {
+            if (element.tagName !== 'BUTTON' && (event.key === 'Enter' || event.key === ' ')) {
                 event.preventDefault();
                 toggleSubmenu(element);
             }
@@ -305,7 +372,7 @@
     if (sidebar) {
         sidebar.querySelectorAll('a[href]').forEach(function (link) {
             link.addEventListener('click', function () {
-                if (isMobile() && !link.classList.contains('submenu-toggle')) toggleSidebar(false);
+                if (isMobile()) toggleSidebar(false);
             });
         });
         var activeLink = sidebar.querySelector('a.active');

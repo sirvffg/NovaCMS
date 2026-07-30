@@ -93,7 +93,18 @@ function recordVisit($page_url = '') {
     // 先采集数据（轻量操作），其余工作推迟到 shutdown
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    $page_url = $page_url ?: $_SERVER['REQUEST_URI'] ?? '';
+    $page_url = (string)($page_url ?: ($_SERVER['REQUEST_URI'] ?? ''));
+    if (strlen($page_url) > 255) {
+        $page_url = function_exists('mb_strcut')
+            ? mb_strcut($page_url, 0, 255, 'UTF-8')
+            : substr($page_url, 0, 255);
+        // Avoid handing strict UTF-8 databases an incomplete multibyte tail.
+        if (!preg_match('//u', $page_url)) {
+            while ($page_url !== '' && !preg_match('//u', $page_url)) {
+                $page_url = substr($page_url, 0, -1);
+            }
+        }
+    }
     $visitor_username = $_SESSION['user_username'] ?? null;
     $visitor_email = $_SESSION['user_email'] ?? null;
 
@@ -250,8 +261,10 @@ function sanitize_title($title, $separator = '-') {
     $title = preg_replace('/[\s\-_]+/', $separator, $title);
     // 去除首尾分隔符
     $title = trim($title, $separator);
-    // 转小写
-    $title = mb_strtolower($title, 'UTF-8');
+    // 转小写；共享主机未启用 mbstring 时仍保持可用。
+    $title = function_exists('mb_strtolower')
+        ? mb_strtolower($title, 'UTF-8')
+        : strtolower($title);
     return $title ?: 'untitled';
 }
 

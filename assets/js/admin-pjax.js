@@ -3,12 +3,14 @@
 
     var CONTAINER_SELECTOR = '#pjax-container';
     var PAGE_SCRIPTS_SELECTOR = '#page-scripts';
+    var MANAGED_HEAD_SELECTOR = '[data-pjax-head-resource]';
 
     var container = document.querySelector(CONTAINER_SELECTOR);
     if (!container) return;
 
     var isLoading = false;
     var currentXhr = null;
+    var loadedHeadScripts = Object.create(null);
 
     // Pages that must always do a full reload (login state changes, etc.)
     var skipPatterns = [
@@ -67,6 +69,13 @@
         return true;
     }
 
+    // Persistent shell dependencies are already available. Remember them so a
+    // page cannot request and execute the same external head dependency again.
+    document.querySelectorAll('script[src]:not([type="text/pjax-script"])').forEach(function (script) {
+        var source = absUrl(script.getAttribute('src'));
+        if (source) loadedHeadScripts[source] = true;
+    });
+
     function showLoading() {
         var el = document.getElementById('loading-overlay');
         if (!el) return;
@@ -116,11 +125,16 @@
         });
     }
 
-    // Remove old head_scripts block content (between comment markers)
+    // Remove old head_scripts content. Initial-page resources live between the
+    // comment markers; resources injected by a PJAX response are explicitly
+    // marked because those markers may not exist on the first page.
     function clearHeadBlock() {
         var oldStart = findComment(document.head, 'nova-head-start');
         var oldEnd = findComment(document.head, 'nova-head-end');
         removeRange(oldStart, oldEnd);
+        document.head.querySelectorAll(MANAGED_HEAD_SELECTOR).forEach(function (element) {
+            element.remove();
+        });
     }
 
     // Collect head_scripts nodes from the response. Returns {links, scripts}.
@@ -160,6 +174,17 @@
 
             var item = queue[index];
             var oldScript = item.node;
+            var source = oldScript.getAttribute('src');
+            var cacheKey = item.loadOnce && source ? absUrl(source) : null;
+
+            if (cacheKey && loadedHeadScripts[cacheKey]) {
+                if (oldScript.ownerDocument === document && oldScript.parentNode) {
+                    oldScript.remove();
+                }
+                loadNext(index + 1);
+                return;
+            }
+
             var newScript = document.createElement('script');
             for (var i = 0; i < oldScript.attributes.length; i++) {
                 var attr = oldScript.attributes[i];
@@ -173,8 +198,14 @@
             // Attach load handlers BEFORE inserting to avoid any race condition
             var isExternal = newScript.hasAttribute('src');
             if (isExternal) {
-                newScript.onload = function () { loadNext(index + 1); };
-                newScript.onerror = function () { loadNext(index + 1); };
+                newScript.onload = function () {
+                    if (cacheKey) loadedHeadScripts[cacheKey] = true;
+                    loadNext(index + 1);
+                };
+                newScript.onerror = function () {
+                    if (cacheKey) delete loadedHeadScripts[cacheKey];
+                    loadNext(index + 1);
+                };
             }
 
             // Only use replaceChild if the old script lives in the LIVE document.
@@ -198,6 +229,26 @@
         loadNext(0);
     }
 
+    // Give page code a chance to release timers/listeners, then unmount any
+    // Vue 3 app before its mount node is removed. This prevents repeated PJAX
+    // visits to the dashboard from leaving refresh timers and charts running.
+    function teardownCurrentPage(nextUrl) {
+        window.dispatchEvent(new CustomEvent('pjax:before-replace', {
+            detail: { url: window.location.href, nextUrl: nextUrl }
+        }));
+
+        container.querySelectorAll('[data-v-app]').forEach(function (mountPoint) {
+            var app = mountPoint.__vue_app__;
+            if (app && typeof app.unmount === 'function') {
+                try {
+                    app.unmount();
+                } catch (error) {
+                    console.error('PJAX Vue teardown error:', error);
+                }
+            }
+        });
+    }
+
     // Update the active state on the persistent sidebar
     function updateActiveMenu(url) {
         var sidebar = document.getElementById('sidebar');
@@ -212,6 +263,7 @@
             var href = link.getAttribute('href');
             if (!href || href.charAt(0) === '#') {
                 link.classList.remove('active');
+                link.removeAttribute('aria-current');
                 return;
             }
             var linkPath;
@@ -219,9 +271,30 @@
                 linkPath = new URL(href, window.location.href).pathname;
             } catch (e) {
                 link.classList.remove('active');
+                link.removeAttribute('aria-current');
                 return;
             }
-            link.classList.toggle('active', linkPath === targetPath);
+            var isActive = linkPath === targetPath;
+            link.classList.toggle('active', isActive);
+            if (isActive) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
+        });
+
+        // The sidebar shell is persistent, so submenu state must follow the
+        // newly active child instead of keeping the state from the first page.
+        sidebar.querySelectorAll('.submenu-toggle').forEach(function (toggle) {
+            var submenuId = toggle.getAttribute('aria-controls');
+            var submenu = submenuId ? document.getElementById(submenuId) : toggle.nextElementSibling;
+            var isCurrent = Boolean(submenu && submenu.querySelector('a.active'));
+            var isVisible = isCurrent && !document.body.classList.contains('collapsed');
+
+            toggle.classList.toggle('is-current', isCurrent);
+            toggle.classList.toggle('open', isCurrent);
+            toggle.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
+            if (submenu) {
+                submenu.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+                submenu.toggleAttribute('inert', !isVisible);
+            }
         });
     }
 
@@ -252,6 +325,7 @@
 
         if (doc.title) document.title = doc.title;
 
+        teardownCurrentPage(url);
         replacePjaxStyles(doc);
         updateShell(doc);
 
@@ -260,7 +334,9 @@
         clearHeadBlock();
         var headNodes = collectHeadNodes(doc);
         headNodes.links.forEach(function (link) {
-            document.head.appendChild(document.importNode(link, true));
+            var importedLink = document.importNode(link, true);
+            importedLink.setAttribute('data-pjax-head-resource', '');
+            document.head.appendChild(importedLink);
         });
 
         // Swap container content
@@ -277,14 +353,14 @@
         // External scripts load sequentially so dependencies (jQuery, Vue, etc.) are ready
         // before inline scripts that use them execute.
         var queue = [];
-        headNodes.scripts.forEach(function (s) { queue.push({ node: s, parent: document.head }); });
+        headNodes.scripts.forEach(function (s) {
+            s.setAttribute('data-pjax-head-resource', '');
+            queue.push({ node: s, parent: document.head, loadOnce: true });
+        });
         container.querySelectorAll('script').forEach(function (s) { queue.push({ node: s, parent: null }); });
         if (pageScriptsEl) {
             pageScriptsEl.querySelectorAll('script').forEach(function (s) { queue.push({ node: s, parent: null }); });
         }
-        // Hide the loading overlay only after ALL scripts have loaded and executed,
-        // so the page is fully ready before the user sees it.
-        executeScriptsInOrder(queue, hideLoading);
 
         updateActiveMenu(url);
 
@@ -294,7 +370,13 @@
 
         window.scrollTo(0, 0);
 
-        window.dispatchEvent(new CustomEvent('pjax:complete', { detail: { url: url } }));
+        // Page scripts can read the new location while initialising. Announce
+        // completion only after external dependencies and inline initialisers
+        // have all run.
+        executeScriptsInOrder(queue, function () {
+            hideLoading();
+            window.dispatchEvent(new CustomEvent('pjax:complete', { detail: { url: url } }));
+        });
     }
 
     function navigate(url, pushState) {
@@ -357,8 +439,6 @@
         if (!link) return;
         if (!shouldIntercept(link, event)) return;
 
-        event.preventDefault();
-
         var fullUrl = absUrl(link.getAttribute('href'));
         if (!fullUrl) return;
 
@@ -371,6 +451,7 @@
             return;
         }
 
+        event.preventDefault();
         navigate(fullUrl, true);
     });
 
@@ -400,22 +481,24 @@
         if (headStart && headEnd) {
             var node = headStart.nextSibling;
             while (node && node !== headEnd) {
-                if (node.nodeName === 'SCRIPT') {
-                    queue.push({ node: node, parent: document.head });
+                // Scripts with another explicit type were not deferred by PHP
+                // and have already been handled by the browser.
+                if (node.nodeName === 'SCRIPT' && node.getAttribute('type') === 'text/pjax-script') {
+                    queue.push({ node: node, parent: document.head, loadOnce: true });
                 }
                 node = node.nextSibling;
             }
         }
 
         // Collect scripts from #pjax-container (converted to text/pjax-script by PHP)
-        container.querySelectorAll('script').forEach(function (s) {
+        container.querySelectorAll('script[type="text/pjax-script"]').forEach(function (s) {
             queue.push({ node: s, parent: null });
         });
 
         // Collect scripts from #page-scripts
         var pageScriptsEl = document.querySelector(PAGE_SCRIPTS_SELECTOR);
         if (pageScriptsEl) {
-            pageScriptsEl.querySelectorAll('script').forEach(function (s) {
+            pageScriptsEl.querySelectorAll('script[type="text/pjax-script"]').forEach(function (s) {
                 queue.push({ node: s, parent: null });
             });
         }

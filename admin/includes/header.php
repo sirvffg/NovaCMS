@@ -34,25 +34,40 @@ if (!defined('NOVA_API')) {
 }
 require_once __DIR__ . '/../../vendor/nova-json/class/backend/class-backend-menu.php';
 
-Nova_Backend_Menu::add_menu('仪表盘', 'dashboard', '/admin/index.php', 'bi-grid-1x2', 10);
-Nova_Backend_Menu::add_menu('网站配置', 'config', '/admin/config.php', 'bi-sliders', 20);
-Nova_Backend_Menu::add_menu('博客管理', 'posts', '/admin/posts.php', 'bi-file-earmark-text', 30);
-Nova_Backend_Menu::add_menu('隐私与付费', 'privacy', '/admin/privacy_access.php', 'bi-shield-check', 40);
-Nova_Backend_Menu::add_menu('用户管理', 'admins', '/admin/admins.php', 'bi-people', 50);
-Nova_Backend_Menu::add_menu('主题管理', 'themes', '/admin/themes.php', 'bi-palette', 55);
-Nova_Backend_Menu::add_menu('友情链接', 'links', '/admin/links.php', 'bi-link-45deg', 60);
-Nova_Backend_Menu::add_menu('访问统计', 'stats', '/admin/stats.php', 'bi-bar-chart', 70);
-Nova_Backend_Menu::add_menu('留言管理', 'guestbook', '/admin/guestbook.php', 'bi-chat-square-text', 80);
-Nova_Backend_Menu::add_menu('说说管理', 'shuoshuo', '/admin/shuoshuo.php', 'bi-chat-heart', 90);
-Nova_Backend_Menu::add_menu('相册管理', 'gallery', '/admin/gallery.php', 'bi-images', 100);
+$primaryMenu = ['group' => 'primary', 'group_label' => '', 'group_order' => 0];
+$contentMenu = ['group' => 'content', 'group_label' => '内容', 'group_order' => 100];
+$systemMenu = ['group' => 'system', 'group_label' => '系统', 'group_order' => 200];
+$toolMenu = ['group' => 'tools', 'group_label' => '工具', 'group_order' => 300];
 
-Nova_Backend_Menu::add_menu('更多工具', 'settings', '', 'bi-grid-3x3-gap', 130);
-Nova_Backend_Menu::add_submenu('settings', '文件管理', 'files', '/admin/files.php', 40, ['icon' => 'bi-folder2-open']);
-Nova_Backend_Menu::add_submenu('settings', '邮件测试', 'email_test', '/admin/email_test.php', 50, ['icon' => 'bi-envelope-check']);
-Nova_Backend_Menu::add_submenu('settings', 'SEO 工具集', 'seo_tools', '/admin/seo_tools.php', 60, ['icon' => 'bi-search']);
-Nova_Backend_Menu::add_submenu('settings', '系统日志', 'view_logs', '/admin/view_logs.php', 70, ['icon' => 'bi-journal-text']);
-Nova_Backend_Menu::add_menu('备份管理', 'backup', '/admin/backup.php', 'bi-database-check', 120);
-Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-right', 140, ['target' => '_blank']);
+Nova_Backend_Menu::add_menu('仪表盘', 'dashboard', '/admin/index.php', 'bi-speedometer2', 10, $primaryMenu);
+
+Nova_Backend_Menu::add_menu('文章', 'posts', '', 'bi-layout-text-sidebar-reverse', 10, $contentMenu);
+Nova_Backend_Menu::add_submenu('posts', '全部文章', 'posts_all', '/admin/posts.php', 10, ['icon' => 'bi-file-earmark-text']);
+Nova_Backend_Menu::add_submenu('posts', '分类管理', 'categories', '/admin/categories.php', 20, ['icon' => 'bi-tags']);
+Nova_Backend_Menu::add_menu('页面', 'pages', '/admin/pages.php', 'bi-window-sidebar', 20, $contentMenu);
+Nova_Backend_Menu::add_menu('评论', 'comments', '/admin/comments.php', 'bi-chat-square-text', 30, $contentMenu);
+Nova_Backend_Menu::add_menu('附件', 'files', '/admin/files.php', 'bi-folder2', 40, $contentMenu);
+Nova_Backend_Menu::add_menu('图库', 'gallery', '/admin/gallery.php', 'bi-image', 50, $contentMenu);
+Nova_Backend_Menu::add_menu('瞬间', 'shuoshuo', '/admin/shuoshuo.php', 'bi-globe2', 60, $contentMenu);
+Nova_Backend_Menu::add_menu('文档', 'documents', '/admin/documents.php', 'bi-journal', 70, $contentMenu);
+Nova_Backend_Menu::add_menu('链接', 'links', '/admin/links.php', 'bi-link-45deg', 80, $contentMenu);
+Nova_Backend_Menu::add_menu('订阅', 'subscriptions', '/admin/subscriptions.php', 'bi-rss', 90, $contentMenu);
+Nova_Backend_Menu::add_menu('智能问答', 'ai_qa', '', 'bi-stars', 100, $contentMenu);
+Nova_Backend_Menu::add_submenu('ai_qa', '知识库', 'ai_knowledge', '/admin/ai_qa.php', 10, ['icon' => 'bi-database']);
+Nova_Backend_Menu::add_submenu('ai_qa', '助手设置', 'ai_settings', '/admin/ai_settings.php', 20, ['icon' => 'bi-sliders2']);
+
+Nova_Backend_Menu::add_menu('网站配置', 'config', '/admin/config.php', 'bi-sliders', 10, $systemMenu);
+Nova_Backend_Menu::add_menu('用户管理', 'admins', '/admin/admins.php', 'bi-people', 20, $systemMenu);
+Nova_Backend_Menu::add_menu('隐私与付费', 'privacy', '/admin/privacy_access.php', 'bi-shield-check', 30, $systemMenu);
+Nova_Backend_Menu::add_menu('主题管理', 'themes', '/admin/themes.php', 'bi-palette', 40, $systemMenu);
+
+Nova_Backend_Menu::add_menu('访问统计', 'stats', '/admin/stats.php', 'bi-bar-chart', 10, $toolMenu);
+Nova_Backend_Menu::add_menu('留言管理', 'guestbook', '/admin/guestbook.php', 'bi-chat-left-dots', 20, $toolMenu);
+Nova_Backend_Menu::add_menu('邮件测试', 'email_test', '/admin/email_test.php', 'bi-envelope-check', 30, $toolMenu);
+Nova_Backend_Menu::add_menu('SEO 工具集', 'seo_tools', '/admin/seo_tools.php', 'bi-search', 40, $toolMenu);
+Nova_Backend_Menu::add_menu('系统日志', 'view_logs', '/admin/view_logs.php', 'bi-journal-text', 50, $toolMenu);
+Nova_Backend_Menu::add_menu('备份管理', 'backup', '/admin/backup.php', 'bi-database-check', 60, $toolMenu);
+Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-right', 70, $toolMenu + ['target' => '_blank']);
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN" data-bs-theme="light">
@@ -108,7 +123,6 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
             </button>
         </div>
 
-        <div class="sidebar-section-label">工作空间</div>
         <nav class="sidebar-scroll">
             <ul class="sidebar-menu">
                 <?php Nova_Backend_Menu::render(); ?>

@@ -37,7 +37,7 @@ class Nova_Backend_Menu {
      * @param string $url         链接地址（支持 /admin/xxx.php 或外部 URL）
      * @param string $icon        图标（Bootstrap Icons 类名，或单个中文字符）
      * @param int    $position    排序位置（越小越靠前，默认 50）
-     * @param array  $options     额外选项：['target' => '_blank', 'badge' => 'New', 'badge_type' => 'danger']
+     * @param array  $options     额外选项：target、badge、capability、group、group_label、group_order
      * @return string 菜单 ID
      */
     public static function add_menu($title, $id, $url, $icon = '', $position = 50, $options = []) {
@@ -179,20 +179,97 @@ class Nova_Backend_Menu {
     }
 
     /**
+     * 菜单分组用于呈现清晰的内容、系统和工具区块。未声明分组的旧插件菜单
+     * 会自动进入“扩展”区，原 add_menu / add_submenu 调用无需调整。
+     */
+    protected static function getGroup($menu) {
+        $group = trim((string)($menu['options']['group'] ?? 'extensions'));
+        return $group !== '' ? $group : 'extensions';
+    }
+
+    protected static function getGroupLabel($menu) {
+        if (array_key_exists('group_label', $menu['options'])) {
+            return trim((string)$menu['options']['group_label']);
+        }
+
+        $labels = [
+            'primary'    => '',
+            'content'    => '内容',
+            'system'     => '系统',
+            'tools'      => '工具',
+            'extensions' => '扩展',
+        ];
+        $group = self::getGroup($menu);
+        return $labels[$group] ?? '扩展';
+    }
+
+    protected static function getGroupOrder($menu) {
+        if (isset($menu['options']['group_order']) && is_numeric($menu['options']['group_order'])) {
+            return (int)$menu['options']['group_order'];
+        }
+
+        $orders = [
+            'primary'    => 0,
+            'content'    => 100,
+            'system'     => 200,
+            'tools'      => 300,
+            'extensions' => 400,
+        ];
+        return $orders[self::getGroup($menu)] ?? 400;
+    }
+
+    protected static function cssToken($value) {
+        $token = preg_replace('/[^a-zA-Z0-9_-]+/', '-', (string)$value);
+        return trim((string)$token, '-') ?: 'item';
+    }
+
+    protected static function renderBadge($options) {
+        if (empty($options['badge'])) return '';
+
+        $type = !empty($options['badge_type'])
+            ? ' badge-' . self::cssToken($options['badge_type'])
+            : '';
+        return '<span class="sidebar-badge' . $type . '">' . e($options['badge']) . '</span>';
+    }
+
+    protected static function renderTargetAttributes($options) {
+        if (empty($options['target'])) return '';
+
+        $target = (string)$options['target'];
+        $attributes = ' target="' . e($target) . '"';
+        if ($target === '_blank') {
+            $attributes .= ' rel="noopener"';
+        }
+        return $attributes;
+    }
+
+    /**
      * 排序菜单
      */
     protected static function sortMenus() {
         if (self::$sorted) return;
 
         uasort(self::$menus, function($a, $b) {
-            return $a['position'] - $b['position'];
+            $groupOrder = self::getGroupOrder($a) <=> self::getGroupOrder($b);
+            if ($groupOrder !== 0) return $groupOrder;
+
+            $group = strcmp(self::getGroup($a), self::getGroup($b));
+            if ($group !== 0) return $group;
+
+            $position = $a['position'] <=> $b['position'];
+            if ($position !== 0) return $position;
+
+            return strcmp((string)$a['id'], (string)$b['id']);
         });
 
         foreach (self::$submenus as &$subs) {
             uasort($subs, function($a, $b) {
-                return $a['position'] - $b['position'];
+                $position = $a['position'] <=> $b['position'];
+                if ($position !== 0) return $position;
+                return strcmp((string)$a['id'], (string)$b['id']);
             });
         }
+        unset($subs);
 
         self::$sorted = true;
     }
@@ -219,53 +296,72 @@ class Nova_Backend_Menu {
         self::sortMenus();
 
         $html = '';
+        $lastGroup = null;
 
         foreach (self::$menus as $menu_id => $menu) {
             if (!self::canShow($menu)) continue;
 
-            $hasSubmenu = isset(self::$submenus[$menu_id]) && !empty(self::$submenus[$menu_id]);
+            $visibleSubmenus = [];
+            if (!empty(self::$submenus[$menu_id])) {
+                foreach (self::$submenus[$menu_id] as $subId => $sub) {
+                    if (self::canShow($sub)) {
+                        $visibleSubmenus[$subId] = $sub;
+                    }
+                }
+            }
+
+            $hasSubmenu = !empty($visibleSubmenus);
+            if (!$hasSubmenu && trim((string)$menu['url']) === '') continue;
+
+            $group = self::getGroup($menu);
+            if ($group !== $lastGroup) {
+                $groupLabel = self::getGroupLabel($menu);
+                if ($groupLabel !== '') {
+                    $html .= '<li class="sidebar-menu-section"><span>' . e($groupLabel) . '</span></li>';
+                }
+                $lastGroup = $group;
+            }
+
+            $menuToken = self::cssToken($menu_id);
+            $itemClasses = 'menu-item menu-item--' . $menuToken;
 
             if ($hasSubmenu) {
                 $submenuOpen = self::hasActiveSubmenu($menu_id);
-                $activeClass = $submenuOpen ? ' open' : '';
-                $html .= '<li>';
-                $html .= '<a class="submenu-toggle' . $activeClass . '" role="button" tabindex="0" aria-expanded="' . ($submenuOpen ? 'true' : 'false') . '" onclick="toggleSubmenu(this)">';
+                $activeClass = $submenuOpen ? ' open is-current' : '';
+                $submenuId = 'admin-submenu-' . $menuToken;
+                $html .= '<li class="' . $itemClasses . ' has-submenu">';
+                $html .= '<button type="button" class="submenu-toggle' . $activeClass . '" aria-expanded="' . ($submenuOpen ? 'true' : 'false') . '" aria-controls="' . e($submenuId) . '" data-menu-label="' . e($menu['title']) . '">';
                 $html .= '<span class="menu-icon">' . self::renderIcon($menu['icon']) . '</span>';
                 $html .= '<span class="menu-text">' . e($menu['title']) . '</span>';
+                $html .= self::renderBadge($menu['options']);
                 $html .= '<span class="submenu-arrow"><i class="bi bi-chevron-right" aria-hidden="true"></i></span>';
-                $html .= '</a>';
-                $html .= '<ul class="submenu">';
+                $html .= '</button>';
+                $html .= '<ul class="submenu" id="' . e($submenuId) . '" aria-label="' . e($menu['title']) . '子菜单" aria-hidden="' . ($submenuOpen ? 'false' : 'true') . '"' . ($submenuOpen ? '' : ' inert') . '>';
 
-                foreach (self::$submenus[$menu_id] as $sub) {
-                    if (!self::canShow($sub)) continue;
-                    $active = self::isActive($sub['url']) ? ' active' : '';
-                    $badge = '';
-                    if (!empty($sub['options']['badge'])) {
-                        $bt = !empty($sub['options']['badge_type']) ? ' badge-' . $sub['options']['badge_type'] : '';
-                        $badge = ' <span class="badge' . $bt . '">' . e($sub['options']['badge']) . '</span>';
-                    }
-                    $html .= '<li><a href="' . e($sub['url']) . '" class="' . $active . '">';
+                foreach ($visibleSubmenus as $subId => $sub) {
+                    $isActive = self::isActive($sub['url']);
+                    $active = $isActive ? ' active' : '';
+                    $current = $isActive ? ' aria-current="page"' : '';
+                    $html .= '<li class="submenu-item submenu-item--' . self::cssToken($subId) . '"><a href="' . e($sub['url']) . '" class="menu-link' . $active . '" data-menu-label="' . e($sub['title']) . '"' . self::renderTargetAttributes($sub['options']) . $current . '>';
                     $iconHtml = !empty($sub['options']['icon']) ? '<span class="menu-icon menu-icon-sub">' . self::renderIcon($sub['options']['icon']) . '</span>' : '<span class="submenu-dot" aria-hidden="true"></span>';
                     $html .= $iconHtml;
-                    $html .= '<span class="menu-text">' . e($sub['title']) . $badge . '</span>';
+                    $html .= '<span class="menu-text">' . e($sub['title']) . '</span>';
+                    $html .= self::renderBadge($sub['options']);
                     $html .= '</a></li>';
                 }
 
                 $html .= '</ul>';
                 $html .= '</li>';
             } else {
-                $active = self::isActive($menu['url']) ? ' active' : '';
-                $target = !empty($menu['options']['target']) ? ' target="' . e($menu['options']['target']) . '"' : '';
-                $badge = '';
-                if (!empty($menu['options']['badge'])) {
-                    $bt = !empty($menu['options']['badge_type']) ? ' badge-' . $menu['options']['badge_type'] : '';
-                    $badge = ' <span class="badge' . $bt . '">' . e($menu['options']['badge']) . '</span>';
-                }
+                $isActive = self::isActive($menu['url']);
+                $active = $isActive ? ' active' : '';
+                $current = $isActive ? ' aria-current="page"' : '';
 
-                $html .= '<li>';
-                $html .= '<a href="' . e($menu['url']) . '" class="' . $active . '"' . $target . '>';
+                $html .= '<li class="' . $itemClasses . '">';
+                $html .= '<a href="' . e($menu['url']) . '" class="menu-link' . $active . '" data-menu-label="' . e($menu['title']) . '"' . self::renderTargetAttributes($menu['options']) . $current . '>';
                 $html .= '<span class="menu-icon">' . self::renderIcon($menu['icon']) . '</span>';
-                $html .= '<span class="menu-text">' . e($menu['title']) . $badge . '</span>';
+                $html .= '<span class="menu-text">' . e($menu['title']) . '</span>';
+                $html .= self::renderBadge($menu['options']);
                 $html .= '</a>';
                 $html .= '</li>';
             }

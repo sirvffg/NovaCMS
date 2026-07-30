@@ -1274,6 +1274,97 @@ ALTER TABLE `visit_stats`
 ALTER TABLE `website_config`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '配置ID', AUTO_INCREMENT=2;
 
+-- --------------------------------------------------------
+
+--
+-- 新内容模块（页面、文档、订阅、智能问答）
+--
+
+CREATE TABLE IF NOT EXISTS `cms_pages` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `summary` text COLLATE utf8mb4_unicode_ci,
+  `content` longtext COLLATE utf8mb4_unicode_ci,
+  `template` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'default',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `show_in_nav` tinyint(1) NOT NULL DEFAULT '0',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cms_pages_slug` (`slug`),
+  KEY `idx_cms_pages_public` (`status`,`show_in_nav`,`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 页面';
+
+CREATE TABLE IF NOT EXISTS `cms_documents` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `summary` text COLLATE utf8mb4_unicode_ci,
+  `content` longtext COLLATE utf8mb4_unicode_ci,
+  `file_url` varchar(2048) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `is_featured` tinyint(1) NOT NULL DEFAULT '0',
+  `download_count` int unsigned NOT NULL DEFAULT '0',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cms_documents_slug` (`slug`),
+  KEY `idx_cms_documents_public` (`status`,`is_featured`,`sort_order`),
+  KEY `idx_cms_documents_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 文档';
+
+CREATE TABLE IF NOT EXISTS `cms_subscribers` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `email` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `source` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'website',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `unsubscribed_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cms_subscribers_email` (`email`),
+  KEY `idx_cms_subscribers_status` (`status`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 邮件订阅';
+
+CREATE TABLE IF NOT EXISTS `cms_ai_qa` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `question` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `answer` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `keywords` varchar(1000) COLLATE utf8mb4_unicode_ci,
+  `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `hit_count` int unsigned NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_cms_ai_qa_public` (`status`,`sort_order`),
+  KEY `idx_cms_ai_qa_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 智能问答知识库';
+
+CREATE TABLE IF NOT EXISTS `cms_ai_settings` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `welcome_message` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '您好，请问有什么可以帮您？',
+  `fallback_message` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '暂时没有找到合适的答案，请换个说法再试。',
+  `match_threshold` decimal(5,4) NOT NULL DEFAULT '0.3500',
+  `max_results` smallint unsigned NOT NULL DEFAULT '3',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 智能问答设置';
+
+INSERT INTO `cms_ai_settings`
+  (`id`, `enabled`, `welcome_message`, `fallback_message`, `match_threshold`, `max_results`)
+VALUES
+  (1, 1, '您好，请问有什么可以帮您？', '暂时没有找到合适的答案，请换个说法再试。', 0.3500, 3)
+ON DUPLICATE KEY UPDATE `id` = `id`;
+
 --
 -- 限制导出的表
 --
