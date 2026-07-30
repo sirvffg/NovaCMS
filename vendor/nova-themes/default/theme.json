@@ -1,9 +1,9 @@
 {
     "name": "默认主题",
     "slug": "default",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "NovaCMS",
-    "description": "NovaCMS 默认主题",
+    "description": "NovaCMS 现代个人博客主题，支持文章流、博客侧栏、深浅色与响应式社区页面",
     "screenshot": "screenshot.png",
     "min_nova_version": "1.0.0"
 }

@@ -1,68 +1,40 @@
 <?php
 $pageTitle = '留言板';
+$pageKey = 'guestbook';
+$pageDescription = '留下一句话，让一次访问变成真实的连接。';
+$communityCssVersion = (string)(@filemtime($themePath . '/assets/css/community.css') ?: 1);
+$communityJsVersion = (string)(@filemtime($themePath . '/assets/js/community.js') ?: 1);
+$extraHead = '<link href="' . NOVA_THEME_URL . '/assets/css/community.css?v=' . e($communityCssVersion) . '" rel="stylesheet">';
+$extraFooter = '<script src="' . NOVA_THEME_URL . '/assets/js/community.js?v=' . e($communityJsVersion) . '"></script>';
 include $themePath . '/partials/header.php';
 include $themePath . '/partials/navbar.php';
 ?>
-<div class="container my-5" style="padding-top: 80px;">
-    <h1 class="mb-4 text-center">留言板</h1>
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <form id="guestbook-form">
-                <div class="mb-3">
-                    <input type="text" class="form-control" id="gb-nickname" placeholder="昵称" required>
-                </div>
-                <div class="mb-3">
-                    <textarea class="form-control" id="gb-content" rows="3" placeholder="说点什么..." required></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">提交留言</button>
-            </form>
+<main id="main-content" class="site-main community-page guestbook-page" data-community-page="guestbook">
+    <section class="community-hero guestbook-hero">
+        <div class="site-container community-hero-grid">
+            <div data-reveal><span class="site-eyebrow"><i class="bi bi-chat-square-heart"></i> Say hello</span><h1>来都来了，留句话吧</h1><p>分享你的想法、建议或简单问候。每一条友善的留言都会被认真看到。</p></div>
+            <div class="guestbook-doodle" aria-hidden="true" data-reveal><span><i class="bi bi-chat-dots"></i></span><span><i class="bi bi-emoji-smile"></i></span><span><i class="bi bi-send"></i></span></div>
         </div>
-    </div>
-    <div id="guestbook-list">
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2 text-muted">加载中...</p>
+    </section>
+    <section class="community-section guestbook-section" aria-labelledby="guestbook-title">
+        <div class="site-container guestbook-layout">
+            <aside class="guestbook-compose" data-reveal>
+                <span class="site-eyebrow"><i class="bi bi-pencil-square"></i> New message</span>
+                <h2>写一条留言</h2><p>邮箱不会公开，仅在收到回复时用于通知。</p>
+                <form data-guestbook-form novalidate>
+                    <div class="form-row"><label for="gb-nickname">昵称</label><input id="gb-nickname" name="nickname" maxlength="50" required placeholder="怎么称呼你"></div>
+                    <div class="form-grid"><div class="form-row"><label for="gb-email">邮箱 <span>可选</span></label><input id="gb-email" name="email" type="email" maxlength="100" autocomplete="email" placeholder="name@example.com"></div><div class="form-row"><label for="gb-website">个人网站 <span>可选</span></label><input id="gb-website" name="website" type="url" maxlength="255" placeholder="https://"></div></div>
+                    <div class="form-row"><label for="gb-content">留言内容</label><textarea id="gb-content" name="content" rows="5" maxlength="2000" required placeholder="想说点什么？"></textarea><small><span data-guestbook-length>0</span> / 2000</small></div>
+                    <p class="form-feedback" data-guestbook-feedback aria-live="polite"></p>
+                    <button class="site-button site-button-primary" type="submit">提交留言 <i class="bi bi-send"></i></button>
+                </form>
+            </aside>
+            <div class="guestbook-feed">
+                <header class="community-heading"><div><span class="site-eyebrow"><i class="bi bi-collection"></i> Messages</span><h2 id="guestbook-title">最近留言</h2></div><p data-guestbook-count>正在打开留言簿…</p></header>
+                <div class="guestbook-list" data-guestbook-list aria-live="polite" aria-busy="true"><div class="community-skeleton skeleton-message"></div><div class="community-skeleton skeleton-message"></div></div>
+                <nav class="community-pagination" data-guestbook-pagination aria-label="留言分页"></nav>
+            </div>
         </div>
-    </div>
-</div>
-<script>
-function loadGuestbook() {
-    fetch('/nova-json/v1/statuses/guestbook')
-        .then(r => r.json())
-        .then(data => {
-            const container = document.getElementById('guestbook-list');
-            if (data.code === 'rest_ok' && data.data?.length) {
-                container.innerHTML = data.data.map(item => `
-                    <div class="card mb-3 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="card-subtitle mb-2 text-primary">${item.nickname}</h6>
-                            <p class="card-text">${item.content}</p>
-                            <small class="text-muted">${item.created_at}</small>
-                            ${item.reply ? `<div class="mt-2 p-2 bg-light rounded"><small class="text-muted">回复：${item.reply}</small></div>` : ''}
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = '<p class="text-center text-muted py-5">暂无留言</p>';
-            }
-        });
-}
-document.getElementById('guestbook-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const nickname = document.getElementById('gb-nickname').value;
-    const content = document.getElementById('gb-content').value;
-    fetch('/nova-json/v1/statuses/guestbook', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({nickname, content})
-    }).then(r => r.json()).then(data => {
-        if (data.code === 'rest_ok') {
-            document.getElementById('gb-nickname').value = '';
-            document.getElementById('gb-content').value = '';
-            loadGuestbook();
-        }
-    });
-});
-loadGuestbook();
-</script>
+    </section>
+</main>
 <?php include $themePath . '/partials/footer.php'; ?>

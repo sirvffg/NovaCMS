@@ -1,38 +1,77 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<?php
+$siteName = trim((string)($config['website_name'] ?? 'NovaCMS')) ?: 'NovaCMS';
+$currentPageTitle = trim((string)($pageTitle ?? ''));
+$documentTitle = $currentPageTitle !== '' && $currentPageTitle !== $siteName
+    ? $currentPageTitle . ' · ' . $siteName
+    : $siteName;
+$siteDescription = trim(strip_tags((string)($pageDescription ?? '')));
+if ($siteDescription === '') {
+    $siteDescription = trim(strip_tags((string)($config['robot_description'] ?? '')));
+}
+if ($siteDescription === '') {
+    $siteDescription = trim(strip_tags((string)($config['description'] ?? '')));
+}
+if ($siteDescription === '') {
+    $siteDescription = $siteName . '，记录知识、灵感与持续成长。';
+}
+$faviconUrl = trim((string)($config['favicon'] ?? ''));
+$faviconIsSafe = $faviconUrl !== '' && !preg_match('/[\x00-\x1F\x7F\\\\]/', $faviconUrl) && (
+    (str_starts_with($faviconUrl, '/') && !str_starts_with($faviconUrl, '//')) ||
+    (filter_var($faviconUrl, FILTER_VALIDATE_URL) && in_array(strtolower((string)parse_url($faviconUrl, PHP_URL_SCHEME)), ['http', 'https'], true))
+);
+$styleVersion = isset($themePath) ? (int)@filemtime($themePath . '/assets/css/style.css') : 0;
+?>
+<!doctype html>
+<html lang="zh-CN" data-bs-theme="light" data-theme="light" data-site-name="<?= e($siteName) ?>">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <meta id="nova-theme-color" name="theme-color" content="#faf9f6">
     <script>
-        (function() {
-            const storedTheme = localStorage.getItem('theme');
-            if (storedTheme) {
-                document.documentElement.setAttribute('data-bs-theme', storedTheme);
-            } else {
-                document.documentElement.setAttribute('data-bs-theme', 'light');
+        (function (root) {
+            var theme = 'light';
+            try {
+                var stored = window.localStorage.getItem('nova-theme') || window.localStorage.getItem('theme');
+                if (stored === 'light' || stored === 'dark') {
+                    theme = stored;
+                } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    theme = 'dark';
+                }
+            } catch (error) {
+                theme = 'light';
             }
-        })();
+            root.setAttribute('data-bs-theme', theme);
+            root.setAttribute('data-theme', theme);
+            root.style.colorScheme = theme;
+            document.getElementById('nova-theme-color').setAttribute('content', theme === 'dark' ? '#0b1220' : '#faf9f6');
+        }(document.documentElement));
     </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($pageTitle ?? $config['website_name']) ?> - <?= e($config['website_name']) ?></title>
-    <meta name="description" content="<?= e(!empty($config['robot_description']) ? strip_tags($config['robot_description']) : $config['website_name']) ?>">
-    <meta name="keywords" content="<?= e($config['website_name']) ?>,博客,技术分享,个人网站,编程,生活">
-    <meta name="author" content="<?= e($config['website_name']) ?>">
-    <meta name="robots" content="index, follow">
-    <?php if (!empty($config['bing_verification'])): ?>
-    <meta name="msvalidate.01" content="<?= e($config['bing_verification']) ?>" />
-    <?php endif; ?>
+    <title><?= e($documentTitle) ?></title>
+    <meta name="description" content="<?= e($siteDescription) ?>">
+    <meta name="author" content="<?= e((string)($config['website_author'] ?? $siteName)) ?>">
+    <meta name="robots" content="index,follow,max-image-preview:large">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <?php if (!empty($config['favicon'])): ?>
-    <link rel="shortcut icon" href="<?= e($config['favicon']) ?>">
-    <link rel="icon" href="<?= e($config['favicon']) ?>" type="image/x-icon">
-    <link rel="apple-touch-icon" href="<?= e($config['favicon']) ?>">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<?= e($siteName) ?>">
+    <meta property="og:title" content="<?= e($documentTitle) ?>">
+    <meta property="og:description" content="<?= e($siteDescription) ?>">
+    <?php if (!empty($config['bing_verification'])): ?>
+        <meta name="msvalidate.01" content="<?= e((string)$config['bing_verification']) ?>">
     <?php endif; ?>
-    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.staticfile.net/bootstrap/5.3.0/css/bootstrap.min.css') ?>" rel="stylesheet">
-    <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.staticfile.net/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
-    <link rel="stylesheet" href="<?= getResourceUrl('/assets/css/all.min.css', 'https://cdn.staticfile.net/font-awesome/6.5.1/css/all.min.css') ?>">
-    <link href="<?= NOVA_THEME_URL ?>/assets/css/style.css" rel="stylesheet">
-    <link href="<?= NOVA_THEME_URL ?>/assets/css/inline-extra.css?v=20260630" rel="stylesheet">
-    <?php if (!empty($extraHead)) echo $extraHead; ?>
+    <?php if ($faviconIsSafe): ?>
+        <link rel="icon" href="<?= e($faviconUrl) ?>">
+        <link rel="apple-touch-icon" href="<?= e($faviconUrl) ?>">
+    <?php endif; ?>
+    <link rel="stylesheet" href="<?= e(NOVA_THEME_URL) ?>/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?= e(NOVA_THEME_URL) ?>/assets/css/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?= e(NOVA_THEME_URL) ?>/assets/css/all.min.css">
+    <link rel="stylesheet" href="<?= e(NOVA_THEME_URL) ?>/assets/css/style.css<?= $styleVersion > 0 ? '?v=' . $styleVersion : '' ?>">
+    <?php if (!empty($extraHead)): ?>
+        <?= $extraHead ?>
+    <?php endif; ?>
 </head>
-<body>
+<body class="nova-site">
+    <a class="nova-skip-link" href="#main-content">跳到正文</a>

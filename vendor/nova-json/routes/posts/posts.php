@@ -70,7 +70,7 @@ function v1_get_post_list($request) {
     $count_stmt->execute($params);
     $total = (int)$count_stmt->fetchColumn();
 
-    $selectFields = "p.id, p.title, p.author, p.cover_image,
+    $selectFields = "p.id, p.title, p.author, p.cover_image, p.summary,
                      p.category, p.tags, p.views, p.is_pinned, p.is_featured,
                      p.published_at, p.created_at, p.updated_at,
                      p.has_privacy_content, p.privacy_type,
@@ -82,7 +82,7 @@ function v1_get_post_list($request) {
 
     $sql = "SELECT {$selectFields}
             FROM blog_posts p {$where}
-            ORDER BY p.is_pinned DESC, p.id ASC";
+            ORDER BY p.is_pinned DESC, COALESCE(p.published_at, p.created_at) DESC, p.id DESC";
 
     if ($has_pagination) {
         $sql .= " LIMIT {$per_page} OFFSET {$offset}";
@@ -187,6 +187,7 @@ function v1_format_post_item($post) {
         'title'        => $post['title'],
         'author'       => $post['author'],
         'cover_image'  => $post['cover_image'],
+        'summary'      => (string)($post['summary'] ?? ''),
         'category'     => $post['category'],
         'tags'         => $post['tags'] ? explode(',', $post['tags']) : [],
         'views'        => (int)$post['views'],
