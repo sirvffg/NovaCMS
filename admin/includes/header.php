@@ -87,7 +87,7 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
     <link href="/assets/css/admin.css?v=<?= e($adminCssVersion) ?>" rel="stylesheet">
 
     <?php if (!empty($head_scripts)): ?>
-<!--nova-head-start--><?= $head_scripts ?><!--nova-head-end-->
+<!--nova-head-start--><?= preg_replace('/<script\b(?![^>]*type\s*=)/i', '<script type="text/pjax-script"', $head_scripts) ?><!--nova-head-end-->
     <?php endif; ?>
 </head>
 <body class="admin-shell" data-admin-page="<?= e($currentAdminPage) ?>">
@@ -169,10 +169,10 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
         </header>
 
         <main class="content-body" id="main-content" tabindex="-1">
-            <div id="loading-overlay" role="status" aria-live="polite" aria-hidden="true">
+            <div id="loading-overlay" class="active" role="status" aria-live="polite" aria-hidden="false">
                 <div class="loading-panel">
                     <span class="loading-spinner" aria-hidden="true"></span>
-                    <span data-loading-text>正在处理…</span>
+                    <span data-loading-text>正在加载页面…</span>
                 </div>
             </div>
 
@@ -192,3 +192,4 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
             </dialog>
 
             <div id="pjax-container" data-pjax-container>
+<?php ob_start(); ?>

@@ -2,6 +2,13 @@
 $adminShellJsVersion = (string)(@filemtime(__DIR__ . '/../../assets/js/admin-shell.js') ?: 1);
 $adminPjaxJsVersion = (string)(@filemtime(__DIR__ . '/../../assets/js/admin-pjax.js') ?: 1);
 ?>
+<?php
+// Flush the pjax-container output buffer, converting all <script> tags to
+// type="text/pjax-script" so the browser doesn't execute them synchronously.
+// admin-pjax.js will execute them after the shell renders.
+$pjaxContent = ob_get_clean();
+echo preg_replace('/<script\b(?![^>]*type\s*=)/i', '<script type="text/pjax-script"', $pjaxContent);
+?>
             </div><!-- /#pjax-container -->
         </main><!-- /.content-body -->
     </div><!-- /.main-content -->
@@ -14,7 +21,7 @@ $adminPjaxJsVersion = (string)(@filemtime(__DIR__ . '/../../assets/js/admin-pjax
 
     <div id="page-scripts" data-page-scripts>
     <?php if (!empty($extra_scripts)): ?>
-    <?= $extra_scripts ?>
+    <?= preg_replace('/<script\b(?![^>]*type\s*=)/i', '<script type="text/pjax-script"', $extra_scripts) ?>
     <?php endif; ?>
     </div>
 </body>

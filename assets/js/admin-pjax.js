@@ -71,7 +71,7 @@
         var el = document.getElementById('loading-overlay');
         if (!el) return;
         var label = el.querySelector('[data-loading-text]');
-        if (label) label.textContent = '正在加载…';
+        if (label) label.textContent = '正在加载页面…';
         el.classList.add('active');
         el.setAttribute('aria-hidden', 'false');
     }
@@ -163,8 +163,11 @@
             var newScript = document.createElement('script');
             for (var i = 0; i < oldScript.attributes.length; i++) {
                 var attr = oldScript.attributes[i];
+                // Convert deferred script type back to executable
+                if (attr.name === 'type' && attr.value === 'text/pjax-script') continue;
                 newScript.setAttribute(attr.name, attr.value);
             }
+            // If no type was copied (was text/pjax-script), leave default (text/javascript)
             newScript.textContent = oldScript.textContent;
 
             // Attach load handlers BEFORE inserting to avoid any race condition
@@ -383,4 +386,45 @@
 
     // Mark the initial state so popstate works correctly
     window.history.replaceState({ pjax: true, url: window.location.href }, '', window.location.href);
+
+    // Initial page load: execute deferred scripts (type="text/pjax-script")
+    // after the shell (sidebar + header) is visible, then hide the loading overlay.
+    // Must wait for DOMContentLoaded because #page-scripts comes after admin-pjax.js
+    // in the HTML and hasn't been parsed yet when this script executes.
+    document.addEventListener('DOMContentLoaded', function initPage() {
+        var queue = [];
+
+        // Collect head scripts (between nova-head-start / nova-head-end markers)
+        var headStart = findComment(document.head, 'nova-head-start');
+        var headEnd = findComment(document.head, 'nova-head-end');
+        if (headStart && headEnd) {
+            var node = headStart.nextSibling;
+            while (node && node !== headEnd) {
+                if (node.nodeName === 'SCRIPT') {
+                    queue.push({ node: node, parent: document.head });
+                }
+                node = node.nextSibling;
+            }
+        }
+
+        // Collect scripts from #pjax-container (converted to text/pjax-script by PHP)
+        container.querySelectorAll('script').forEach(function (s) {
+            queue.push({ node: s, parent: null });
+        });
+
+        // Collect scripts from #page-scripts
+        var pageScriptsEl = document.querySelector(PAGE_SCRIPTS_SELECTOR);
+        if (pageScriptsEl) {
+            pageScriptsEl.querySelectorAll('script').forEach(function (s) {
+                queue.push({ node: s, parent: null });
+            });
+        }
+
+        if (queue.length > 0) {
+            executeScriptsInOrder(queue, hideLoading);
+        } else {
+            // No page-specific scripts — hide loading immediately
+            hideLoading();
+        }
+    });
 })();

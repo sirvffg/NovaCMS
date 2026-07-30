@@ -1128,7 +1128,7 @@ body.admin-shell .dataTables_wrapper .dataTables_paginate {
 
 /* Loading and toast feedback */
 #loading-overlay {
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: 2000;
     display: none;
