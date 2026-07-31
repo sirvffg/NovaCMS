@@ -230,7 +230,9 @@ $loginJsVersion = (string)(@filemtime(__DIR__ . '/../assets/js/admin-login.js') 
     </div>
 
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
-    <script src="/vendor/public/captcha/captcha.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4/dist/sha256.umd.min.js"></script>
+    <script src="/vendor/public/captcha/crypto-js.min.js"></script>
+    <script src="/vendor/public/captcha/BehaviorAuth.js?v=20260731-1"></script>
     <script src="/assets/js/admin-shell.js?v=<?= e($adminShellJsVersion) ?>"></script>
     <script src="/assets/js/admin-login.js?v=<?= e($loginJsVersion) ?>"></script>
 </body>

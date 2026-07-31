@@ -504,7 +504,7 @@ class BehaviorAuth {
         const payload = { behavior: behaviorData, env: this.envData };
         const encryptedData = await this.encryptBehaviorData(payload, this.token);
         try {
-            await this.segmentedApi('verify-final', {
+            const result = await this.segmentedApi('verify-final', {
                 offset_x: Math.round(this.currentX),
                 behavior_data: encryptedData
             });
@@ -524,10 +524,16 @@ class BehaviorAuth {
                 this.sliderTrackText.style.fontWeight = 'bold';
                 window.IsPass = true;
             }
+            if (this.onSuccess && typeof this.onSuccess === 'function') {
+                this.onSuccess(result.token);
+            }
         } catch (err) {
             this.setStatus ('fail', err.message || ' 验证失败 ');
             this.sliderBtn.classList.add ('fail');
             this.puzzleBlock.style.filter = 'drop-shadow (2px 2px 4px rgba (220,53,69,0.8))';
+            if (this.onFail && typeof this.onFail === 'function') {
+                this.onFail(err.message || '验证失败');
+            }
             setTimeout (() => this.reset (), 2000);
         }
     }
@@ -554,45 +560,25 @@ class BehaviorAuth {
     }
 
     async encryptBehaviorData(data, token) {
-        const tokenHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
-        const tokenHashHex = Array.from(new Uint8Array(tokenHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        const keyBytes = new TextEncoder().encode(tokenHashHex.substring(0, 32));
-        const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-CBC' }, false, ['encrypt']);
-        const iv = crypto.getRandomValues(new Uint8Array(16));
-        const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-CBC', iv },
-            key,
-            new TextEncoder().encode(JSON.stringify(data))
-        );
-        const combined = new Uint8Array(iv.length + encryptedBuffer.byteLength);
-        combined.set(iv);
-        combined.set(new Uint8Array(encryptedBuffer), iv.length);
-        return this.uint8ToBase64(combined);
+        const key = CryptoJS.SHA256(token);
+        const iv = CryptoJS.lib.WordArray.random(16);
+        const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
+        return iv.toString() + encrypted.toString();
     }
 
     async segmentEncrypt(data, keyStr) {
-        const keyBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyStr));
-        const key = await crypto.subtle.importKey('raw', keyBuffer, { name: 'AES-CBC' }, false, ['encrypt']);
-        const iv = crypto.getRandomValues(new Uint8Array(16));
-        const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-CBC', iv },
-            key,
-            new TextEncoder().encode(data)
-        );
-        const combined = new Uint8Array(iv.length + encryptedBuffer.byteLength);
-        combined.set(iv);
-        combined.set(new Uint8Array(encryptedBuffer), iv.length);
-        return this.uint8ToBase64(combined);
+        const key = CryptoJS.SHA256(keyStr);
+        const iv = CryptoJS.lib.WordArray.random(16);
+        const encrypted = CryptoJS.AES.encrypt(data, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
+        return iv.toString() + encrypted.toString();
     }
 
     async segmentDecrypt(data, keyStr) {
-        const keyBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyStr));
-        const key = await crypto.subtle.importKey('raw', keyBuffer, { name: 'AES-CBC' }, false, ['decrypt']);
-        const bytes = this.base64ToUint8(data);
-        const iv = bytes.slice(0, 16);
-        const ciphertext = bytes.slice(16);
-        const decrypted = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, ciphertext);
-        return new TextDecoder().decode(decrypted);
+        const key = CryptoJS.SHA256(keyStr);
+        const iv = CryptoJS.enc.Hex.parse(data.substring(0, 32));
+        const ciphertext = data.substring(32);
+        const decrypted = CryptoJS.AES.decrypt(ciphertext, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
+        return decrypted.toString(CryptoJS.enc.Utf8);
     }
 
     async segmentedApi (action, requestData) {

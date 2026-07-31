@@ -276,6 +276,7 @@ CREATE TABLE `captcha_sessions` (
   `valid_x` smallint(6) NOT NULL DEFAULT '0' COMMENT '正确X坐标',
   `valid_y` smallint(6) NOT NULL DEFAULT '0' COMMENT '正确Y坐标',
   `valid_shape` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '正确形状',
+  `segment_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '分段加密密钥',
   `ip` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '请求IP',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `expire_at` timestamp NOT NULL COMMENT '过期时间'
@@ -297,7 +298,22 @@ CREATE TABLE `captcha_tokens` (
 -- --------------------------------------------------------
 
 --
--- 表的结构 `crawler_logs`
+-- 表的结构 `captcha_segments`
+--
+
+CREATE TABLE `captcha_segments` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `token` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '验证令牌',
+  `seq` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '序列号',
+  `seg_index` tinyint(4) NOT NULL DEFAULT '0' COMMENT '分段索引',
+  `seg_type` enum('req','res') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'req' COMMENT '分段类型',
+  `data` longtext COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分段数据',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `expire_at` timestamp NOT NULL COMMENT '过期时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_lookup` (`token`,`seq`,`seg_index`,`seg_type`),
+  KEY `idx_expire` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='验证码分段数据表';
 --
 
 CREATE TABLE `crawler_logs` (

@@ -4,7 +4,7 @@
  * 运行此文件自动创建验证码所需的数据表
  */
 
-require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../../config/database.php';
 
 $db = getDB();
 
@@ -17,6 +17,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS `captcha_sessions` (
     `valid_x` smallint NOT NULL DEFAULT 0 COMMENT '正确X坐标',
     `valid_y` smallint NOT NULL DEFAULT 0 COMMENT '正确Y坐标',
     `valid_shape` varchar(20) NOT NULL DEFAULT '' COMMENT '正确形状',
+    `segment_key` varchar(64) NOT NULL DEFAULT '' COMMENT '分段加密密钥',
     `ip` varchar(45) NOT NULL DEFAULT '' COMMENT '请求IP',
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `expire_at` timestamp NOT NULL COMMENT '过期时间',
@@ -34,5 +35,20 @@ $db->exec("CREATE TABLE IF NOT EXISTS `captcha_tokens` (
     PRIMARY KEY (`token`),
     KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='验证码业务令牌表'");
+
+// 创建分段数据表（请求/响应分段缓存）
+$db->exec("CREATE TABLE IF NOT EXISTS `captcha_segments` (
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `token` varchar(128) NOT NULL COMMENT '验证令牌',
+    `seq` varchar(32) NOT NULL DEFAULT '' COMMENT '序列号',
+    `seg_index` tinyint NOT NULL DEFAULT 0 COMMENT '分段索引',
+    `seg_type` enum('req','res') NOT NULL DEFAULT 'req' COMMENT '分段类型',
+    `data` longtext NOT NULL COMMENT '分段数据',
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `expire_at` timestamp NOT NULL COMMENT '过期时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_lookup` (`token`, `seq`, `seg_index`, `seg_type`),
+    KEY `idx_expire` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='验证码分段数据表'");
 
 echo json_encode(['success' => true, 'message' => '验证码数据表创建成功']);

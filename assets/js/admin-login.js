@@ -62,7 +62,7 @@
     function openCaptcha() {
         if (submitting || !validateForm()) return;
 
-        if (!window.bootstrap || !window.BehaviorAuth) {
+        if (!window.bootstrap || typeof BehaviorAuth === 'undefined') {
             showNotice('安全验证组件暂时不可用，请刷新页面后重试', true);
             return;
         }
@@ -72,7 +72,7 @@
 
         try {
             if (!captcha) {
-                captcha = new window.BehaviorAuth('captcha-container', '/vendor/public/captcha/AuthApi.php');
+                captcha = new BehaviorAuth('captcha-container', '/vendor/public/captcha/AuthApi.php');
                 captcha.onSuccess = function (bizToken) {
                     if (!bizToken) {
                         showNotice('安全验证未完成，请重试', true);

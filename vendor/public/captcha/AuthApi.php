@@ -2,9 +2,10 @@
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING);
 
+require_once __DIR__ . '/../../../config/database.php';
+
 class BehaviorAuth {
-    private $redis;
-    private $redisPrefix = 'auth:';
+    private $db;
     private $sessionTTL = 45;
     private $tokenSecret = 'B3havi0r_Auth_S3cr3t_K3y!@#';
 
@@ -17,12 +18,66 @@ class BehaviorAuth {
     private $imageApiUrl = 'https://picsum.photos/300/150';
 
     public function __construct() {
-        $this->redis = new Redis();
-        try {
-            $this->redis->connect('127.0.0.1', 16379);
-        } catch (Exception $e) {
+        $this->db = getDB();
+        $this->ensureSchema();
+        $this->cleanup();
+    }
 
-        }
+    private function ensureSchema() {
+        try {
+            $this->db->exec("CREATE TABLE IF NOT EXISTS `captcha_sessions` (
+                `token` varchar(128) NOT NULL COMMENT '验证令牌',
+                `salt` varchar(32) NOT NULL COMMENT 'POW盐值',
+                `difficulty` tinyint NOT NULL DEFAULT 5 COMMENT 'POW难度',
+                `status` enum('init','pow_verified','completed') NOT NULL DEFAULT 'init' COMMENT '会话状态',
+                `valid_x` smallint NOT NULL DEFAULT 0 COMMENT '正确X坐标',
+                `valid_y` smallint NOT NULL DEFAULT 0 COMMENT '正确Y坐标',
+                `valid_shape` varchar(20) NOT NULL DEFAULT '' COMMENT '正确形状',
+                `segment_key` varchar(64) NOT NULL DEFAULT '' COMMENT '分段加密密钥',
+                `ip` varchar(45) NOT NULL DEFAULT '' COMMENT '请求IP',
+                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                `expire_at` timestamp NOT NULL COMMENT '过期时间',
+                PRIMARY KEY (`token`),
+                KEY `idx_expire` (`expire_at`),
+                KEY `idx_ip` (`ip`, `created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            $this->db->exec("CREATE TABLE IF NOT EXISTS `captcha_tokens` (
+                `token` varchar(128) NOT NULL COMMENT '业务令牌',
+                `ip` varchar(45) NOT NULL DEFAULT '' COMMENT '验证时IP',
+                `verified_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '验证通过时间',
+                `expire_at` timestamp NOT NULL COMMENT '过期时间',
+                PRIMARY KEY (`token`),
+                KEY `idx_expire` (`expire_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            $this->db->exec("CREATE TABLE IF NOT EXISTS `captcha_segments` (
+                `id` bigint NOT NULL AUTO_INCREMENT,
+                `token` varchar(128) NOT NULL COMMENT '验证令牌',
+                `seq` varchar(32) NOT NULL DEFAULT '' COMMENT '序列号',
+                `seg_index` tinyint NOT NULL DEFAULT 0 COMMENT '分段索引',
+                `seg_type` enum('req','res') NOT NULL DEFAULT 'req' COMMENT '分段类型',
+                `data` longtext NOT NULL COMMENT '分段数据',
+                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                `expire_at` timestamp NOT NULL COMMENT '过期时间',
+                PRIMARY KEY (`id`),
+                KEY `idx_lookup` (`token`, `seq`, `seg_index`, `seg_type`),
+                KEY `idx_expire` (`expire_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            $col = $this->db->query("SHOW COLUMNS FROM `captcha_sessions` LIKE 'segment_key'")->fetch();
+            if (!$col) {
+                $this->db->exec("ALTER TABLE `captcha_sessions` ADD COLUMN `segment_key` varchar(64) NOT NULL DEFAULT '' COMMENT '分段加密密钥' AFTER `valid_shape`");
+            }
+        } catch (Exception $e) {}
+    }
+
+    private function cleanup() {
+        try {
+            $this->db->exec("DELETE FROM captcha_segments WHERE expire_at < NOW()");
+            $this->db->exec("DELETE FROM captcha_sessions WHERE expire_at < NOW()");
+            $this->db->exec("DELETE FROM captcha_tokens WHERE expire_at < NOW()");
+        } catch (Exception $e) {}
     }
 
     public function initAuth() {
@@ -31,18 +86,8 @@ class BehaviorAuth {
         $difficulty = $this->getDynamicDifficulty();
         $segmentKey = bin2hex(random_bytes(16));
 
-        $sessionData = [
-            'salt' => $salt,
-            'difficulty' => $difficulty,
-            'status' => 'init',
-            'valid_x' => 0,
-            'valid_y' => 0,
-            'valid_shape' => '',
-            'segment_key' => $segmentKey
-        ];
-        $this->redis->hMSet($this->redisPrefix . $token, $sessionData);
-        $this->redis->expire($this->redisPrefix . $token, $this->sessionTTL);
-        $this->redis->incr('auth:pool:requests');
+        $stmt = $this->db->prepare("INSERT INTO captcha_sessions (token, salt, difficulty, status, segment_key, ip, expire_at) VALUES (?, ?, ?, 'init', ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))");
+        $stmt->execute([$token, $salt, $difficulty, $segmentKey, $_SERVER['REMOTE_ADDR'] ?? '', $this->sessionTTL]);
 
         return $this->jsonResponse([
             'code' => 200,
@@ -56,29 +101,36 @@ class BehaviorAuth {
 
     public function verifyPOW($token, $nonce) {
         if (!$this->validateSecureToken($token)) {
-            return ['code' => 403, 'msg' => ' 不合法的令牌 '];
+            return ['code' => 403, 'msg' => '不合法的令牌'];
         }
-        $key = $this->redisPrefix . $token;
-        if (!$this->redis->exists($key)) return ['code' => 403, 'msg' => ' 令牌已失效 '];
 
-        $session = $this->redis->hGetAll($key);
+        $stmt = $this->db->prepare("SELECT salt, difficulty, status FROM captcha_sessions WHERE token = ? AND expire_at > NOW()");
+        $stmt->execute([$token]);
+        $session = $stmt->fetch();
+
+        if (!$session) return ['code' => 403, 'msg' => '令牌已失效'];
+
         $hash = hash('sha256', $session['salt'] . $nonce);
         $prefix = str_repeat('0', (int)$session['difficulty']);
 
         if (strpos($hash, $prefix) === 0) {
-            $this->redis->hSet($key, 'status', 'pow_verified');
+            $stmt = $this->db->prepare("UPDATE captcha_sessions SET status = 'pow_verified' WHERE token = ?");
+            $stmt->execute([$token]);
             return ['code' => 200, 'msg' => 'POW verified'];
         }
-        $this->redis->del($key);
-        return ['code' => 400, 'msg' => 'POW 验证失败 '];
+
+        $this->deleteSession($token);
+        return ['code' => 400, 'msg' => 'POW 验证失败'];
     }
 
     public function getPuzzle($token) {
         if (!$this->validateSecureToken($token)) {
             return ['code' => 403, 'msg' => 'Invalid token format'];
         }
-        $key = $this->redisPrefix . $token;
-        if (!$this->redis->exists($key) || $this->redis->hGet($key, 'status') !== 'pow_verified') {
+
+        $stmt = $this->db->prepare("SELECT * FROM captcha_sessions WHERE token = ? AND status = 'pow_verified' AND expire_at > NOW()");
+        $stmt->execute([$token]);
+        if (!$stmt->fetch()) {
             return ['code' => 403, 'msg' => 'Invalid access'];
         }
 
@@ -103,15 +155,15 @@ class BehaviorAuth {
         $validShape = $this->shapePool[array_rand($this->shapePool)];
 
         $interferenceShape = $validShape;
-        $interferenceY = $validY;
         do {
             $interferenceX = rand($blockSize + 20, $width - $blockSize - 20);
         } while (abs($interferenceX - $validX) < $blockSize + 20);
 
-        $this->redis->hMSet($key, ['valid_x' => $validX, 'valid_y' => $validY, 'valid_shape' => $validShape]);
+        $stmt = $this->db->prepare("UPDATE captcha_sessions SET valid_x = ?, valid_y = ?, valid_shape = ? WHERE token = ?");
+        $stmt->execute([$validX, $validY, $validShape, $token]);
 
         $this->drawPuzzleHole($bgImg, $validX, $validY, $blockSize, $validShape);
-        $this->drawPuzzleHole($bgImg, $interferenceX, $interferenceY, $blockSize, $interferenceShape);
+        $this->drawPuzzleHole($bgImg, $interferenceX, $interferenceY ?? $validY, $blockSize, $interferenceShape);
         $this->addNoise($bgImg, 300);
         $this->addInterferenceLines($bgImg, 6);
 
@@ -165,47 +217,57 @@ class BehaviorAuth {
         if (!$this->validateSecureToken($token)) {
             return ['code' => 403, 'msg' => 'Invalid token format'];
         }
-        $key = $this->redisPrefix . $token;
-        if (!$this->redis->exists($key)) return ['code' => 403, 'msg' => ' 令牌已失效 '];
 
-        $session = $this->redis->hGetAll($key);
+        $stmt = $this->db->prepare("SELECT valid_x, valid_y, valid_shape FROM captcha_sessions WHERE token = ? AND expire_at > NOW()");
+        $stmt->execute([$token]);
+        $session = $stmt->fetch();
+
+        if (!$session) return ['code' => 403, 'msg' => '令牌已失效'];
+
         $payload = $this->decryptBehaviorData($encryptedBehaviorData, $token);
-        if (!$payload) return ['code' => 400, 'msg' => ' 不合法的请求格式 '];
+        if (!$payload) return ['code' => 400, 'msg' => '不合法的请求格式'];
 
         $behaviorData = $payload['behavior'] ?? [];
         $envData = $payload['env'] ?? [];
 
         if (abs((int)$offsetX - (int)$session['valid_x']) > 5) {
-            $this->redis->del($key); return ['code' => 400, 'msg' => ' 请拖动至缺口位置 '];
+            $this->deleteSession($token);
+            return ['code' => 400, 'msg' => '请拖动至缺口位置'];
         }
         if (!$this->analyzeBehavior($behaviorData)) {
-            $this->redis->del($key); return ['code' => 400, 'msg' => ' 行为验证失败，请重试 '];
+            $this->deleteSession($token);
+            return ['code' => 400, 'msg' => '行为验证失败，请重试'];
         }
 
         if (!$this->analyzeEnvironment($envData)) {
-            $this->redis->del($key); return ['code' => 400, 'msg' => ' 环境校验失败 '];
+            $this->deleteSession($token);
+            return ['code' => 400, 'msg' => '环境校验失败'];
         }
 
-        $this->redis->del($key);
+        $this->deleteSession($token);
         $bizToken = $this->generateBizToken();
-        $captchaKey = 'captcha:' . $bizToken;
-        $this->redis->set($captchaKey, time());
-        $this->redis->expire($captchaKey, 3600);
+
+        $stmt = $this->db->prepare("INSERT INTO captcha_tokens (token, ip, expire_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 3600 SECOND))");
+        $stmt->execute([$bizToken, $_SERVER['REMOTE_ADDR'] ?? '']);
         setcookie("auth_token", $bizToken, time() + 3600, "/", "", false, true);
 
         return ['code' => 200, 'msg' => 'Success', 'token' => $bizToken];
     }
 
-    public function sendSegment ($token, $seq, $index, $data) {
+    public function sendSegment($token, $seq, $index, $data) {
         if (!$this->validateSecureToken($token)) {
-            return $this->jsonResponse (['code' => 403, 'msg' => ' 令牌不合法 '], 403);
+            return $this->jsonResponse(['code' => 403, 'msg' => '令牌不合法'], 403);
         }
-        $key = $this->redisPrefix . $token;
-        if (!$this->redis->exists($key)) {
-            return $this->jsonResponse (['code' => 403, 'msg' => ' 令牌已失效 '], 403);
+
+        $stmt = $this->db->prepare("SELECT token FROM captcha_sessions WHERE token = ? AND expire_at > NOW()");
+        $stmt->execute([$token]);
+        if (!$stmt->fetch()) {
+            return $this->jsonResponse(['code' => 403, 'msg' => '令牌已失效'], 403);
         }
-        $reqKey = $this->redisPrefix . "req:{$token}:{$seq}:{$index}";
-        $this->redis->set($reqKey, $data, 30);
+
+        $stmt = $this->db->prepare("INSERT INTO captcha_segments (token, seq, seg_index, seg_type, data, expire_at) VALUES (?, ?, ?, 'req', ?, DATE_ADD(NOW(), INTERVAL 30 SECOND)) ON DUPLICATE KEY UPDATE data = VALUES(data), expire_at = VALUES(expire_at)");
+        $stmt->execute([$token, $seq, $index, $data]);
+
         return $this->jsonResponse(['code' => 200, 'msg' => 'Segment received']);
     }
 
@@ -213,23 +275,30 @@ class BehaviorAuth {
         if (!$this->validateSecureToken($token)) {
             return $this->jsonResponse(['code' => 403, 'msg' => 'Invalid token format'], 403);
         }
-        $key = $this->redisPrefix . $token;
-        if (!$this->redis->exists ($key)) {
-            return $this->jsonResponse (['code' => 403, 'msg' => ' 令牌已失效 '], 403);
+
+        $stmt = $this->db->prepare("SELECT * FROM captcha_sessions WHERE token = ? AND expire_at > NOW()");
+        $stmt->execute([$token]);
+        $session = $stmt->fetch();
+        if (!$session) {
+            return $this->jsonResponse(['code' => 403, 'msg' => '令牌已失效'], 403);
         }
-        $session = $this->redis->hGetAll($key);
+
         $segmentKey = $session['segment_key'];
 
         $encryptedReq = '';
         for ($i = 0; $i < 5; $i++) {
-            $reqKey = $this->redisPrefix . "req:{$token}:{$seq}:{$i}";
-            $segment = $this->redis->get($reqKey);
-            if ($segment === false) {
+            $stmt = $this->db->prepare("SELECT data FROM captcha_segments WHERE token = ? AND seq = ? AND seg_index = ? AND seg_type = 'req' AND expire_at > NOW()");
+            $stmt->execute([$token, $seq, $i]);
+            $row = $stmt->fetch();
+            if (!$row) {
                 return $this->jsonResponse(['code' => 400, 'msg' => 'Missing request segment'], 400);
             }
-            $encryptedReq .= $segment;
-            $this->redis->del($reqKey);
+            $encryptedReq .= $row['data'];
         }
+
+        $stmt = $this->db->prepare("DELETE FROM captcha_segments WHERE token = ? AND seq = ? AND seg_type = 'req'");
+        $stmt->execute([$token, $seq]);
+
         $reqJson = $this->segmentDecrypt($encryptedReq, $segmentKey);
         if ($reqJson === null || $reqJson === false) {
             return $this->jsonResponse(['code' => 400, 'msg' => 'Request decryption failed'], 400);
@@ -258,25 +327,52 @@ class BehaviorAuth {
         $encryptedRes = $this->segmentEncrypt($resJson, $segmentKey);
         $len = strlen($encryptedRes);
         $chunkSize = ceil($len / 5);
+
+        $stmt = $this->db->prepare("INSERT INTO captcha_segments (token, seq, seg_index, seg_type, data, expire_at) VALUES (?, ?, ?, 'res', ?, DATE_ADD(NOW(), INTERVAL 30 SECOND))");
         for ($i = 0; $i < 5; $i++) {
             $chunk = substr($encryptedRes, $i * $chunkSize, $chunkSize);
-            $resKey = $this->redisPrefix . "res:{$token}:{$seq}:{$i}";
-            $this->redis->set($resKey, $chunk, 30);
+            $stmt->execute([$token, $seq, $i, $chunk]);
         }
+
         return $this->jsonResponse(['code' => 200, 'msg' => 'Executed']);
     }
 
     public function fetchSegment($token, $seq, $index) {
-        $resKey = $this->redisPrefix . "res:{$token}:{$seq}:{$index}";
-        $chunk = $this->redis->get($resKey);
-        if ($chunk === false) {
+        $stmt = $this->db->prepare("SELECT data FROM captcha_segments WHERE token = ? AND seq = ? AND seg_index = ? AND seg_type = 'res' AND expire_at > NOW()");
+        $stmt->execute([$token, $seq, $index]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
             return $this->jsonResponse(['code' => 404, 'msg' => 'Segment not found'], 404);
         }
-        $this->redis->del($resKey);
-        return $this->jsonResponse(['code' => 200, 'data' => $chunk]);
+
+        $stmt = $this->db->prepare("DELETE FROM captcha_segments WHERE token = ? AND seq = ? AND seg_index = ? AND seg_type = 'res'");
+        $stmt->execute([$token, $seq, $index]);
+
+        return $this->jsonResponse(['code' => 200, 'data' => $row['data']]);
     }
 
-    private function fetchImageFromApi () {
+    public function verifyBizToken($bizToken) {
+        if (empty($bizToken)) return false;
+
+        $stmt = $this->db->prepare("SELECT token FROM captcha_tokens WHERE token = ? AND expire_at > NOW()");
+        $stmt->execute([$bizToken]);
+        $row = $stmt->fetch();
+
+        if (!$row) return false;
+
+        $stmt = $this->db->prepare("DELETE FROM captcha_tokens WHERE token = ?");
+        $stmt->execute([$bizToken]);
+
+        return true;
+    }
+
+    private function deleteSession($token) {
+        $stmt = $this->db->prepare("DELETE FROM captcha_sessions WHERE token = ?");
+        $stmt->execute([$token]);
+    }
+
+    private function fetchImageFromApi() {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->imageApiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -312,36 +408,36 @@ class BehaviorAuth {
     private function analyzeEnvironment($env) {
         if (empty($env)) return false;
 
-        if (!empty ($env['webdriver']) || !empty($env['auto_phantom']) || !empty($env['auto_nightmare']) || !empty($env['auto_cdc']) || !empty($env['auto_selenium']) || !empty($env['auto_puppeteer'])) {
+        if (!empty($env['webdriver']) || !empty($env['auto_phantom']) || !empty($env['auto_nightmare']) || !empty($env['auto_cdc']) || !empty($env['auto_selenium']) || !empty($env['auto_puppeteer'])) {
             return false;
         }
 
-        if (!empty ($env['proto_tampered']) || !empty($env['perm_inconsistency'])) {
+        if (!empty($env['proto_tampered']) || !empty($env['perm_inconsistency'])) {
             return false;
         }
 
-        if (isset ($env ['win_w']) && $env ['win_w'] <= 0) return false;
-        if (isset ($env ['scr_w']) && $env ['scr_w'] <= 0) return false;
-        if (isset ($env ['scr_ah']) && $env ['scr_ah'] > $env ['scr_h']) return false;
+        if (isset($env['win_w']) && $env['win_w'] <= 0) return false;
+        if (isset($env['scr_w']) && $env['scr_w'] <= 0) return false;
+        if (isset($env['scr_ah']) && $env['scr_ah'] > $env['scr_h']) return false;
 
-        if (isset ($env['color_depth']) && !in_array($env['color_depth'], [24, 32, 48])) {
+        if (isset($env['color_depth']) && !in_array($env['color_depth'], [24, 32, 48])) {
             return false;
         }
 
-        if (isset ($env ['cpu_cores']) && $env ['cpu_cores'] <= 0) return false;
+        if (isset($env['cpu_cores']) && $env['cpu_cores'] <= 0) return false;
 
-        if (isset ($env['canvas_hash']) && (int)$env['canvas_hash'] === 0) return false;
+        if (isset($env['canvas_hash']) && (int)$env['canvas_hash'] === 0) return false;
 
-        if (isset ($env['webgl_data']) && is_array($env['webgl_data'])) {
+        if (isset($env['webgl_data']) && is_array($env['webgl_data'])) {
             if (empty($env['webgl_data']['vendor']) || empty($env['webgl_data']['renderer'])) {
                 return false;
             }
         }
 
-        if (isset ($env ['ls']) && $env ['ls'] === false) return false;
-        if (isset ($env ['idb']) && $env ['idb'] === false) return false;
+        if (isset($env['ls']) && $env['ls'] === false) return false;
+        if (isset($env['idb']) && $env['idb'] === false) return false;
 
-        if (isset ($env['logic_check']) && (int)$env['logic_check'] >= 2) {
+        if (isset($env['logic_check']) && (int)$env['logic_check'] >= 2) {
             return false;
         }
         return true;
@@ -445,31 +541,34 @@ class BehaviorAuth {
     }
 
     private function decryptBehaviorData($encryptedData, $token) {
-        $key = substr(hash('sha256', $token), 0, 32);
-        $data = base64_decode($encryptedData);
-        if (!$data) return null;
-        $iv = substr($data, 0, 16); $ciphertext = substr($data, 16);
+        $key = hash('sha256', $token, true);
+        $ivHex = substr($encryptedData, 0, 32);
+        $ciphertextBase64 = substr($encryptedData, 32);
+        $iv = hex2bin($ivHex);
+        $ciphertext = base64_decode($ciphertextBase64);
+        if (!$iv || !$ciphertext) return null;
         $decrypted = openssl_decrypt($ciphertext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
         return json_decode($decrypted, true);
     }
 
     private function getEncryptionKey($keyStr) {
-        return substr(hash('sha256', $keyStr, true), 0, 32);
+        return hash('sha256', $keyStr, true);
     }
 
     private function segmentEncrypt($data, $keyStr) {
         $key = $this->getEncryptionKey($keyStr);
         $iv = random_bytes(16);
         $encrypted = openssl_encrypt($data, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
-        return base64_encode($iv . $encrypted);
+        return bin2hex($iv) . base64_encode($encrypted);
     }
 
     private function segmentDecrypt($data, $keyStr) {
         $key = $this->getEncryptionKey($keyStr);
-        $decoded = base64_decode($data);
-        if (!$decoded) return null;
-        $iv = substr($decoded, 0, 16);
-        $ciphertext = substr($decoded, 16);
+        $ivHex = substr($data, 0, 32);
+        $ciphertextBase64 = substr($data, 32);
+        $iv = hex2bin($ivHex);
+        $ciphertext = base64_decode($ciphertextBase64);
+        if (!$iv || !$ciphertext) return null;
         return openssl_decrypt($ciphertext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
     }
 
@@ -505,24 +604,31 @@ class BehaviorAuth {
     }
 }
 
-$auth = new BehaviorAuth();
-$action = $_GET['action'] ?? '';
+if (__FILE__ === $_SERVER['SCRIPT_FILENAME']) {
+    $auth = new BehaviorAuth();
+    $action = $_GET['action'] ?? '';
 
-switch ($action) {
-    case 'init':
-        $auth->initAuth();
-        break;
-    case 'send-segment':
-        $d = json_decode(file_get_contents('php://input'), true);
-        $auth->sendSegment($d['token'] ?? '', $d['seq'] ?? '', $d['index'] ?? 0, $d['data'] ?? '');
-        break;
-    case 'execute':
-        $d = json_decode(file_get_contents('php://input'), true);
-        $auth->execute($d['token'] ?? '', $d['seq'] ?? '', $d['action'] ?? '');
-        break;
-    case 'fetch-segment':
-        $auth->fetchSegment($_GET['token'] ?? '', $_GET['seq'] ?? '', $_GET['index'] ?? 0);
-        break;
-    default:
-        $auth->jsonResponse(['code' => 404, 'msg' => 'Invalid action'], 404);
+    switch ($action) {
+        case 'init':
+            $auth->initAuth();
+            break;
+        case 'send-segment':
+            $d = json_decode(file_get_contents('php://input'), true);
+            $auth->sendSegment($d['token'] ?? '', $d['seq'] ?? '', $d['index'] ?? 0, $d['data'] ?? '');
+            break;
+        case 'execute':
+            $d = json_decode(file_get_contents('php://input'), true);
+            $auth->execute($d['token'] ?? '', $d['seq'] ?? '', $d['action'] ?? '');
+            break;
+        case 'fetch-segment':
+            $auth->fetchSegment($_GET['token'] ?? '', $_GET['seq'] ?? '', $_GET['index'] ?? 0);
+            break;
+        case 'verify-token':
+            $d = json_decode(file_get_contents('php://input'), true);
+            $valid = $auth->verifyBizToken($d['token'] ?? '');
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['valid' => $valid]); exit;
+        default:
+            $auth->jsonResponse(['code' => 404, 'msg' => 'Invalid action'], 404);
+    }
 }
