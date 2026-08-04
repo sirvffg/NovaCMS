@@ -14,7 +14,7 @@ echo preg_replace('/<script\b(?![^>]*type\s*=)/i', '<script type="text/pjax-scri
     </div><!-- /.main-content -->
 
     <?php if (empty($skip_bootstrap_js)): ?>
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <?php endif; ?>
     <script src="/assets/js/admin-shell.js?v=<?= e($adminShellJsVersion) ?>"></script>
     <script src="/assets/js/admin-pjax.js?v=<?= e($adminPjaxJsVersion) ?>"></script>

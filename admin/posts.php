@@ -1860,7 +1860,7 @@ require_once 'includes/header.php'; ?>
 
     <?php include 'includes/markdown_editor.php'; ?>
     
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <script>
         // 初始化文章内容编辑器
         initMarkdownEditor('post_content');

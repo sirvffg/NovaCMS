@@ -1034,7 +1034,7 @@ require_once 'includes/header.php'; ?>
         </div>
     </div>
     
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <script>
         // 自动打开模态框（如果是编辑模式）
         document.addEventListener('DOMContentLoaded', function() {

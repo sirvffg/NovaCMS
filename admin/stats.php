@@ -453,7 +453,7 @@ require_once 'includes/header.php'; ?>
     <script src="<?= getResourceUrl('/assets/js/jquery-3.7.0.min.js', 'https://cdn.bootcdn.net/ajax/libs/jquery/3.7.0/jquery.min.js') ?>"></script>
     <script src="<?= getResourceUrl('/assets/js/jquery.dataTables.min.js', 'https://cdn.bootcdn.net/ajax/libs/datatables.net/1.13.4/jquery.dataTables.min.js') ?>"></script>
     <script src="<?= getResourceUrl('/assets/js/dataTables.bootstrap5.min.js', 'https://cdn.bootcdn.net/ajax/libs/datatables.net-bs5/1.13.4/dataTables.bootstrap5.min.js') ?>"></script>
-    <script src="<?= getResourceUrl('/assets/js/chart.min.js', 'https://cdn.staticfile.net/Chart.js/4.4.0/chart.umd.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/chart.min.js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js') ?>"></script>
 
     <script>
         // 兜底：手动下拉切换，不依赖 Bootstrap JS

@@ -109,8 +109,8 @@ $loginJsVersion = (string)(@filemtime(__DIR__ . '/../assets/js/admin-login.js') 
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" href="<?= e($config['favicon']) ?>">
     <?php endif; ?>
-    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.staticfile.net/bootstrap/5.3.0/css/bootstrap.min.css') ?>" rel="stylesheet">
-    <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.staticfile.net/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
+    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css') ?>" rel="stylesheet">
+    <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
     <link href="<?= getResourceUrl('/assets/css/harmonyos-sans.css') ?>" rel="stylesheet">
     <link href="/assets/css/admin.css?v=<?= e($adminCssVersion) ?>" rel="stylesheet">
     <link href="/assets/css/admin-login.css?v=<?= e($loginCssVersion) ?>" rel="stylesheet">
@@ -216,7 +216,7 @@ $loginJsVersion = (string)(@filemtime(__DIR__ . '/../assets/js/admin-login.js') 
     <div class="admin-toast-region" data-toast-region aria-live="polite" aria-atomic="true"></div>
 
     <div class="modal fade" id="captchaModal" tabindex="-1" aria-labelledby="captchaModalTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered modal-captcha">
             <div class="modal-content admin-captcha-content">
                 <div class="modal-header">
                     <h2 class="modal-title" id="captchaModalTitle">完成安全验证</h2>
@@ -229,7 +229,7 @@ $loginJsVersion = (string)(@filemtime(__DIR__ . '/../assets/js/admin-login.js') 
         </div>
     </div>
 
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4/dist/sha256.umd.min.js"></script>
     <script src="/vendor/public/captcha/crypto-js.min.js"></script>
     <script src="/vendor/public/captcha/BehaviorAuth.js?v=20260731-1"></script>

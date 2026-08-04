@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['favicon'])) {
 <head>
     <meta charset="UTF-8">
     <title>Favicon 上传测试</title>
-    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.staticfile.net/bootstrap/5.3.0/css/bootstrap.min.css') ?>" rel="stylesheet">
+    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css') ?>" rel="stylesheet">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>

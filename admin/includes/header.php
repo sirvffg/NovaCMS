@@ -92,8 +92,8 @@ Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-r
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" href="<?= e($config['favicon']) ?>">
     <?php endif; ?>
-    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.staticfile.net/bootstrap/5.3.0/css/bootstrap.min.css') ?>" rel="stylesheet">
-    <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.staticfile.net/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
+    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css') ?>" rel="stylesheet">
+    <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
     <link href="<?= getResourceUrl('/assets/css/harmonyos-sans.css') ?>" rel="stylesheet">
 
     <?php if (!empty($extra_css)): ?>

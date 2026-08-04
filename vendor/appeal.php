@@ -704,8 +704,8 @@ $type_map = [
     <?php if (!empty($config['favicon'])): ?>
     <link rel="icon" type="image/x-icon" href="<?= e($config['favicon']) ?>">
     <?php endif; ?>
-    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.staticfile.net/bootstrap/5.3.0/css/bootstrap.min.css') ?>" rel="stylesheet">
-    <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.staticfile.net/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
+    <link href="<?= getResourceUrl('/assets/css/bootstrap.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css') ?>" rel="stylesheet">
+    <link href="<?= getResourceUrl('/assets/css/bootstrap-icons.css', 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
     <link href="/assets/css/harmonyos-sans.css" rel="stylesheet">
     <link href="/assets/css/harmonyos-sans.css" rel="stylesheet">
     <style>
@@ -1191,7 +1191,7 @@ $type_map = [
         </div>
     </div>
 
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <script src="/assets/js/account-ui.js?v=20260727-1"></script>
     <script>
     // ===================== 申诉提交 =====================

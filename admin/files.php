@@ -689,7 +689,7 @@ require_once 'includes/header.php'; ?>
         <input type="hidden" name="path" id="deletePath">
     </form>
     
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     
     <!-- 引入国内的 Monaco Editor CDN，用于提供强大的代码编辑体验 -->
     <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/monaco-editor/0.33.0/min/vs/editor/editor.main.min.css">

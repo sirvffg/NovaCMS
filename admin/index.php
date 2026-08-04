@@ -15,7 +15,7 @@ $dashboardJsVersion = (string)(@filemtime(__DIR__ . '/../assets/js/admin-dashboa
 $vueJsVersion = (string)(@filemtime(__DIR__ . '/../assets/js/vue.global.prod.js') ?: 1);
 $head_scripts =
     '<link href="/assets/css/admin-dashboard.css?v=' . e($dashboardCssVersion) . '" rel="stylesheet">' .
-    '<script src="' . getResourceUrl('/assets/js/chart.min.js', 'https://cdn.staticfile.net/Chart.js/4.4.0/chart.umd.min.js') . '"></script>' .
+    '<script src="' . getResourceUrl('/assets/js/chart.min.js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js') . '"></script>' .
     '<script src="/assets/js/vue.global.prod.js?v=' . e($vueJsVersion) . '"></script>';
 
 $dashboardConfig = [

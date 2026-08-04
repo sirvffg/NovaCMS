@@ -388,12 +388,17 @@ body.admin-login-page {
     text-align: center;
 }
 
+.admin-login-page .modal-dialog.modal-captcha {
+    max-width: 380px;
+}
+
 .admin-login-page .modal-content.admin-captcha-content {
     padding: 14px;
     background: var(--admin-surface);
     border: 1px solid var(--admin-border);
     border-radius: 18px;
     box-shadow: var(--admin-shadow-lg);
+    overflow: visible;
 }
 
 .admin-login-page .modal-header {

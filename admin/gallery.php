@@ -553,7 +553,7 @@ require_once 'includes/header.php'; ?>
         <input type="hidden" name="redirect_album_id" value="<?= $currentAlbum['id'] ?? 0 ?>">
     </form>
 
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.staticfile.net/bootstrap/5.3.0/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <script>
         const albumModal = new bootstrap.Modal(document.getElementById('albumModal'));
         
