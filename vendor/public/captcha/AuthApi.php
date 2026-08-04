@@ -604,31 +604,117 @@ class BehaviorAuth {
     }
 }
 
-if (__FILE__ === $_SERVER['SCRIPT_FILENAME']) {
-    $auth = new BehaviorAuth();
-    $action = $_GET['action'] ?? '';
+//w
+/**
+ * 仅当此文件被直接访问时，才执行 API 请求分发。
+ *
+ * login.php 会引入此文件来使用 BehaviorAuth 类。
+ * 因此，当本文件被其他页面引入时不能执行 API 分发，
+ * 否则登录页面的内容会被 JSON 响应覆盖。
+ */
+function novaCaptchaIsDirectRequest(): bool
+{
+    $scriptFilename = (string)($_SERVER['SCRIPT_FILENAME'] ?? '');
+    if ($scriptFilename === '') {
+        return false;
+    }
 
-    switch ($action) {
-        case 'init':
-            $auth->initAuth();
-            break;
-        case 'send-segment':
-            $d = json_decode(file_get_contents('php://input'), true);
-            $auth->sendSegment($d['token'] ?? '', $d['seq'] ?? '', $d['index'] ?? 0, $d['data'] ?? '');
-            break;
-        case 'execute':
-            $d = json_decode(file_get_contents('php://input'), true);
-            $auth->execute($d['token'] ?? '', $d['seq'] ?? '', $d['action'] ?? '');
-            break;
-        case 'fetch-segment':
-            $auth->fetchSegment($_GET['token'] ?? '', $_GET['seq'] ?? '', $_GET['index'] ?? 0);
-            break;
-        case 'verify-token':
-            $d = json_decode(file_get_contents('php://input'), true);
-            $valid = $auth->verifyBizToken($d['token'] ?? '');
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['valid' => $valid]); exit;
-        default:
-            $auth->jsonResponse(['code' => 404, 'msg' => 'Invalid action'], 404);
+    $currentPath = realpath(__FILE__);
+    $requestedPath = realpath($scriptFilename);
+
+    if ($currentPath !== false && $requestedPath !== false) {
+        $currentPath = str_replace('\\', '/', $currentPath);
+        $requestedPath = str_replace('\\', '/', $requestedPath);
+        return strcasecmp($currentPath, $requestedPath) === 0;
+    }
+
+    // 针对 Windows 或 Apache 路径格式异常情况的备用判断。
+    $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    return strcasecmp(basename(__FILE__), basename($scriptFilename)) === 0
+        && str_ends_with(strtolower($scriptName), '/vendor/public/captcha/authapi.php');
+}
+
+if (novaCaptchaIsDirectRequest()) {
+    try {
+        $auth = new BehaviorAuth();
+        $action = (string)($_GET['action'] ?? '');
+
+        switch ($action) {
+            case 'init':
+                $auth->initAuth();
+                break;
+
+            case 'send-segment':
+                $data = json_decode(file_get_contents('php://input'), true);
+                if (!is_array($data)) {
+                    $data = [];
+                }
+
+                $auth->sendSegment(
+                    (string)($data['token'] ?? ''),
+                    (string)($data['seq'] ?? ''),
+                    (int)($data['index'] ?? 0),
+                    (string)($data['data'] ?? '')
+                );
+                break;
+
+            case 'execute':
+                $data = json_decode(file_get_contents('php://input'), true);
+                if (!is_array($data)) {
+                    $data = [];
+                }
+
+                $auth->execute(
+                    (string)($data['token'] ?? ''),
+                    (string)($data['seq'] ?? ''),
+                    (string)($data['action'] ?? '')
+                );
+                break;
+
+            case 'fetch-segment':
+                $auth->fetchSegment(
+                    (string)($_GET['token'] ?? ''),
+                    (string)($_GET['seq'] ?? ''),
+                    (int)($_GET['index'] ?? 0)
+                );
+                break;
+
+            case 'verify-token':
+                $data = json_decode(file_get_contents('php://input'), true);
+                if (!is_array($data)) {
+                    $data = [];
+                }
+
+                $valid = $auth->verifyBizToken((string)($data['token'] ?? ''));
+                header('Content-Type: application/json; charset=utf-8');
+                header('Cache-Control: no-store');
+                echo json_encode(['valid' => $valid], JSON_UNESCAPED_UNICODE);
+                exit;
+
+            default:
+                http_response_code(404);
+                header('Content-Type: application/json; charset=utf-8');
+                header('Cache-Control: no-store');
+                echo json_encode([
+                    'code' => 404,
+                    'msg' => 'Invalid action',
+                    'received_action' => $action
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+        }
+    } catch (Throwable $error) {
+        error_log('[NovaCMS Captcha] ' . $error);
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        $isLocal = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true);
+        echo json_encode([
+            'code' => 500,
+            'msg' => $isLocal
+                ? get_class($error) . ': ' . $error->getMessage() . ' at line ' . $error->getLine()
+                : 'Captcha service error'
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
 }
