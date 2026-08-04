@@ -17,7 +17,6 @@
 7. [Auth - 认证模块](#7-auth---认证模块)
 8. [Users - 用户管理模块](#8-users---用户管理模块)
 9. [Statuses - 动态模块](#9-statuses---动态模块)
-10. [Public - 公共模块](#10-public---公共模块)
 
 ---
 
@@ -2680,101 +2679,6 @@ GET /v1/statuses/terms?type=terms
                 ]
             }
         ]
-    }
-}
-```
-
----
-
-## 10. Public - 公共模块
-
-### 10.1 公网代理
-
-`GET/POST /v1/public/proxy`
-
-代理请求外部API，解决跨域问题。
-
-**请求参数**
-
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| url | string | 是 | - | 目标URL（仅允许公网http/https） |
-| method | string | 否 | GET | 请求方法(GET/POST等) |
-| headers | object | 否 | {} | 自定义请求头 |
-| body | string/object | 否 | null | 请求体 |
-| timeout | int | 否 | 10 | 超时时间(秒，最大30) |
-
-**模拟请求**
-
-```json
-POST /v1/public/proxy
-{
-    "url": "https://api.example.com/data",
-    "method": "GET",
-    "headers": {
-        "Accept": "application/json"
-    },
-    "timeout": 15
-}
-```
-
-**模拟响应**
-
-```json
-{
-    "code": "rest_ok",
-    "message": "请求成功",
-    "data": {
-        "status": 200,
-        "target_url": "https://api.example.com/data",
-        "content_type": "application/json",
-        "body": {
-            "key": "value"
-        }
-    }
-}
-```
-
----
-
-### 10.2 内部代理
-
-`POST /v1/public/proxy/internal`
-
-内部代理，直接调度本地 API 端点（零网络开销）。
-
-**请求参数**
-
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| route | string | 否 | 本地路由(如 /v1/posts)，与 url 二选一 |
-| url | string | 否 | 本地URL，与 route 二选一 |
-| method | string | 否 | 请求方法(GET/POST/PUT/DELETE，默认GET) |
-| params | object | 否 | 请求参数 |
-
-**模拟请求**
-
-```json
-POST /v1/public/proxy/internal
-{
-    "route": "/v1/posts/1",
-    "method": "GET"
-}
-```
-
-**模拟响应**
-
-```json
-{
-    "code": "rest_ok",
-    "message": "获取成功",
-    "data": {
-        "status": 200,
-        "item": {
-            "id": 1,
-            "title": "PHP 入门指南",
-            "content": "文章全文内容..."
-        }
     }
 }
 ```

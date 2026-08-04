@@ -71,6 +71,7 @@ if (empty($_SESSION['user_id'])) {
 require_once $novaDir . '/class/rest/class-request.php';
 require_once $novaDir . '/class/rest/class-response.php';
 require_once $novaDir . '/class/rest/class-server.php';
+require_once $novaDir . '/class/rest/class-proxy.php';
 require_once $novaDir . '/class/database/class-db.php';
 require_once $novaDir . '/class/database/class-db-cache.php';
 require_once $novaDir . '/class/database/class-db-schema.php';
@@ -260,8 +261,7 @@ $route_files = [
     'statuses/shuoshuo.php',  // 说说
     'statuses/guestbook.php', // 留言板
     'statuses/terms.php',     // 协议与政策
-    'public/proxy.php',       // 代理请求（公网 + 内部）
-    
+
     // 内容功能路由
     'content/content.php',    // 页面、文档、订阅与智能问答
 

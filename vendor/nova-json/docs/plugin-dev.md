@@ -30,6 +30,7 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
   - [Nova_Backend_Ajax](#57-nova_backend_ajax)
   - [Nova_Backend_Notice](#58-nova_backend_notice)
   - [Nova_API](#59-nova_api)
+  - [Nova_Proxy](#510-nova_proxy)
 - [🗃 案例和最佳实践](#6-案例和最佳实践)
   - [示例一：文章统计插件](#61-示例一文章统计插件)
   - [示例二：内容审核插件](#62-示例二内容审核插件)
@@ -80,7 +81,7 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
 
 | 概念 | 说明 |
 |------|------|
-| **插件** | 继承 `Nova_Plugin` 的 PHP 类，放在 `vendor/plugins/` 目录 |
+| **插件** | 继承 `Nova_Plugin` 的 PHP 类，放在 `vendor/nova-plugins/` 目录 |
 | **路由** | REST API 端点，通过 `register_rest_route()` 注册 |
 | **钩子** | 事件（Action）和过滤器（Filter），通过 `Nova_Hooks` 管理 |
 | **扩展点** | 系统预定义的可扩展位置，插件可注入自定义逻辑 |
@@ -100,10 +101,10 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
 
 ### 目录结构
 
-NovaCMS 的插件系统约定插件应放置在 `vendor/plugins/` 目录，每个插件一个独立文件夹：
+NovaCMS 的插件系统约定插件应放置在 `vendor/nova-plugins/` 目录，每个插件一个独立文件夹：
 
 ```
-vendor/plugins/
+vendor/nova-plugins/
 ├── my-plugin/
 │   ├── plugin.php              # 插件入口文件
 │   ├── class-my-plugin.php     # 插件主类（推荐）
@@ -122,7 +123,7 @@ vendor/plugins/
 创建一个最基本的插件目录和文件结构：
 
 ```bash
-cd vendor/plugins/
+cd vendor/nova-plugins/
 mkdir -p my-plugin/routes my-plugin/views my-plugin/assets
 touch my-plugin/class-my-plugin.php
 ```
@@ -135,7 +136,7 @@ touch my-plugin/class-my-plugin.php
 
 ### 创建插件类
 
-在 `vendor/plugins/my-plugin/class-my-plugin.php` 中创建插件主类：
+在 `vendor/nova-plugins/my-plugin/class-my-plugin.php` 中创建插件主类：
 
 ```php
 <?php
@@ -214,14 +215,14 @@ new MyPlugin();
 
 ```php
 <?php
-// vendor/plugins/my-plugin/plugin.php
+// vendor/nova-plugins/my-plugin/plugin.php
 require_once __DIR__ . '/class-my-plugin.php';
 // 系统会自动扫描并加载此文件
 ```
 
 ### 验证插件
 
-1. 将插件目录 `my-plugin` 放入 `vendor/plugins/`
+1. 将插件目录 `my-plugin` 放入 `vendor/nova-plugins/`
 2. 访问任意前台页面，插件即自动加载
 3. 访问 `GET /nova-json/v1/my-plugin/hello` 测试 API
 
@@ -963,6 +964,62 @@ $result = Nova_API::delete('/v1/statuses/shuoshuo/5');
 
 ---
 
+### 5.10 Nova_Proxy
+
+代理请求类（公网 + 内部）。仅供插件/主题在 PHP 层调用，**不暴露为 HTTP 端点**。
+
+**文件**: `vendor/nova-json/class/rest/class-proxy.php`
+
+调用来源校验通过 `debug_backtrace` 实现，只有调用栈中存在来自 `nova-plugins/` 或 `nova-themes/` 目录的帧才放行，否则抛出 `RuntimeException`。内置 SSRF 防护：仅允许公网 http/https、禁止内网/环回地址、DNS 固定解析防 Rebinding、超时与响应体大小限制。
+
+**静态方法**
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `request()` | `(url, method='GET', options=[]): array/Response` | 公网代理请求外部 URL |
+| `internal()` | `(routeOrUrl, method='GET', params=[]): array/Response/string` | 内部代理调度本地 API（零网络开销） |
+
+**request 选项 (options)**
+
+| 键 | 类型 | 默认值 | 说明 |
+|----|------|--------|------|
+| `headers` | array | `[]` | 自定义请求头 |
+| `body` | mixed | `null` | 请求体（string/array） |
+| `timeout` | int | `10` | 超时秒数（1-30） |
+
+**示例**
+
+```php
+// 公网代理 — 请求外部 API（在插件/主题内调用）
+$resp = Nova_Proxy::request('https://api.github.com', 'GET', [
+    'headers' => ['Accept' => 'application/json'],
+    'timeout' => 10,
+]);
+// $resp['data']['body'] 为外部 API 返回的 JSON 解码结果
+
+// 公网代理 — POST 请求
+$resp = Nova_Proxy::request('https://api.example.com/webhook', 'POST', [
+    'headers' => ['Content-Type' => 'application/json'],
+    'body'    => ['event' => 'plugin_activated'],
+]);
+
+// 内部代理 — 调度本地 API 端点（零网络开销）
+$data = Nova_Proxy::internal('/v1/posts', 'GET', ['per_page' => 5]);
+
+// 内部代理 — 也可传完整 URL，自动解析为本地请求
+$data = Nova_Proxy::internal('https://你的域名/nova-json/v1/posts', 'GET');
+
+// 内部代理 — POST 调度
+$result = Nova_Proxy::internal('/v1/statuses/guestbook', 'POST', [
+    'nickname' => 'Test',
+    'content'  => 'Hello',
+]);
+```
+
+> **注意**: 在 `nova-plugins/` 或 `nova-themes/` 目录外的代码（如 `routes/` 路由文件、根目录脚本）调用 `Nova_Proxy` 会抛出 `RuntimeException`。
+
+---
+
 ## 6. 案例和最佳实践
 
 ### 6.1 示例一：文章统计插件
@@ -1194,7 +1251,7 @@ new ShortcodePlugin();
 
 ### 插件开发检查清单
 
-- [ ] 创建插件目录 `vendor/plugins/{plugin-name}/`
+- [ ] 创建插件目录 `vendor/nova-plugins/{plugin-name}/`
 - [ ] 创建插件主类，继承 `Nova_Plugin`
 - [ ] 在 `init()` 方法中注册路由、钩子、菜单
 - [ ] 如果需要数据库表，使用 `Nova_DB_Schema` 创建
@@ -1206,10 +1263,10 @@ new ShortcodePlugin();
 
 | 文件路径 | 说明 |
 |----------|------|
-| `vendor/plugins/{name}/class-{name}.php` | 插件主类文件 |
-| `vendor/plugins/{name}/routes/*.php` | REST 路由文件（自动加载） |
-| `vendor/plugins/{name}/views/*.php` | 后台视图模板 |
-| `vendor/plugins/{name}/assets/` | 静态资源目录 |
+| `vendor/nova-plugins/{name}/class-{name}.php` | 插件主类文件 |
+| `vendor/nova-plugins/{name}/routes/*.php` | REST 路由文件（自动加载） |
+| `vendor/nova-plugins/{name}/views/*.php` | 后台视图模板 |
+| `vendor/nova-plugins/{name}/assets/` | 静态资源目录 |
 
 ### 版本兼容性
 

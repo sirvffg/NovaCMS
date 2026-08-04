@@ -193,6 +193,56 @@ register_rest_route('v1', '/posts', [
 
 ---
 
+### Nova_Proxy
+
+**文件**: `rest/class-proxy.php`
+
+代理请求类（公网 + 内部）。仅供插件/主题在 PHP 层调用，**不暴露为 HTTP 端点**。调用来源校验通过 `debug_backtrace` 实现，只有调用栈中存在来自 `nova-plugins/` 或 `nova-themes/` 目录的帧才放行，否则抛出 `RuntimeException`。
+
+内置 SSRF 防护：仅允许公网 http/https、禁止内网/环回地址、DNS 固定解析防 Rebinding、超时与响应体大小限制。
+
+**主要方法**
+
+| 方法 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `request($url, $method='GET', $options=[])` | url, method, options | array/Response | 公网代理请求外部 URL |
+| `internal($routeOrUrl, $method='GET', $params=[])` | routeOrUrl, method, params | array/Response/string | 内部代理调度本地 API 端点（零网络开销） |
+
+**request 选项 (options)**
+
+| 键 | 类型 | 默认值 | 说明 |
+|----|------|--------|------|
+| headers | array | [] | 自定义请求头 |
+| body | mixed | null | 请求体（string/array） |
+| timeout | int | 10 | 超时秒数（1-30） |
+
+**示例**
+
+```php
+// 公网代理 — 请求外部 API（插件/主题内调用）
+$resp = Nova_Proxy::request('https://api.github.com', 'GET', [
+    'headers' => ['Accept' => 'application/json'],
+    'timeout' => 10,
+]);
+// $resp['data']['body'] 即为外部 API 返回的 JSON 解码结果
+
+// 内部代理 — 调度本地 API 端点（零网络开销）
+$data = Nova_Proxy::internal('/v1/posts', 'GET', ['per_page' => 5]);
+
+// 内部代理 — 也可传完整 URL，自动解析为本地请求
+$data = Nova_Proxy::internal('https://你的域名/nova-json/v1/posts', 'GET');
+
+// 内部代理 — POST 调度
+$result = Nova_Proxy::internal('/v1/statuses/guestbook', 'POST', [
+    'nickname' => 'Test',
+    'content'  => 'Hello',
+]);
+```
+
+> **注意**: 在插件/主题目录外的代码（如 routes/ 路由文件、根目录脚本）调用 `Nova_Proxy` 会抛出 `RuntimeException`。
+
+---
+
 ## 3. Database - 数据库层
 
 ### Nova_DB
@@ -1066,7 +1116,7 @@ new MyTheme();
 **主题目录结构**
 
 ```
-themes/my-theme/
+nova-themes/my-theme/
 ├── style.css
 ├── views/
 │   ├── header.php
