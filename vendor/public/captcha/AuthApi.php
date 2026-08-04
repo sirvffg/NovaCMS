@@ -15,7 +15,7 @@ class BehaviorAuth {
     const SHAPE_TRIANGLE = 'triangle';
 
     private $shapePool = [self::SHAPE_CIRCLE, self::SHAPE_SQUARE, self::SHAPE_STAR, self::SHAPE_TRIANGLE];
-    private $imageApiUrl = 'https://picsum.photos/300/150';
+    private $imageApiUrl = 'https://wallpaper.lygalaxy.cn/api/public/random_redirect_300x150.php';
 
     public function __construct() {
         $this->db = getDB();
