@@ -2,14 +2,14 @@
 
 > 一款轻量、可扩展、开箱即用的 PHP 内容管理系统，聚焦个人博客与小型站点的写作、展示与运营。
 
-![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-777BB4?style=for-the-badge&logo=php&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-%3E%3D5.7-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-777BB4?style=for-the-badge\&logo=php\&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-%3E%3D5.7-4479A1?style=for-the-badge\&logo=mysql\&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge\&logo=bootstrap\&logoColor=white)
 ![License](https://img.shields.io/badge/License-Open%20Source-success?style=for-the-badge)
 
 NovaCMS 是一套基于原生 PHP + MySQL + Bootstrap 5 构建的单租户 CMS，无需复杂框架，部署简单，自带后台、主题、插件、API 与行为验证码，适合用于搭建个人博客、文档站、作品集与小型社区站点。
 
----
+***
 
 ## 目录
 
@@ -23,28 +23,32 @@ NovaCMS 是一套基于原生 PHP + MySQL + Bootstrap 5 构建的单租户 CMS�
 - [安全实践](#安全实践)
 - [参与贡献](#参与贡献)
 
----
+***
 
 ## 特性一览
 
 **内容管理**
+
 - 文章（Markdown / 双栏编辑器 EasyMDE）、独立页面、文档中心
 - 说说（短动态）、相册（图集 / 单图）、留言板、友情链接
 - 分类与标签、封面与附件管理、文章加密与付费下载
 - RSS、Sitemap、SEO 工具（meta / 关键词 / 友好链接）
 
 **用户与权限**
+
 - 前台注册 / 登录 / 找回密码 / 申诉解封
 - 后台管理员账户、角色与封禁管理
 - 隐私访问控制（按内容粒度授权）
 - 会话保护与登录行为验证码
 
 **运营与统计**
+
 - 实时访问趋势、热门页面、访客 IP 地理解析
 - 邮件通知（PHPMailer）、订阅、留言与评论审核
 - AI 问答与 AI 设置模块
 
 **系统能力**
+
 - 主题系统（默认主题 `default`，支持 `theme.json` 描述）
 - 插件系统（内置 `backup` 备份插件示例）
 - RESTful API（`nova-json`，含路由、钩子、REST Server）
@@ -53,17 +57,17 @@ NovaCMS 是一套基于原生 PHP + MySQL + Bootstrap 5 构建的单租户 CMS�
 
 ## 技术栈
 
-| 层级 | 选型 |
-| --- | --- |
-| 后端 | 原生 PHP（PDO + MySQL），无重型框架 |
-| 数据库 | MySQL 5.7+ / 8.x（utf8mb4） |
-| 前端 | Bootstrap 5.3、Bootstrap Icons、HarmonyOS Sans |
-| 交互 | jQuery 3.7、Vue 3（global build）、Chart.js、DataTables |
-| 编辑器 | EasyMDE（Markdown）、Marked.js |
-| 邮件 | PHPMailer |
-| Markdown | Parsedown |
-| 验证码 | 自研行为验证码（滑块拼图 + POW + 行为分析） |
-| IP 解析 | GeoCN.mmdb / qqwry.ipdb（本地库，离线查询） |
+| 层级       | 选型                                                 |
+| -------- | -------------------------------------------------- |
+| 后端       | 原生 PHP（PDO + MySQL），无重型框架                          |
+| 数据库      | MySQL 5.7+ / 8.x（utf8mb4）                          |
+| 前端       | Bootstrap 5.3、Bootstrap Icons、HarmonyOS Sans       |
+| 交互       | jQuery 3.7、Vue 3（global build）、Chart.js、DataTables |
+| 编辑器      | EasyMDE（Markdown）、Marked.js                        |
+| 邮件       | PHPMailer                                          |
+| Markdown | Parsedown                                          |
+| 验证码      | 自研行为验证码（滑块拼图 + POW + 行为分析）                         |
+| IP 解析    | GeoCN.mmdb / qqwry.ipdb（本地库，离线查询）                  |
 
 ## 环境要求
 
@@ -191,16 +195,6 @@ API 开发文档见 `vendor/nova-json/docs/`（`routes.md`、`plugin-dev.md`、`
 - **邮件**：PHPMailer SMTP（`vendor/public/phpmailer/`）
 - **IP 解析**：本地 qqwry / GeoCN 离线库（`vendor/api/ipsearch/`）
 
-## 安全实践
-
-- 所有状态变更操作（增删改、审核、封禁等）均校验 CSRF Token
-- 表单使用 `<?= csrfField() ?>`，AJAX 使用 `getCsrfToken()` 附加令牌
-- 密码使用 `password_hash` / `password_verify` 存储
-- 登录会话使用 `session_regenerate_id(true)` 防止固定会话
-- 后台登录前置行为验证码，验证令牌一次性消费防重放
-- 敏感目录（`config/`、`logs/`、`uploads/`）通过 `.htaccess` 限制访问
-- 数据库错误信息仅写入日志，不直接暴露给用户
-
 ## 参与贡献
 
 项目当前处于测试 / 搭建阶段，欢迎通过以下方式参与：
@@ -210,3 +204,4 @@ API 开发文档见 `vendor/nova-json/docs/`（`routes.md`、`plugin-dev.md`、`
 - 分享主题与插件
 
 > 目前这是一个正在测试 / 搭建中的博客系统，部分功能仍在迭代。
+
