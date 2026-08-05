@@ -705,6 +705,29 @@ $extra_css = <<<'CSS'
     color: white;
     font-weight: 500;
 }
+.post-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    color: var(--admin-heading, #111827);
+    background: color-mix(in srgb, var(--admin-surface, #fff) 92%, var(--admin-primary, #5b5bd6) 8%);
+    border-bottom: 1px solid var(--admin-border, #e5e9f0);
+}
+.post-editor-header h5 {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: inherit;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+.post-editor-header .bi {
+    color: var(--admin-primary, #5b5bd6);
+}
+[data-bs-theme="dark"] .post-editor-header {
+    background: color-mix(in srgb, var(--admin-surface-raised, #182136) 88%, var(--admin-primary, #8b8cf7) 12%);
+}
 .color-dot {
     width: 10px;
     height: 10px;
@@ -912,7 +935,7 @@ require_once 'includes/header.php'; ?>
                     <div class="tab-pane fade <?= $activeTab === 'posts' ? 'show active' : '' ?>" id="posts-content" role="tabpanel">
                 <!-- 添加/编辑表单 -->
                 <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header post-editor-header">
                         <h5 class="mb-0" id="formTitle">
                             <i class="bi bi-pencil-square"></i> <?= $editPost ? '编辑文章' : '发布新文章' ?>
                         </h5>
