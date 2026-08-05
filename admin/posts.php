@@ -736,58 +736,150 @@ $extra_css = <<<'CSS'
     margin-right: 6px;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
-.tag-badge {
+.badge.tag-badge {
     display: inline-flex;
     align-items: center;
-    padding: 3px 8px;
-    border-radius: 4px;
+    gap: 6px;
+    padding: 7px 10px !important;
+    border-radius: 999px !important;
     font-size: 12px;
     color: white;
     margin: 2px;
+    font-weight: 600;
+    line-height: 1;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
 .tag-color-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     display: inline-block;
-    margin-right: 4px;
     border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
+}
+.tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin: -2px -4px -2px 0;
+    padding: 0;
+    color: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.14);
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.16s ease, transform 0.16s ease, color 0.16s ease;
+}
+.tag-remove:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.26);
+    transform: scale(1.06);
+}
+.tag-remove .bi {
+    font-size: 13px;
+    line-height: 1;
+}
+.admin-tags-field {
+    padding: 14px;
+    border: 1px solid var(--admin-border, #e5e7eb);
+    border-radius: var(--admin-radius, 14px);
+    background: var(--admin-surface-muted, #f8fafc);
+}
+.admin-tags-field .form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--admin-heading, #111827);
+    font-weight: 650;
+}
+.admin-tags-field .form-label .bi {
+    color: var(--admin-primary, #2563eb);
+}
+.admin-tags-field .form-control {
+    min-height: 44px;
+    color: var(--admin-text, #111827);
+    background: var(--admin-surface, #fff);
+    border-color: var(--admin-border, #e5e7eb);
+    border-radius: 12px;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+.admin-tags-field .form-control:focus {
+    color: var(--admin-text, #111827);
+    background: var(--admin-surface, #fff);
+    border-color: var(--admin-primary, #2563eb);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--admin-primary, #2563eb) 16%, transparent);
 }
 .tag-input-hint {
     font-size: 12px;
-    color: #6c757d;
-    margin-top: 5px;
+    color: var(--admin-text-muted, #64748b);
+    margin-top: 7px;
 }
 .tags-preview {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    align-items: center;
+    gap: 8px;
     margin-top: 10px;
-    min-height: 40px;
-    padding: 10px;
-    border: 1px dashed #dee2e6;
-    border-radius: 0.375rem;
-    background-color: #f8f9fa;
+    min-height: 46px;
+    padding: 9px 10px;
+    border: 1px dashed var(--admin-border, #e5e7eb);
+    border-radius: 12px;
+    background: var(--admin-surface, #fff);
+}
+.tags-preview-empty {
+    color: var(--admin-text-muted, #64748b);
+    font-size: 12px;
 }
 .suggested-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    align-items: center;
+    gap: 8px;
     margin-top: 10px;
+    padding: 10px;
+    border: 1px solid var(--admin-border, #e5e7eb);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--admin-surface, #fff) 78%, var(--admin-primary, #2563eb) 6%);
+}
+.suggested-tags-label {
+    margin: 0 2px 0 0;
+    color: var(--admin-text-muted, #64748b);
+    font-size: 12px;
+    font-weight: 600;
 }
 .suggested-tag {
     cursor: pointer;
     font-size: 12px;
-    padding: 3px 8px;
-    border-radius: 15px;
-    background-color: #e9ecef;
-    border: 1px solid #dee2e6;
-    color: #495057;
-    transition: all 0.2s;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--admin-surface, #fff);
+    border: 1px solid var(--admin-border, #e5e7eb);
+    color: var(--admin-primary, #2563eb);
+    font-weight: 600;
+    line-height: 1;
+    transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .suggested-tag:hover {
-    background-color: #dee2e6;
+    background: color-mix(in srgb, var(--admin-primary, #2563eb) 10%, var(--admin-surface, #fff));
+    border-color: color-mix(in srgb, var(--admin-primary, #2563eb) 42%, var(--admin-border, #e5e7eb));
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
     transform: translateY(-1px);
+}
+[data-bs-theme="dark"] .admin-tags-field {
+    background: color-mix(in srgb, var(--admin-surface, #111827) 88%, #fff 4%);
+}
+[data-bs-theme="dark"] .suggested-tags {
+    background: color-mix(in srgb, var(--admin-surface, #111827) 82%, var(--admin-primary, #60a5fa) 10%);
+}
+[data-bs-theme="dark"] .badge.tag-badge {
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
 }
 .card {
     border: 1px solid rgba(0,0,0,.125);
@@ -1025,6 +1117,11 @@ require_once 'includes/header.php'; ?>
                                                 <div class="alert alert-info">
                                                     <i class="bi bi-info-circle"></i> 在文章内容中使用 <code>[Paid]</code> 和 <code>[/Paid]</code> 标记包围付费内容
                                                     <br>示例：这是免费内容<code>[Paid]</code>这是付费内容<code>[/Paid]</code>这是更多免费内容
+                                                    <div class="mt-2">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="insertProtectedContentMarker('paid')">
+                                                            <i class="bi bi-braces"></i> 插入付费内容标记
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1115,6 +1212,11 @@ require_once 'includes/header.php'; ?>
                                                     <i class="bi bi-info-circle"></i> 在文章内容中使用 <code>[Privacy]</code> 和 <code>[/Privacy]</code> 标记包围隐私内容
                                                     <br>示例：这是公开内容<code>[Privacy]</code>这是隐私内容<code>[/Privacy]</code>这是更多公开内容
                                                     <br><small class="text-muted">注意：必须使用配对标记，单标记格式不再支持。</small>
+                                                    <div class="mt-2">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="insertProtectedContentMarker('privacy')">
+                                                            <i class="bi bi-braces"></i> 插入隐私内容标记
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1143,8 +1245,8 @@ require_once 'includes/header.php'; ?>
                                         </select>
                                     </div>
                                     
-                                    <div class="mb-3">
-                                        <label class="form-label">文章标签</label>
+                                    <div class="mb-3 admin-tags-field">
+                                        <label class="form-label"><i class="bi bi-tags"></i>文章标签</label>
                                         <input type="text" name="tags" id="tagsInput" class="form-control" 
                                                value="<?= e(formatTagsForInput($editPost['tags'] ?? '')) ?>"
                                                placeholder="例如：#技术分享#项目案例#学习笔记">
@@ -1157,7 +1259,7 @@ require_once 'includes/header.php'; ?>
                                         
                                         <!-- 推荐标签 -->
                                         <div class="suggested-tags">
-                                            <span class="tag-input-hint">推荐标签：</span>
+                                            <span class="suggested-tags-label">推荐标签</span>
                                             <?php 
                                             // 获取所有历史标签作为推荐
                                             $allTags = [];
@@ -1885,8 +1987,40 @@ require_once 'includes/header.php'; ?>
     
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <script>
+        window.insertProtectedContentMarker = function(type) {
+            const config = type === 'privacy'
+                ? { start: '[Privacy]', end: '[/Privacy]', placeholder: '这里输入隐私内容' }
+                : { start: '[Paid]', end: '[/Paid]', placeholder: '这里输入付费内容' };
+            const markerText = `${config.start}${config.placeholder}${config.end}`;
+            const richEditor = document.querySelector('.nova-rich-editor');
+            const shell = document.querySelector('.nova-editor-shell');
+            const cmElement = document.querySelector('.CodeMirror');
+            const cm = cmElement && cmElement.CodeMirror;
+            const textarea = document.getElementById('post_content');
+
+            if (shell && shell.dataset.editorMode === 'rich' && richEditor && getComputedStyle(richEditor).display !== 'none') {
+                richEditor.focus();
+                document.execCommand('insertText', false, markerText);
+                richEditor.dispatchEvent(new Event('input', { bubbles: true }));
+                if (!cm && textarea) {
+                    textarea.value = (richEditor.textContent || '').trim();
+                }
+                return;
+            }
+
+            if (cm) {
+                const selected = cm.getSelection() || config.placeholder;
+                cm.replaceSelection(`${config.start}${selected}${config.end}`);
+                cm.focus();
+                cm.save();
+            } else if (textarea) {
+                textarea.value += (textarea.value ? '\n\n' : '') + markerText;
+            }
+        };
+    </script>
+    <script>
         // 初始化文章内容编辑器
-        initMarkdownEditor('post_content');
+        const postEditor = initMarkdownEditor('post_content');
 
         // 监听 EasyMDE 全屏切换，隐藏/显示侧边栏
         (function() {
@@ -2017,6 +2151,9 @@ require_once 'includes/header.php'; ?>
         // 保存文章
         postForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            if (postEditor && typeof postEditor.syncRichToMarkdown === 'function') {
+                postEditor.syncRichToMarkdown();
+            }
             
             const title = document.getElementById('title').value.trim();
             const content = document.getElementById('post_content').value.trim();
@@ -2271,6 +2408,9 @@ require_once 'includes/header.php'; ?>
             if (editor && editor.CodeMirror) {
                 editor.CodeMirror.setValue('');
             }
+            if (postEditor && typeof postEditor.refreshRichEditor === 'function') {
+                postEditor.refreshRichEditor();
+            }
             
             // 重置按钮状态
             resetSubmitButton();
@@ -2366,6 +2506,9 @@ require_once 'includes/header.php'; ?>
                         editor.CodeMirror.setValue(post.content || '');
                     } else {
                         document.getElementById('post_content').value = post.content || '';
+                    }
+                    if (postEditor && typeof postEditor.refreshRichEditor === 'function') {
+                        postEditor.refreshRichEditor();
                     }
                     
                     // 更新界面状态
@@ -2468,26 +2611,39 @@ require_once 'includes/header.php'; ?>
             tagsPreview.innerHTML = '';
             
             if (!inputValue) {
-                tagsPreview.innerHTML = '<span class="text-muted">暂无标签</span>';
+                tagsPreview.innerHTML = '<span class="tags-preview-empty">暂无标签</span>';
                 return;
             }
             
             const tags = inputValue.split('#').filter(tag => tag.trim() !== '');
             
             if (tags.length === 0) {
-                tagsPreview.innerHTML = '<span class="text-muted">暂无标签</span>';
+                tagsPreview.innerHTML = '<span class="tags-preview-empty">暂无标签</span>';
                 return;
             }
             
             tags.forEach(tag => {
+                const cleanTag = tag.trim();
+                const tagColor = getTagColor(cleanTag);
                 const tagElement = document.createElement('span');
                 tagElement.className = 'badge tag-badge';
-                tagElement.style.backgroundColor = getTagColor(tag.trim());
-                tagElement.innerHTML = `
-                    <span class="tag-color-dot" style="background-color: ${adjustColorBrightness(getTagColor(tag.trim()), 30)}"></span>
-                    ${tag.trim()}
-                    <i class="bi bi-x" onclick="removeTag('${tag.trim()}')" style="margin-left: 5px; cursor: pointer; font-size: 10px;"></i>
-                `;
+                tagElement.style.backgroundColor = tagColor;
+
+                const colorDot = document.createElement('span');
+                colorDot.className = 'tag-color-dot';
+                colorDot.style.backgroundColor = adjustColorBrightness(tagColor, 30);
+
+                const tagText = document.createElement('span');
+                tagText.textContent = cleanTag;
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'tag-remove';
+                removeButton.setAttribute('aria-label', `移除标签 ${cleanTag}`);
+                removeButton.innerHTML = '<i class="bi bi-x"></i>';
+                removeButton.addEventListener('click', () => removeTag(cleanTag));
+
+                tagElement.append(colorDot, tagText, removeButton);
                 tagsPreview.appendChild(tagElement);
             });
         }
