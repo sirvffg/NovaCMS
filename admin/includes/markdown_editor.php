@@ -280,50 +280,84 @@
 .editor-toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
-    padding: 4px;
+    gap: 6px;
+    padding: 10px 12px;
 }
 
 .editor-toolbar button {
-    min-width: 32px;
-    min-height: 32px;
-    max-width: 40px;
-    padding: 4px 8px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: none;
+    padding: 8px 11px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #ddd;
-    background: #f8f9fa;
+    border: 1px solid var(--admin-border, #dde3ec);
+    background: var(--admin-surface-muted, #f8fafc);
+    color: var(--admin-text, #172033);
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 10px;
     margin: 0;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
 }
 
 .editor-toolbar button i {
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.editor-toolbar button.table,
+.editor-toolbar button.bi-table {
+    display: inline-flex;
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    padding: 8px;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.editor-toolbar button.nova-source-toggle {
+    gap: 6px;
+    min-width: 118px;
+    padding-inline: 12px;
+    font-weight: 650;
+}
+
+.editor-toolbar button.nova-source-toggle[data-mode="preview"] {
+    background: var(--admin-primary, #5b5bd6);
+    color: #fff;
+    border-color: var(--admin-primary, #5b5bd6);
+}
+
+.editor-toolbar button.nova-source-toggle .nova-source-label {
+    font-size: 12px;
     line-height: 1;
 }
 
 .editor-toolbar button:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    background: color-mix(in srgb, var(--admin-primary, #5b5bd6) 9%, var(--admin-surface, #fff));
+    border-color: color-mix(in srgb, var(--admin-primary, #5b5bd6) 32%, var(--admin-border, #dde3ec));
+    color: var(--admin-primary-strong, #4545bd);
+    transform: translateY(-1px);
 }
 
 .editor-toolbar button.active {
-    background: #007bff;
+    background: var(--admin-primary, #5b5bd6);
     color: white;
-    border-color: #007bff;
+    border-color: var(--admin-primary, #5b5bd6);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--admin-primary, #5b5bd6) 24%, transparent);
 }
 
 .editor-toolbar .separator,
 .editor-toolbar span[data-separator="true"] {
     width: 1px;
-    height: 24px;
-    background: #dee2e6;
-    margin: 0 4px;
+    height: 28px;
+    background: var(--admin-border, #dde3ec);
+    margin: 0 6px;
     align-self: center;
     flex-shrink: 0;
 }
@@ -331,18 +365,31 @@
 /* 响应式设计 */
 @media (max-width: 768px) {
     .editor-toolbar {
-        gap: 1px;
-        padding: 2px;
+        gap: 5px;
+        padding: 8px;
     }
     
     .editor-toolbar button {
-        min-width: 28px;
-        min-height: 28px;
-        padding: 2px 6px;
+        min-width: 38px;
+        min-height: 38px;
+        padding: 7px 10px;
+    }
+
+    .editor-toolbar button.table,
+    .editor-toolbar button.bi-table {
+        width: 38px;
+        min-width: 38px;
+        max-width: 38px;
+        padding: 7px;
+    }
+
+    .editor-toolbar button.nova-source-toggle {
+        min-width: 104px;
+        padding-inline: 10px;
     }
     
     .editor-toolbar button i {
-        font-size: 12px;
+        font-size: 15px;
     }
     
     .autocomplete-suggestions {
@@ -362,13 +409,243 @@
         overflow-x: auto;
     }
 }
+
+.nova-editor-shell {
+    border: 1px solid var(--admin-border, #e5e9f0);
+    border-radius: var(--admin-radius, 14px);
+    overflow: hidden;
+    background: var(--admin-surface, #fff);
+    box-shadow: var(--admin-shadow-sm, 0 1px 2px rgba(16, 24, 40, 0.05));
+}
+
+.nova-editor-shell .EasyMDEContainer {
+    border: 0;
+}
+
+.nova-editor-shell .editor-toolbar {
+    border: 0;
+    border-bottom: 1px solid var(--admin-border, #e5e9f0);
+    border-radius: 0;
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    background: color-mix(in srgb, var(--admin-surface, #fff) 92%, var(--admin-primary, #5b5bd6) 8%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--admin-border-strong, #d6dce7) transparent;
+}
+
+.nova-editor-shell .CodeMirror {
+    border: 0;
+    border-radius: 0;
+    min-height: 520px;
+    resize: vertical;
+    background: var(--admin-surface, #fff);
+    color: var(--admin-text, #172033);
+    font-family: "HarmonyOS Sans", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 15px;
+    line-height: 1.72;
+}
+
+.nova-editor-shell .CodeMirror-gutters {
+    background: var(--admin-surface-muted, #f8fafc);
+    border-right: 1px solid var(--admin-border, #e5e9f0);
+}
+
+.nova-editor-shell .CodeMirror-cursor {
+    border-left-color: var(--admin-primary, #5b5bd6);
+}
+
+.nova-editor-shell .CodeMirror-selected {
+    background: color-mix(in srgb, var(--admin-primary, #5b5bd6) 18%, transparent) !important;
+}
+
+.nova-editor-shell .editor-preview,
+.nova-editor-shell .editor-preview-side {
+    background: var(--admin-surface, #fff);
+    color: var(--admin-text, #172033);
+}
+
+.nova-editor-shell .editor-preview-side {
+    border-color: var(--admin-border, #e5e9f0);
+}
+
+.nova-rich-editor {
+    min-height: 520px;
+    padding: 22px 24px;
+    background: var(--admin-surface, #fff);
+    color: var(--admin-text, #172033);
+    font-size: 15px;
+    line-height: 1.72;
+    outline: none;
+    overflow: auto;
+}
+
+.nova-rich-editor:focus {
+    box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--admin-primary, #5b5bd6) 14%, transparent);
+}
+
+.nova-rich-editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--admin-muted, #667085);
+}
+
+.nova-rich-editor h1,
+.nova-rich-editor h2,
+.nova-rich-editor h3 {
+    margin: 1.1em 0 0.55em;
+    color: var(--admin-heading, #111827);
+}
+
+.nova-rich-editor p,
+.nova-rich-editor ul,
+.nova-rich-editor ol,
+.nova-rich-editor blockquote,
+.nova-rich-editor pre,
+.nova-rich-editor table {
+    margin-bottom: 1em;
+}
+
+.nova-rich-editor blockquote {
+    padding: 10px 14px;
+    border-left: 4px solid var(--admin-primary, #5b5bd6);
+    background: var(--admin-surface-muted, #f8fafc);
+    border-radius: 0 10px 10px 0;
+}
+
+.nova-rich-editor pre {
+    padding: 14px;
+    border-radius: 10px;
+    background: var(--admin-surface-muted, #f8fafc);
+    overflow-x: auto;
+}
+
+.nova-rich-editor table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.nova-rich-editor th,
+.nova-rich-editor td {
+    border: 1px solid var(--admin-border, #e5e9f0);
+    padding: 8px 10px;
+}
+
+.nova-rich-editor th {
+    background: var(--admin-surface-muted, #f8fafc);
+}
+
+.nova-editor-shell[data-editor-mode="rich"] .CodeMirror {
+    display: none;
+}
+
+.nova-editor-shell[data-editor-mode="markdown"] .nova-rich-editor {
+    display: none;
+}
+
+.nova-editor-shell.is-dragover {
+    border-color: var(--admin-primary, #5b5bd6);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--admin-primary, #5b5bd6) 16%, transparent);
+}
+
+.nova-editor-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--admin-border, #e5e9f0);
+    background: var(--admin-surface-muted, #f8fafc);
+    color: var(--admin-muted, #667085);
+    font-size: 12px;
+}
+
+.nova-editor-statusbar .status-left,
+.nova-editor-statusbar .status-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.nova-editor-statusbar button {
+    border: 0;
+    background: transparent;
+    color: var(--admin-primary, #5b5bd6);
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.nova-editor-statusbar button:hover {
+    text-decoration: underline;
+}
+
+.nova-editor-draft {
+    color: var(--admin-success, #0f9f6e);
+}
+
+.nova-editor-dirty {
+    color: var(--admin-danger, #dc3f56);
+}
+
+[data-bs-theme="dark"] .nova-editor-shell .editor-toolbar {
+    background: color-mix(in srgb, var(--admin-surface-raised, #182136) 86%, var(--admin-primary, #8b8cf7) 14%);
+}
+
+[data-bs-theme="dark"] .editor-toolbar button {
+    box-shadow: none;
+}
+
+[data-bs-theme="dark"] .nova-editor-shell .CodeMirror,
+[data-bs-theme="dark"] .nova-editor-shell .editor-preview,
+[data-bs-theme="dark"] .nova-editor-shell .editor-preview-side,
+[data-bs-theme="dark"] .nova-rich-editor {
+    background: var(--admin-surface, #12192a);
+    color: var(--admin-text, #d9e0ee);
+}
+
+[data-bs-theme="dark"] .nova-editor-shell .CodeMirror-gutters {
+    background: var(--admin-surface-muted, #0f1627);
+    color: var(--admin-muted, #98a5ba);
+}
+
+@media (max-width: 768px) {
+    .nova-editor-shell .CodeMirror {
+        min-height: 420px;
+    }
+
+    .nova-rich-editor {
+        min-height: 420px;
+        padding: 18px;
+    }
+
+    .nova-editor-statusbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
 </style>
 
 <script>
 // 更新工具栏按钮状态
+function getEditorToolbar(editor) {
+    return editor.toolbarElement || editor.toolbar_div || (editor.gui && editor.gui.toolbar) || null;
+}
+
+function isEditorPreviewActive(editor) {
+    const wrapper = editor.codemirror && editor.codemirror.getWrapperElement();
+    const previewByDom = wrapper && wrapper.querySelector('.editor-preview-active');
+    if (previewByDom) return true;
+    return typeof editor.isPreviewActive === 'function' && editor.isPreviewActive();
+}
+
+function isEditorRichActive(editor) {
+    return editor.novaMode === 'rich';
+}
+
 function updateToolbarState(editor) {
     const cm = editor.codemirror;
-    const toolbar = editor.toolbarElement;
+    const toolbar = getEditorToolbar(editor);
     if (!toolbar) return;
     
     // 获取当前光标位置的行内容
@@ -385,45 +662,306 @@ function updateToolbarState(editor) {
     // 重置所有按钮状态
     const buttons = toolbar.querySelectorAll('button');
     buttons.forEach(button => {
+        if (button.classList.contains('nova-source-toggle')) return;
         button.classList.remove('active');
-        button.style.background = '#f8f9fa';
+        button.style.background = 'var(--admin-surface-muted, #f8fafc)';
         button.style.color = '';
-        button.style.borderColor = '#ddd';
+        button.style.borderColor = 'var(--admin-border, #dde3ec)';
     });
     
     // 根据当前行类型设置按钮状态
     buttons.forEach(button => {
+        if (button.classList.contains('nova-source-toggle')) return;
         const className = button.className;
         
         // 检查是否为无序列表按钮
         if (isUnorderedList && className.includes('unordered-list')) {
             button.classList.add('active');
-            button.style.background = '#007bff';
+            button.style.background = 'var(--admin-primary, #5b5bd6)';
             button.style.color = 'white';
-            button.style.borderColor = '#007bff';
+            button.style.borderColor = 'var(--admin-primary, #5b5bd6)';
         }
         // 检查是否为有序列表按钮
         else if (isOrderedList && className.includes('ordered-list')) {
             button.classList.add('active');
-            button.style.background = '#007bff';
+            button.style.background = 'var(--admin-primary, #5b5bd6)';
             button.style.color = 'white';
-            button.style.borderColor = '#007bff';
+            button.style.borderColor = 'var(--admin-primary, #5b5bd6)';
         }
         // 检查是否为引用按钮
         else if (isQuote && className.includes('quote')) {
             button.classList.add('active');
-            button.style.background = '#007bff';
+            button.style.background = 'var(--admin-primary, #5b5bd6)';
             button.style.color = 'white';
-            button.style.borderColor = '#007bff';
+            button.style.borderColor = 'var(--admin-primary, #5b5bd6)';
         }
         // 检查是否为标题按钮
         else if (isHeading && className.includes('heading')) {
             button.classList.add('active');
-            button.style.background = '#007bff';
+            button.style.background = 'var(--admin-primary, #5b5bd6)';
             button.style.color = 'white';
-            button.style.borderColor = '#007bff';
+            button.style.borderColor = 'var(--admin-primary, #5b5bd6)';
         }
     });
+}
+
+function addEditorViewToggle(editor, settings) {
+    const toolbar = getEditorToolbar(editor);
+    if (!toolbar || toolbar.querySelector('.nova-source-toggle')) return;
+
+    const toggleButton = document.createElement('button');
+    toggleButton.type = 'button';
+    toggleButton.className = 'nova-source-toggle no-disable';
+    toggleButton.setAttribute('aria-pressed', 'false');
+
+    toolbar.insertBefore(toggleButton, toolbar.firstChild);
+
+    editor.novaSourceToggle = toggleButton;
+    toggleButton.addEventListener('click', function() {
+        setEditorViewMode(editor, isEditorRichActive(editor) ? 'markdown' : 'rich');
+    });
+
+    toolbar.addEventListener('click', function(e) {
+        const button = e.target.closest('button');
+        if (!button || button.classList.contains('nova-source-toggle') || !isEditorRichActive(editor)) return;
+        if (handleRichToolbarAction(editor, button)) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+
+    editor.codemirror.on('update', function() {
+        updateEditorViewToggleState(editor);
+    });
+
+    setTimeout(() => {
+        if (settings.defaultView === 'rich') {
+            setEditorViewMode(editor, 'rich');
+        } else {
+            setEditorViewMode(editor, 'markdown');
+            updateEditorViewToggleState(editor);
+        }
+    }, 0);
+}
+
+function setEditorViewMode(editor, mode) {
+    const shell = editor.novaShell || editor.codemirror.getWrapperElement().closest('.nova-editor-shell');
+    const shouldShowRich = mode === 'rich';
+
+    if (isEditorPreviewActive(editor)) {
+        EasyMDE.togglePreview(editor);
+    }
+
+    if (shouldShowRich) {
+        syncRichFromMarkdown(editor);
+        editor.novaMode = 'rich';
+        if (shell) shell.dataset.editorMode = 'rich';
+    } else {
+        syncMarkdownFromRich(editor);
+        editor.novaMode = 'markdown';
+        if (shell) shell.dataset.editorMode = 'markdown';
+    }
+
+    updateEditorViewToggleState(editor);
+
+    if (shouldShowRich) {
+        setTimeout(() => {
+            updateEditorViewToggleState(editor);
+            if (editor.novaRichEditor) editor.novaRichEditor.focus();
+        }, 0);
+    } else {
+        setTimeout(() => {
+            updateEditorViewToggleState(editor);
+            editor.codemirror.refresh();
+            editor.codemirror.focus();
+        }, 0);
+    }
+}
+
+function updateEditorViewToggleState(editor) {
+    const button = editor.novaSourceToggle;
+    if (!button) return;
+
+    const isRichActive = isEditorRichActive(editor);
+    button.dataset.mode = isRichActive ? 'rich' : 'markdown';
+    button.setAttribute('aria-pressed', isRichActive ? 'true' : 'false');
+    button.title = isRichActive ? '切换到 Markdown 编辑器' : '切换到富文本编辑器';
+    button.innerHTML = isRichActive
+        ? '<i class="bi bi-markdown"></i><span class="nova-source-label">Markdown源码</span>'
+        : '<i class="bi bi-pencil-square"></i><span class="nova-source-label">富文本编辑</span>';
+}
+
+function createRichEditorPanel(editor) {
+    const cmWrapper = editor.codemirror.getWrapperElement();
+    const richEditor = document.createElement('div');
+    richEditor.className = 'nova-rich-editor';
+    richEditor.contentEditable = 'true';
+    richEditor.setAttribute('role', 'textbox');
+    richEditor.setAttribute('aria-multiline', 'true');
+    richEditor.dataset.placeholder = '开始写作...';
+    cmWrapper.parentNode.insertBefore(richEditor, cmWrapper.nextSibling);
+
+    let syncTimer = null;
+    richEditor.addEventListener('input', function() {
+        clearTimeout(syncTimer);
+        syncTimer = setTimeout(() => syncMarkdownFromRich(editor), 120);
+    });
+
+    richEditor.addEventListener('blur', function() {
+        syncMarkdownFromRich(editor);
+    });
+
+    richEditor.addEventListener('paste', function() {
+        setTimeout(() => syncMarkdownFromRich(editor), 0);
+    });
+
+    return richEditor;
+}
+
+function syncRichFromMarkdown(editor) {
+    if (!editor.novaRichEditor) return;
+    const markdown = editor.value() || '';
+    const rendered = editor.options && typeof editor.options.previewRender === 'function'
+        ? editor.options.previewRender.call({ parent: editor }, markdown)
+        : markdown;
+    editor.novaRichEditor.innerHTML = rendered || '';
+}
+
+function syncMarkdownFromRich(editor) {
+    if (!editor.novaRichEditor || editor.novaSyncingRich) return;
+    const markdown = htmlToMarkdown(editor.novaRichEditor).trim();
+    if (markdown === editor.value().trim()) {
+        editor.codemirror.save();
+        return;
+    }
+
+    editor.novaSyncingRich = true;
+    const cursor = editor.codemirror.getCursor();
+    editor.codemirror.setValue(markdown);
+    editor.codemirror.setCursor({
+        line: Math.min(cursor.line, editor.codemirror.lineCount() - 1),
+        ch: cursor.ch
+    });
+    editor.codemirror.save();
+    editor.novaSyncingRich = false;
+}
+
+function htmlToMarkdown(root) {
+    const walk = function(node, context = {}) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent.replace(/\u00a0/g, ' ');
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+        const tag = node.tagName.toLowerCase();
+        const children = Array.from(node.childNodes).map(child => walk(child, context)).join('');
+        const block = text => text.trim() ? `\n\n${text.trim()}\n\n` : '';
+
+        switch (tag) {
+            case 'br':
+                return '  \n';
+            case 'strong':
+            case 'b':
+                return children.trim() ? `**${children.trim()}**` : '';
+            case 'em':
+            case 'i':
+                return children.trim() ? `*${children.trim()}*` : '';
+            case 's':
+            case 'del':
+            case 'strike':
+                return children.trim() ? `~~${children.trim()}~~` : '';
+            case 'code':
+                return context.inPre ? children : '`' + children.trim() + '`';
+            case 'pre':
+                return block('```\n' + node.textContent.trim() + '\n```');
+            case 'h1':
+            case 'h2':
+            case 'h3':
+            case 'h4':
+            case 'h5':
+            case 'h6':
+                return block('#'.repeat(Number(tag.slice(1))) + ' ' + children.trim());
+            case 'blockquote':
+                return block(children.trim().split('\n').map(line => `> ${line}`).join('\n'));
+            case 'ul':
+                return block(Array.from(node.children).map(li => `- ${walk(li, { listItem: true }).trim()}`).join('\n'));
+            case 'ol':
+                return block(Array.from(node.children).map((li, index) => `${index + 1}. ${walk(li, { listItem: true }).trim()}`).join('\n'));
+            case 'li':
+                return children;
+            case 'a': {
+                const href = node.getAttribute('href') || '';
+                const text = children.trim() || href;
+                return href ? `[${text}](${href})` : text;
+            }
+            case 'img': {
+                const src = node.getAttribute('src') || '';
+                const alt = node.getAttribute('alt') || '';
+                return src ? `![${alt}](${src})` : '';
+            }
+            case 'table':
+                return block(tableToMarkdown(node));
+            case 'div':
+            case 'p':
+                return context.listItem ? children : block(children);
+            default:
+                return children;
+        }
+    };
+
+    return Array.from(root.childNodes)
+        .map(node => walk(node))
+        .join('')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+function tableToMarkdown(table) {
+    const rows = Array.from(table.querySelectorAll('tr')).map(row => {
+        return Array.from(row.children).map(cell => cell.textContent.trim().replace(/\|/g, '\\|'));
+    }).filter(row => row.length);
+    if (!rows.length) return '';
+    const columnCount = Math.max(...rows.map(row => row.length));
+    const normalize = row => row.concat(Array(Math.max(0, columnCount - row.length)).fill(''));
+    const header = normalize(rows[0]);
+    const body = rows.slice(1).map(normalize);
+    return [
+        `| ${header.join(' | ')} |`,
+        `| ${header.map(() => '---').join(' | ')} |`,
+        ...body.map(row => `| ${row.join(' | ')} |`)
+    ].join('\n');
+}
+
+function handleRichToolbarAction(editor, button) {
+    const richEditor = editor.novaRichEditor;
+    if (!richEditor) return false;
+    const className = button.className;
+    richEditor.focus();
+
+    if (className.includes('bold')) document.execCommand('bold');
+    else if (className.includes('italic')) document.execCommand('italic');
+    else if (className.includes('strikethrough')) document.execCommand('strikeThrough');
+    else if (className.includes('unordered-list')) document.execCommand('insertUnorderedList');
+    else if (className.includes('ordered-list')) document.execCommand('insertOrderedList');
+    else if (className.includes('heading')) document.execCommand('formatBlock', false, 'h2');
+    else if (className.includes('quote')) document.execCommand('formatBlock', false, 'blockquote');
+    else if (className.includes('code')) document.execCommand('formatBlock', false, 'pre');
+    else if (className.includes('clean-block')) document.execCommand('removeFormat');
+    else if (className.includes('horizontal-rule')) document.execCommand('insertHorizontalRule');
+    else if (className.includes('link')) {
+        const url = prompt('链接地址');
+        if (url) document.execCommand('createLink', false, url);
+    } else if (className.includes('table') || className.includes('bi-table')) {
+        document.execCommand('insertHTML', false, '<table><thead><tr><th>标题1</th><th>标题2</th><th>标题3</th></tr></thead><tbody><tr><td>内容1</td><td>内容2</td><td>内容3</td></tr><tr><td>内容4</td><td>内容5</td><td>内容6</td></tr></tbody></table><p><br></p>');
+    } else {
+        setEditorViewMode(editor, 'markdown');
+        setTimeout(() => button.click(), 0);
+        return true;
+    }
+
+    syncMarkdownFromRich(editor);
+    updateToolbarState(editor);
+    return true;
 }
 
 // 检查内容长度并显示提醒
@@ -625,9 +1163,19 @@ function showContentWarning(currentLength, maxLength) {
 }
 
 // 初始化 Markdown 编辑器
-function initMarkdownEditor(textareaId) {
+function initMarkdownEditor(textareaId, options = {}) {
     const textarea = document.getElementById(textareaId);
     if (!textarea) return null;
+    const settings = Object.assign({
+        autosave: true,
+        autosaveKey: `nova-editor-draft:${location.pathname}:${textareaId}`,
+        autosaveDelay: 800,
+        leaveWarning: true,
+        dragUpload: true,
+        statusbar: true,
+        defaultView: 'rich'
+    }, options);
+    const initialValue = textarea.value || '';
     
     const easyMDE = new EasyMDE({
         element: textarea,
@@ -826,16 +1374,18 @@ function initMarkdownEditor(textareaId) {
     
     // 添加自定义快捷键
     const cm = easyMDE.codemirror;
+    enhanceMarkdownEditor(easyMDE, textarea, settings, initialValue);
+    addEditorViewToggle(easyMDE, settings);
     
     // 优化工具栏布局
     setTimeout(() => {
-        const toolbar = easyMDE.toolbarElement;
+        const toolbar = getEditorToolbar(easyMDE);
         if (toolbar) {
             // 确保工具栏使用flexbox布局
             toolbar.style.display = 'flex';
             toolbar.style.flexWrap = 'nowrap';
             toolbar.style.alignItems = 'center';
-            toolbar.style.gap = '2px';
+            toolbar.style.gap = '6px';
             
             // 移除所有空的或隐藏的元素
             const allChildren = Array.from(toolbar.children);
@@ -845,7 +1395,8 @@ function initMarkdownEditor(textareaId) {
                     child.remove();
                 }
                 // 移除没有内容的按钮
-                if (child.tagName === 'BUTTON' && !child.innerHTML.trim() && !child.querySelector('i') && !child.querySelector('svg')) {
+                const hasIconClass = Array.from(child.classList || []).some(className => className === 'bi' || className.startsWith('bi-'));
+                if (child.tagName === 'BUTTON' && !child.innerHTML.trim() && !child.querySelector('i') && !child.querySelector('svg') && !hasIconClass) {
                     child.remove();
                 }
             });
@@ -856,9 +1407,9 @@ function initMarkdownEditor(textareaId) {
                 if (element.textContent === '|' || element.getAttribute('data-separator') === 'true') {
                     element.className = 'separator';
                     element.style.width = '1px';
-                    element.style.height = '24px';
-                    element.style.background = '#dee2e6';
-                    element.style.margin = '0 4px';
+                    element.style.height = '28px';
+                    element.style.background = 'var(--admin-border, #dde3ec)';
+                    element.style.margin = '0 6px';
                     element.style.border = 'none';
                     element.style.cursor = 'default';
                     element.style.pointerEvents = 'none';
@@ -873,37 +1424,51 @@ function initMarkdownEditor(textareaId) {
             buttons.forEach(button => {
                 if (!button.classList.contains('separator')) {
                     // 设置基础样式
-                    button.style.minWidth = '32px';
-                    button.style.maxWidth = '40px';
-                    button.style.height = '32px';
-                    button.style.padding = '4px 8px';
+                    button.style.minWidth = button.classList.contains('nova-source-toggle') ? '128px' : '40px';
+                    button.style.maxWidth = 'none';
+                    button.style.height = '40px';
+                    button.style.padding = '8px 11px';
                     button.style.display = 'inline-flex';
                     button.style.alignItems = 'center';
                     button.style.justifyContent = 'center';
-                    button.style.borderRadius = '4px';
-                    button.style.border = '1px solid #ddd';
-                    button.style.background = '#f8f9fa';
+                    button.style.borderRadius = '10px';
+                    button.style.border = '1px solid var(--admin-border, #dde3ec)';
+                    button.style.background = 'var(--admin-surface-muted, #f8fafc)';
+                    button.style.color = 'var(--admin-text, #172033)';
                     button.style.cursor = 'pointer';
                     button.style.margin = '0';
                     button.style.flexShrink = '0';
                     button.style.whiteSpace = 'nowrap';
-                    button.style.overflow = 'hidden';
-                    button.style.textOverflow = 'ellipsis';
+                    button.style.overflow = 'visible';
+                    button.style.textOverflow = 'clip';
                     button.style.transition = 'all 0.2s ease';
+
+                    if (button.classList.contains('nova-source-toggle')) {
+                        button.style.gap = '6px';
+                        button.style.paddingLeft = '12px';
+                        button.style.paddingRight = '12px';
+                    }
+
+                    if (button.classList.contains('table') || button.classList.contains('bi-table')) {
+                        button.style.width = window.innerWidth <= 768 ? '38px' : '40px';
+                        button.style.minWidth = window.innerWidth <= 768 ? '38px' : '40px';
+                        button.style.maxWidth = window.innerWidth <= 768 ? '38px' : '40px';
+                        button.style.padding = window.innerWidth <= 768 ? '7px' : '8px';
+                    }
                     
                     // 设置悬停效果（如果还没有的话）
                     if (!button.hasAttribute('data-hover-added')) {
                         button.addEventListener('mouseenter', function() {
                             if (!this.classList.contains('active')) {
-                                this.style.background = '#e9ecef';
-                                this.style.borderColor = '#adb5bd';
+                                this.style.background = 'color-mix(in srgb, var(--admin-primary, #5b5bd6) 9%, var(--admin-surface, #fff))';
+                                this.style.borderColor = 'color-mix(in srgb, var(--admin-primary, #5b5bd6) 32%, var(--admin-border, #dde3ec))';
                             }
                         });
                         
                         button.addEventListener('mouseleave', function() {
                             if (!this.classList.contains('active')) {
-                                this.style.background = '#f8f9fa';
-                                this.style.borderColor = '#ddd';
+                                this.style.background = 'var(--admin-surface-muted, #f8fafc)';
+                                this.style.borderColor = 'var(--admin-border, #dde3ec)';
                             }
                         });
                         
@@ -913,7 +1478,7 @@ function initMarkdownEditor(textareaId) {
                     // 确保图标正确显示
                     const icon = button.querySelector('i');
                     if (icon) {
-                        icon.style.fontSize = '14px';
+                        icon.style.fontSize = '16px';
                         icon.style.lineHeight = '1';
                         icon.style.pointerEvents = 'none';
                     }
@@ -991,6 +1556,7 @@ function initMarkdownEditor(textareaId) {
     // 初始化工具栏状态
     setTimeout(() => {
         updateToolbarState(easyMDE);
+        updateEditorStatus(easyMDE);
     }, 200);
     
     // 监听预览渲染完成，为标题生成ID
@@ -1000,7 +1566,244 @@ function initMarkdownEditor(textareaId) {
         }, 100);
     });
     
+    window.NovaMarkdownEditors = window.NovaMarkdownEditors || {};
+    window.NovaMarkdownEditors[textareaId] = easyMDE;
     return easyMDE;
+}
+
+function enhanceMarkdownEditor(editor, textarea, settings, initialValue) {
+    const container = editor.codemirror.getWrapperElement().closest('.EasyMDEContainer');
+    if (!container) return;
+
+    const shell = document.createElement('div');
+    shell.className = 'nova-editor-shell';
+    shell.dataset.editorMode = 'markdown';
+    container.parentNode.insertBefore(shell, container);
+    shell.appendChild(container);
+
+    editor.novaShell = shell;
+    editor.novaMode = 'markdown';
+    editor.novaRichEditor = createRichEditorPanel(editor);
+    editor.novaInitialValue = initialValue;
+    let autosaveKey = settings.autosaveKey;
+    editor.novaAutosaveKey = autosaveKey;
+    editor.novaDirty = false;
+    editor.novaStatusElements = settings.statusbar ? createEditorStatusbar(shell) : null;
+
+    const savedDraft = settings.autosave ? loadEditorDraft(autosaveKey) : null;
+    if (savedDraft && savedDraft.content && savedDraft.content !== initialValue) {
+        showDraftRestore(editor, savedDraft);
+    }
+
+    let autosaveTimer = null;
+    editor.codemirror.on('change', function() {
+        editor.codemirror.save();
+        editor.novaDirty = editor.value() !== editor.novaInitialValue;
+        updateEditorStatus(editor);
+        if (isEditorRichActive(editor) && !editor.novaSyncingRich) {
+            syncRichFromMarkdown(editor);
+        }
+
+        if (!settings.autosave) return;
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => {
+            saveEditorDraft(editor, autosaveKey);
+        }, settings.autosaveDelay);
+    });
+
+    if (settings.leaveWarning) {
+        window.addEventListener('beforeunload', function(e) {
+            if (!editor.novaDirty) return;
+            e.preventDefault();
+            e.returnValue = '';
+        });
+    }
+
+    if (settings.dragUpload) {
+        bindEditorDropUpload(editor, shell);
+        bindEditorPasteUpload(editor);
+    }
+
+    editor.clearEditorDraft = function() {
+        if (isEditorRichActive(editor)) {
+            syncMarkdownFromRich(editor);
+        }
+        localStorage.removeItem(autosaveKey);
+        editor.novaInitialValue = editor.value();
+        editor.novaDirty = false;
+        updateEditorStatus(editor);
+    };
+
+    editor.setEditorDraftKey = function(nextKey) {
+        if (!nextKey || nextKey === autosaveKey) return;
+        localStorage.removeItem(autosaveKey);
+        autosaveKey = nextKey;
+        editor.novaAutosaveKey = nextKey;
+    };
+
+    editor.refreshRichEditor = function() {
+        syncRichFromMarkdown(editor);
+    };
+
+    editor.syncRichToMarkdown = function() {
+        syncMarkdownFromRich(editor);
+    };
+}
+
+function createEditorStatusbar(shell) {
+    const statusbar = document.createElement('div');
+    statusbar.className = 'nova-editor-statusbar';
+    statusbar.innerHTML = `
+        <div class="status-left">
+            <span data-role="words">0 字</span>
+            <span data-role="chars">0 字符</span>
+            <span data-role="reading">约 1 分钟阅读</span>
+        </div>
+        <div class="status-right">
+            <span data-role="draft" class="nova-editor-draft">草稿未保存</span>
+            <span data-role="dirty"></span>
+        </div>
+    `;
+    shell.appendChild(statusbar);
+    return {
+        words: statusbar.querySelector('[data-role="words"]'),
+        chars: statusbar.querySelector('[data-role="chars"]'),
+        reading: statusbar.querySelector('[data-role="reading"]'),
+        draft: statusbar.querySelector('[data-role="draft"]'),
+        dirty: statusbar.querySelector('[data-role="dirty"]')
+    };
+}
+
+function updateEditorStatus(editor) {
+    if (!editor || !editor.novaStatusElements) return;
+    const content = editor.value() || '';
+    const chineseChars = (content.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const latinWords = (content.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9_]+/g) || []).length;
+    const words = chineseChars + latinWords;
+    const chars = content.length;
+    const readingMinutes = Math.max(1, Math.ceil(words / 350));
+
+    editor.novaStatusElements.words.textContent = `${words.toLocaleString()} 字`;
+    editor.novaStatusElements.chars.textContent = `${chars.toLocaleString()} 字符`;
+    editor.novaStatusElements.reading.textContent = `约 ${readingMinutes} 分钟阅读`;
+    editor.novaStatusElements.dirty.textContent = editor.novaDirty ? '有未保存修改' : '内容已同步';
+    editor.novaStatusElements.dirty.className = editor.novaDirty ? 'nova-editor-dirty' : '';
+}
+
+function loadEditorDraft(key) {
+    try {
+        return JSON.parse(localStorage.getItem(key) || 'null');
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveEditorDraft(editor, key) {
+    if (!editor || !key) return;
+    localStorage.setItem(key, JSON.stringify({
+        content: editor.value(),
+        savedAt: Date.now()
+    }));
+    if (editor.novaStatusElements) {
+        editor.novaStatusElements.draft.textContent = `草稿已保存 ${new Date().toLocaleTimeString()}`;
+    }
+}
+
+function showDraftRestore(editor, draft) {
+    const shell = editor.codemirror.getWrapperElement().closest('.nova-editor-shell');
+    if (!shell) return;
+
+    const restore = document.createElement('div');
+    restore.className = 'alert alert-warning d-flex align-items-center justify-content-between gap-3 mb-2';
+    restore.innerHTML = `
+        <div><i class="bi bi-clock-history me-1"></i> 检测到本地草稿，保存于 ${new Date(draft.savedAt).toLocaleString()}</div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-primary" data-action="restore">恢复</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="discard">忽略</button>
+        </div>
+    `;
+    shell.parentNode.insertBefore(restore, shell);
+
+    restore.querySelector('[data-action="restore"]').addEventListener('click', function() {
+        editor.value(draft.content);
+        editor.codemirror.save();
+        editor.novaDirty = true;
+        updateEditorStatus(editor);
+        restore.remove();
+    });
+
+    restore.querySelector('[data-action="discard"]').addEventListener('click', function() {
+        localStorage.removeItem(editor.novaAutosaveKey);
+        restore.remove();
+    });
+}
+
+function bindEditorDropUpload(editor, shell) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+        shell.addEventListener(eventName, function(e) {
+            if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+            e.preventDefault();
+            shell.classList.add('is-dragover');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        shell.addEventListener(eventName, function() {
+            shell.classList.remove('is-dragover');
+        });
+    });
+
+    shell.addEventListener('drop', function(e) {
+        if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+        e.preventDefault();
+        Array.from(e.dataTransfer.files).forEach(file => uploadEditorFile(editor, file));
+    });
+}
+
+function bindEditorPasteUpload(editor) {
+    editor.codemirror.getWrapperElement().addEventListener('paste', function(e) {
+        const items = e.clipboardData && e.clipboardData.items ? Array.from(e.clipboardData.items) : [];
+        const files = items.map(item => item.getAsFile()).filter(Boolean);
+        if (!files.length) return;
+        e.preventDefault();
+        files.forEach(file => uploadEditorFile(editor, file));
+    });
+}
+
+function uploadEditorFile(editor, file) {
+    if (file.type.startsWith('image/')) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert('图片大小不能超过 5MB');
+            return;
+        }
+
+        uploadFileToServer(editor, file, 'image', '/admin/upload_image.php', (data) => {
+            editor.codemirror.replaceSelection(`![${file.name}](${data.url})`);
+        }, {source: 'posts'});
+        return;
+    }
+
+    if (file.type.startsWith('video/')) {
+        if (file.size > 100 * 1024 * 1024) {
+            alert('视频大小不能超过 100MB');
+            return;
+        }
+
+        uploadFileToServer(editor, file, 'video', '/admin/upload_video.php', (data) => {
+            editor.codemirror.replaceSelection(`<video controls width="100%">\n  <source src="${data.url}" type="${file.type || 'video/mp4'}">\n  您的浏览器不支持视频播放\n</video>`);
+        }, {source: 'posts'});
+        return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+        alert('文件大小不能超过 50MB');
+        return;
+    }
+
+    uploadFileToServer(editor, file, 'file', '/admin/upload_file.php', (data) => {
+        const name = data.originalName || file.name;
+        editor.codemirror.replaceSelection(`[${name}](${data.url})`);
+    });
 }
 
 // 自动补全功能
