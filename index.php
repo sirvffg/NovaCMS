@@ -19,6 +19,13 @@ recordVisit($requestPath);
 
 // 处理退出登录
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'logout') {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo '请求验证失败，请刷新页面后重试。';
+        exit;
+    }
+
     if (isset($_SESSION['user_id'])) {
         logoutCurrentDevice($_SESSION['user_id']);
     }

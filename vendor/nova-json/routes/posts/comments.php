@@ -36,6 +36,8 @@ register_rest_route('v1', '/comments/{id}', [
 
 function nova_get_comment_list($request) {
     $db = getDB();
+    $currentUserId = v1_get_current_user_id();
+    $isAdmin = v1_is_admin($currentUserId);
 
     // 分页：不传 per_page 则返回全部
     $raw_per_page = $request->get_param('per_page');
@@ -50,23 +52,37 @@ function nova_get_comment_list($request) {
         $offset   = 0;
     }
 
-    $post_id = (int)$request->get_param('post_id') ?: 0;
+    $post_id = max(0, (int)($request->get_param('post_id') ?? 0));
 
     $where  = "WHERE c.status = 'approved'";
     $params = [];
 
+    if (!$isAdmin) {
+        $where .= " AND p.is_published = 1";
+    }
+
     if ($post_id > 0) {
+        $postStmt = $db->prepare("SELECT is_published FROM blog_posts WHERE id = ? LIMIT 1");
+        $postStmt->execute([$post_id]);
+        $post = $postStmt->fetch();
+        if (!$post || (!$isAdmin && empty($post['is_published']))) {
+            return new Nova_REST_Response([
+                'code' => 'post_not_found',
+                'message' => '文章不存在',
+                'data' => ['status' => 404],
+            ], 404);
+        }
         $where .= " AND c.post_id = ?";
         $params[] = $post_id;
     }
 
-    $count_stmt = $db->prepare("SELECT COUNT(*) FROM blog_comments c {$where}");
+    $count_stmt = $db->prepare("SELECT COUNT(*) FROM blog_comments c INNER JOIN blog_posts p ON c.post_id = p.id {$where}");
     $count_stmt->execute($params);
     $total = (int)$count_stmt->fetchColumn();
 
     $sql = "SELECT c.*, p.title as post_title
             FROM blog_comments c
-            LEFT JOIN blog_posts p ON c.post_id = p.id
+            INNER JOIN blog_posts p ON c.post_id = p.id
             {$where}
             ORDER BY c.created_at DESC";
 
@@ -77,9 +93,6 @@ function nova_get_comment_list($request) {
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $comments = $stmt->fetchAll();
-
-    $currentUserId = v1_get_current_user_id();
-    $isAdmin = v1_is_admin($currentUserId);
 
     $items = array_map(function($c) use ($isAdmin) {
         $item = [
@@ -115,8 +128,11 @@ function nova_get_comment_list($request) {
 function nova_get_single_comment($request) {
     $db = getDB();
     $id = (int)$request->get_param('id');
+    $currentUserId = v1_get_current_user_id();
+    $isAdmin = v1_is_admin($currentUserId);
 
-    $stmt = $db->prepare("SELECT c.*, p.title as post_title FROM blog_comments c LEFT JOIN blog_posts p ON c.post_id = p.id WHERE c.id = ? LIMIT 1");
+    $visibility = $isAdmin ? '' : " AND c.status = 'approved' AND p.is_published = 1";
+    $stmt = $db->prepare("SELECT c.*, p.title as post_title FROM blog_comments c INNER JOIN blog_posts p ON c.post_id = p.id WHERE c.id = ?{$visibility} LIMIT 1");
     $stmt->execute([$id]);
     $comment = $stmt->fetch();
 
@@ -127,9 +143,6 @@ function nova_get_single_comment($request) {
             'data'    => ['status' => 404],
         ], 404);
     }
-
-    $currentUserId = v1_get_current_user_id();
-    $isAdmin = v1_is_admin($currentUserId);
 
     $item = [
         'id'         => (int)$comment['id'],
@@ -186,7 +199,7 @@ function nova_add_comment($request) {
         ], 400);
     }
 
-    if (empty($content)) {
+    if ($content === '') {
         return new Nova_REST_Response([
             'code'    => 'rest_empty_content',
             'message' => '评论内容不能为空',
@@ -208,11 +221,12 @@ function nova_add_comment($request) {
         ];
     }
 
+    $failureStatus = max(400, min(599, (int)($result['status'] ?? 400)));
     return new Nova_REST_Response([
         'code'    => 'rest_comment_failed',
         'message' => $result['message'],
-        'data'    => ['status' => 400],
-    ], 400);
+        'data'    => ['status' => $failureStatus],
+    ], $failureStatus);
 }
 
 /**

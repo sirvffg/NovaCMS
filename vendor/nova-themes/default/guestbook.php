@@ -22,6 +22,7 @@ include $themePath . '/partials/navbar.php';
                 <span class="site-eyebrow"><i class="bi bi-pencil-square"></i> New message</span>
                 <h2>写一条留言</h2><p>邮箱不会公开，仅在收到回复时用于通知。</p>
                 <form data-guestbook-form novalidate>
+                    <div class="form-honeypot" aria-hidden="true"><label for="gb-company">公司</label><input id="gb-company" name="company" tabindex="-1" autocomplete="off"></div>
                     <div class="form-row"><label for="gb-nickname">昵称</label><input id="gb-nickname" name="nickname" maxlength="50" required placeholder="怎么称呼你"></div>
                     <div class="form-grid"><div class="form-row"><label for="gb-email">邮箱 <span>可选</span></label><input id="gb-email" name="email" type="email" maxlength="100" autocomplete="email" placeholder="name@example.com"></div><div class="form-row"><label for="gb-website">个人网站 <span>可选</span></label><input id="gb-website" name="website" type="url" maxlength="255" placeholder="https://"></div></div>
                     <div class="form-row"><label for="gb-content">留言内容</label><textarea id="gb-content" name="content" rows="5" maxlength="2000" required placeholder="想说点什么？"></textarea><small><span data-guestbook-length>0</span> / 2000</small></div>

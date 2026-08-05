@@ -43,11 +43,29 @@ register_rest_route('v1', '/statuses/guestbook/{id}', [
     'callback' => 'nova_delete_guestbook',
 ]);
 
+function nova_guestbook_text_length($value) {
+    $value = (string)$value;
+    if (function_exists('mb_strlen')) {
+        return mb_strlen($value, 'UTF-8');
+    }
+    $count = preg_match_all('/./us', $value, $matches);
+    return $count === false ? strlen($value) : $count;
+}
+
+function nova_guestbook_error($code, $message, $status = 400) {
+    return new Nova_REST_Response([
+        'code'    => $code,
+        'message' => $message,
+        'data'    => ['status' => (int)$status],
+    ], (int)$status);
+}
+
 /**
  * 获取留言列表
  */
 function nova_get_guestbook($request) {
     $db = getDB();
+    $isAdmin = v1_is_admin(v1_get_current_user_id());
 
     // 确保表存在
     try {
@@ -111,7 +129,6 @@ function nova_get_guestbook($request) {
         $item = [
             'id'            => (int)$msg['id'],
             'nickname'      => $msg['nickname'],
-            'email'         => $msg['email'] ?? '',
             'website'       => $msg['website'] ?? '',
             'content'       => $msg['content'],
             'reply_content' => $msg['reply_content'] ?? '',
@@ -119,17 +136,23 @@ function nova_get_guestbook($request) {
             'created_at'    => $msg['created_at'],
             'replies'       => [],
         ];
+        if ($isAdmin) {
+            $item['email'] = $msg['email'] ?? '';
+        }
 
         if (isset($repliesGrouped[$msg['id']])) {
             foreach ($repliesGrouped[$msg['id']] as $reply) {
-                $item['replies'][] = [
+                $replyItem = [
                     'id'         => (int)$reply['id'],
                     'nickname'   => $reply['nickname'],
-                    'email'      => $reply['email'] ?? '',
                     'website'    => $reply['website'] ?? '',
                     'content'    => $reply['content'],
                     'created_at' => $reply['created_at'],
                 ];
+                if ($isAdmin) {
+                    $replyItem['email'] = $reply['email'] ?? '';
+                }
+                $item['replies'][] = $replyItem;
             }
         }
 
@@ -160,21 +183,52 @@ function nova_create_guestbook($request) {
     $email     = trim(strip_tags($request->get_param('email') ?? ''));
     $website   = trim(strip_tags($request->get_param('website') ?? ''));
     $parentId  = (int)($request->get_param('parent_id') ?? 0);
+    $honeypot  = trim((string)($request->get_param('company') ?? ''));
 
-    if (empty($nickname)) {
+    if ($honeypot !== '') {
         return [
-            'code'    => 'rest_missing_fields',
-            'message' => '昵称不能为空',
-            'data'    => ['status' => 400],
+            'code' => 'rest_ok',
+            'message' => '留言成功',
+            'data' => ['status' => 201],
         ];
     }
 
-    if (empty($content)) {
-        return [
-            'code'    => 'rest_missing_fields',
-            'message' => '留言内容不能为空',
-            'data'    => ['status' => 400],
-        ];
+    if ($nickname === '') {
+        return nova_guestbook_error('rest_missing_fields', '昵称不能为空');
+    }
+
+    if ($content === '') {
+        return nova_guestbook_error('rest_missing_fields', '留言内容不能为空');
+    }
+
+    if (nova_guestbook_text_length($nickname) > 50) {
+        return nova_guestbook_error('rest_invalid_nickname', '昵称不能超过 50 个字符');
+    }
+    if (nova_guestbook_text_length($content) > 2000) {
+        return nova_guestbook_error('rest_invalid_content', '留言内容不能超过 2000 个字符');
+    }
+    if ($email !== '' && (nova_guestbook_text_length($email) > 100 || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
+        return nova_guestbook_error('rest_invalid_email', '邮箱格式不正确');
+    }
+    if ($website !== '') {
+        $scheme = strtolower((string)parse_url($website, PHP_URL_SCHEME));
+        if (
+            nova_guestbook_text_length($website) > 255
+            || !filter_var($website, FILTER_VALIDATE_URL)
+            || !in_array($scheme, ['http', 'https'], true)
+            || parse_url($website, PHP_URL_USER) !== null
+            || parse_url($website, PHP_URL_PASS) !== null
+        ) {
+            return nova_guestbook_error('rest_invalid_website', '个人网站需使用有效的 http(s) 地址');
+        }
+    }
+    if ($parentId < 0) {
+        return nova_guestbook_error('rest_invalid_parent', '回复目标无效');
+    }
+
+    $rateLimit = checkRateLimit('guestbook_create', 5, 600);
+    if (empty($rateLimit['allowed'])) {
+        return nova_guestbook_error('rest_rate_limited', $rateLimit['message'] ?? '提交过于频繁，请稍后再试', 429);
     }
 
     // 如果 parent_id > 0，检查父留言是否存在
@@ -182,11 +236,7 @@ function nova_create_guestbook($request) {
         $stmt = $db->prepare("SELECT id FROM guestbook WHERE id = ?");
         $stmt->execute([$parentId]);
         if (!$stmt->fetch()) {
-            return [
-                'code'    => 'rest_error',
-                'message' => '要回复的留言不存在',
-                'data'    => ['status' => 404],
-            ];
+            return nova_guestbook_error('rest_error', '要回复的留言不存在', 404);
         }
     }
 
@@ -291,7 +341,6 @@ function nova_create_guestbook($request) {
             'status'     => 201,
             'id'         => $newId,
             'nickname'   => $nickname,
-            'email'      => $email,
             'website'    => $website,
             'content'    => $content,
             'parent_id'  => $parentId,

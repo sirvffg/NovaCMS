@@ -9,6 +9,15 @@
  * @param int $userId 用户ID
  * @return bool 是否为管理员
  */
+function privacyAnswerLength($value) {
+    $value = (string)$value;
+    if (function_exists('mb_strlen')) {
+        return mb_strlen($value, 'UTF-8');
+    }
+    $count = preg_match_all('/./us', $value, $matches);
+    return $count === false ? strlen($value) : $count;
+}
+
 function isAdmin($db, $userId) {
     if (!$userId) return false;
     
@@ -58,8 +67,11 @@ function hasPrivacyAccess($db, $userId, $postId) {
  * @return array 返回验证结果和访问状态
  */
 function validatePrivacyAnswer($db, $userId, $postId, $answer) {
-    if (!$userId || !$postId || empty($answer)) {
+    if (!$userId || !$postId || trim((string)$answer) === '') {
         return ['success' => false, 'message' => '参数错误'];
+    }
+    if (privacyAnswerLength($answer) > 255) {
+        return ['success' => false, 'message' => '回答不能超过 255 个字符'];
     }
     
     // 获取文章的隐私设置
@@ -73,6 +85,7 @@ function validatePrivacyAnswer($db, $userId, $postId, $answer) {
     
     $isCorrect = 0;
     $accessGranted = 0;
+    $success = true;
     $message = '';
     
     // 根据验证类型处理
@@ -82,6 +95,7 @@ function validatePrivacyAnswer($db, $userId, $postId, $answer) {
             $hashedAnswer = md5(strtolower(trim($answer)));
             $isCorrect = $hashedAnswer === $post['privacy_answer'] ? 1 : 0;
             $accessGranted = $isCorrect;
+            $success = (bool)$isCorrect;
             $message = $isCorrect ? '答案正确，您现在可以查看隐私内容' : '答案错误，请重试';
             break;
             
@@ -118,7 +132,17 @@ function validatePrivacyAnswer($db, $userId, $postId, $answer) {
                          VALUES (?, ?, ?, ?, ?)");
     $stmt->execute([$userId, $postId, $answer, $isCorrect, $accessGranted]);
     
-    return ['success' => true, 'message' => $message, 'pending_approval' => ($accessGranted == 0 && ($post['approval_required'] == 1 || $post['privacy_type'] == 'manual_approval'))];
+    $pendingApproval = $accessGranted == 0 && (
+        $post['privacy_type'] === 'manual_approval'
+        || ($post['privacy_type'] === 'open_answer' && $post['approval_required'] == 1)
+    );
+
+    return [
+        'success' => $success,
+        'message' => $message,
+        'access_granted' => (bool)$accessGranted,
+        'pending_approval' => $pendingApproval,
+    ];
 }
 
 /**
@@ -200,7 +224,7 @@ function processBlogContent($db, $userId, $postId, $content) {
                         <h5 style="color: #28a745; margin-top: 0;">🔒 登录可见内容</h5>
                         <p>此内容需要登录后才能查看。</p>' .
                         ($customText ? '<div style="margin-top: 10px; padding: 10px; background: rgba(40,167,69,0.08); border-radius: 4px; font-size: 14px;">' . $customText . '</div>' : '') .
-                        '<a href="/vendor/login.php?redirect_url=' . urlencode($_SERVER['REQUEST_URI']) . '" class="btn btn-success">
+                        '<a href="/vendor/login.php?redirect_url=' . urlencode('/blog?id=' . $postId) . '" class="btn btn-success">
                             <i class="bi bi-box-arrow-in-right"></i> 立即登录
                         </a>
                     </div>';

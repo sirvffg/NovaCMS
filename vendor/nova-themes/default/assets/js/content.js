@@ -87,6 +87,14 @@
         return error;
     }
 
+    function effectiveResponseStatus(response, payload) {
+        var headerStatus = Number.parseInt(response.headers.get('X-Response-Status') || '', 10);
+        var payloadStatus = payload && payload.data && Number.parseInt(payload.data.status, 10);
+        if (Number.isFinite(headerStatus) && headerStatus > 0) return headerStatus;
+        if (Number.isFinite(payloadStatus) && payloadStatus > 0) return payloadStatus;
+        return response.status;
+    }
+
     async function requestJson(url, options) {
         var response = await fetch(url, Object.assign({
             credentials: 'same-origin',
@@ -98,8 +106,10 @@
         } catch (error) {
             throw apiError('服务器返回了无法识别的内容', response.status);
         }
-        if (!response.ok || !payload || payload.code !== 'rest_ok') {
-            throw apiError(payload && payload.message ? payload.message : '请求没有完成', response.status, payload);
+        var status = effectiveResponseStatus(response, payload);
+        var applicationError = !payload || (payload.code && payload.code !== 'rest_ok');
+        if (!response.ok || status >= 400 || applicationError) {
+            throw apiError(payload && payload.message ? payload.message : '请求没有完成', status >= 400 ? status : 400, payload);
         }
         return payload.data || {};
     }
@@ -474,6 +484,7 @@
         qsa('pre', target).forEach(function (pre) {
             if (pre.parentElement && pre.parentElement.classList.contains('code-block-wrapper')) return;
             var wrapper = element('div', 'code-block-wrapper');
+            wrapper.setAttribute('data-nova-copy', 'true');
             var toolbar = element('div', 'code-block-toolbar');
             toolbar.appendChild(element('span', '', 'Code'));
             var copy = element('button', '', '复制');
@@ -589,13 +600,88 @@
         document.title = text(post.title, '文章') + ' · ' + (document.documentElement.dataset.siteName || 'NovaCMS');
     }
 
+    function sortCommentsByDate(items) {
+        return (items || []).slice().sort(function (left, right) {
+            var leftDate = new Date(String(left.created_at || '').replace(' ', 'T')).getTime();
+            var rightDate = new Date(String(right.created_at || '').replace(' ', 'T')).getTime();
+            if (Number.isNaN(leftDate) || Number.isNaN(rightDate)) return Number(left.id) - Number(right.id);
+            return leftDate - rightDate;
+        });
+    }
+
+    function activateCommentReply(comment) {
+        var form = qs('[data-comment-form]', root);
+        if (!form) return;
+        var parentId = Math.max(0, Number(comment && comment.id) || 0);
+        if (!parentId) return;
+        var replyName = text(comment.username, '访客');
+        var label = qs('[data-comment-label]', form);
+        var feedback = qs('[data-comment-feedback]', form);
+        var cancel = qs('[data-comment-cancel-reply]', form);
+        var textarea = form.elements.content;
+        form.dataset.replyParentId = String(parentId);
+        form.dataset.replyName = replyName;
+        if (label) label.textContent = '回复 @' + replyName;
+        if (feedback) feedback.textContent = '正在回复 @' + replyName + '。';
+        if (cancel) cancel.hidden = false;
+        if (textarea) {
+            try {
+                textarea.focus({ preventScroll: true });
+            } catch (error) {
+                textarea.focus();
+            }
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    function clearCommentReply(form, message) {
+        if (!form) return;
+        delete form.dataset.replyParentId;
+        delete form.dataset.replyName;
+        var label = qs('[data-comment-label]', form);
+        var feedback = qs('[data-comment-feedback]', form);
+        var cancel = qs('[data-comment-cancel-reply]', form);
+        if (label) label.textContent = '写下你的想法';
+        if (cancel) cancel.hidden = true;
+        if (message && feedback) feedback.textContent = message;
+    }
+
+    function commentReplyAction(comment) {
+        var button = element('button', 'comment-reply-action');
+        button.type = 'button';
+        button.setAttribute('aria-label', '回复 ' + text(comment.username, '访客'));
+        append(button, icon('bi-reply'), document.createTextNode('回复'));
+        button.addEventListener('click', function () { activateCommentReply(comment); });
+        return button;
+    }
+
+    function renderCommentReplies(parentId, grouped, ancestorIds) {
+        var replies = sortCommentsByDate(grouped[String(parentId)] || []);
+        if (!replies.length) return null;
+        var container = element('div', 'comment-replies');
+        replies.forEach(function (reply) {
+            var replyId = String(reply.id || '');
+            if (!replyId || ancestorIds[replyId]) return;
+            var nextAncestors = Object.assign({}, ancestorIds);
+            nextAncestors[replyId] = true;
+            var child = element('article', 'comment-reply');
+            var header = element('header', 'comment-reply-header');
+            append(header, element('strong', '', text(reply.username, '访客')), element('time', '', formatDate(reply.created_at)), commentReplyAction(reply));
+            append(child, header, element('p', '', text(reply.content)));
+            var nested = renderCommentReplies(reply.id, grouped, nextAncestors);
+            if (nested) child.appendChild(nested);
+            container.appendChild(child);
+        });
+        return container;
+    }
+
     async function loadComments(postId) {
         var container = qs('[data-comment-list]', root);
         var count = qs('[data-comment-count]', root);
         if (!container) return;
         setBusy(container, true);
         try {
-            var data = await requestJson('/nova-json/v1/comments?post_id=' + encodeURIComponent(postId) + '&per_page=50&page=1');
+            var data = await requestJson('/nova-json/v1/comments?post_id=' + encodeURIComponent(postId));
             var comments = Array.isArray(data.items) ? data.items : [];
             clear(container);
             if (count) count.textContent = number(data.total) + ' 条';
@@ -609,23 +695,15 @@
                 if (!grouped[parent]) grouped[parent] = [];
                 grouped[parent].push(comment);
             });
-            (grouped.root || []).forEach(function (comment) {
+            sortCommentsByDate(grouped.root || []).forEach(function (comment) {
                 var article = element('article', 'comment-card');
                 var avatar = element('span', 'comment-avatar', text(comment.username, '访客').slice(0, 1).toUpperCase());
                 var body = element('div', 'comment-body');
                 var header = element('header');
-                append(header, element('strong', '', text(comment.username, '访客')), element('time', '', formatDate(comment.created_at)));
+                append(header, element('strong', '', text(comment.username, '访客')), element('time', '', formatDate(comment.created_at)), commentReplyAction(comment));
                 append(body, header, element('p', '', text(comment.content)));
-                var children = grouped[String(comment.id)] || [];
-                if (children.length) {
-                    var replies = element('div', 'comment-replies');
-                    children.forEach(function (reply) {
-                        var child = element('div', 'comment-reply');
-                        append(child, element('strong', '', text(reply.username, '访客')), element('p', '', text(reply.content)));
-                        replies.appendChild(child);
-                    });
-                    body.appendChild(replies);
-                }
+                var replies = renderCommentReplies(comment.id, grouped, (function () { var ancestors = {}; ancestors[String(comment.id)] = true; return ancestors; }()));
+                if (replies) body.appendChild(replies);
                 append(article, avatar, body);
                 container.appendChild(article);
             });
@@ -642,6 +720,12 @@
         if (!form || form.getAttribute('data-comment-form-bound') === 'true') return;
         form.setAttribute('data-comment-form-bound', 'true');
         var feedback = qs('[data-comment-feedback]', form);
+        var cancelReply = qs('[data-comment-cancel-reply]', form);
+        if (cancelReply) {
+            cancelReply.addEventListener('click', function () {
+                clearCommentReply(form, '已取消回复，现在可以发表新评论。');
+            });
+        }
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
             var textarea = form.elements.content;
@@ -655,9 +739,12 @@
             button.disabled = true;
             feedback.textContent = '正在发布…';
             try {
-                await requestJson('/nova-json/v1/comments', jsonOptions('POST', { post_id: postId, content: content }));
+                var payload = { post_id: postId, content: content };
+                var parentId = Math.max(0, Number(form.dataset.replyParentId) || 0);
+                if (parentId) payload.parent_id = parentId;
+                await requestJson('/nova-json/v1/comments', jsonOptions('POST', payload));
                 form.reset();
-                feedback.textContent = '评论已发布。';
+                clearCommentReply(form, parentId ? '回复已发布。' : '评论已发布。');
                 loadComments(postId);
             } catch (error) {
                 feedback.textContent = error.status === 401 ? '请先登录，再参与讨论。' : error.message;
@@ -674,7 +761,7 @@
             var payload = await response.json();
             var data = payload && payload.data ? payload.data : {};
             question.textContent = text(data.question, payload.message || '请回答作者设置的问题。');
-            if (response.status === 401) {
+            if (effectiveResponseStatus(response, payload) === 401) {
                 var feedback = qs('[data-privacy-feedback]', dialog);
                 feedback.textContent = '请先登录后再申请访问。';
             }
@@ -713,8 +800,14 @@
             feedback.textContent = '正在提交…';
             try {
                 var data = await requestJson('/nova-json/v1/posts/privacy', jsonOptions('POST', { post_id: postId, answer: answer }));
-                feedback.textContent = data.pending_approval ? '申请已提交，请等待审核。' : '验证通过，正在刷新文章。';
-                if (!data.pending_approval) window.setTimeout(function () { window.location.reload(); }, 600);
+                if (data.pending_approval) {
+                    feedback.textContent = '申请已提交，请等待审核。';
+                } else if (data.access_granted) {
+                    feedback.textContent = '验证通过，正在刷新文章。';
+                    window.setTimeout(function () { window.location.reload(); }, 600);
+                } else {
+                    feedback.textContent = '本次申请尚未获得访问权限。';
+                }
             } catch (error) {
                 feedback.textContent = error.message;
             } finally {
@@ -752,6 +845,7 @@
         } catch (error) {
             clear(body);
             body.appendChild(errorState(error.status === 404 ? '这篇文章不存在或尚未公开。' : error.message, loadPostDetail));
+            return;
         }
         bindCopyLink(root);
         initReadingProgress();

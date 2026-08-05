@@ -1527,6 +1527,42 @@
     font-size: .82rem;
 }
 
+.comment-form-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .55rem;
+}
+
+.comment-cancel-reply,
+.comment-reply-action {
+    display: inline-flex;
+    align-items: center;
+    gap: .38rem;
+    border: 0;
+    color: var(--content-muted);
+    background: transparent;
+    font: inherit;
+    font-size: .8rem;
+    cursor: pointer;
+}
+
+.comment-cancel-reply[hidden] {
+    display: none;
+}
+
+.comment-cancel-reply:hover,
+.comment-reply-action:hover {
+    color: var(--content-primary);
+}
+
+.comment-cancel-reply:focus-visible,
+.comment-reply-action:focus-visible {
+    outline: 2px solid var(--content-primary);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
 .comment-list {
     display: grid;
     gap: .8rem;
@@ -1562,6 +1598,10 @@
     gap: 1rem;
 }
 
+.comment-body header .comment-reply-action {
+    margin-left: auto;
+}
+
 .comment-body time {
     color: var(--content-muted);
     font-size: .75rem;
@@ -1586,6 +1626,26 @@
     padding: .7rem .8rem;
     border-radius: 12px;
     background: var(--content-surface-muted);
+}
+
+.comment-reply-header {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+}
+
+.comment-reply-header time {
+    color: var(--content-muted);
+    font-size: .72rem;
+}
+
+.comment-reply-header .comment-reply-action {
+    margin-left: auto;
+}
+
+.comment-reply .comment-replies {
+    margin-top: .7rem;
+    padding-left: .7rem;
 }
 
 .comment-reply p {
@@ -2103,7 +2163,8 @@
     .article-aside-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .article-aside-card .small-label { grid-column: 1 / -1; }
     .comment-form-footer { align-items: stretch; flex-direction: column; }
-    .comment-form-footer .site-button { width: 100%; }
+    .comment-form-actions { width: 100%; }
+    .comment-form-actions .site-button { flex: 1; width: auto; }
     .docs-sidebar { grid-template-columns: 1fr; }
     .docs-help-card { display: none; }
     .error-illustration { font-size: 8rem; }

@@ -286,10 +286,16 @@
                         payload = text;
                     }
                 }
-                if (!response.ok) {
-                    var message = payload && payload.message ? String(payload.message) : '请求失败（' + response.status + '）';
+                var headerStatus = Number.parseInt(response.headers.get('X-Response-Status') || '', 10);
+                var payloadStatus = payload && payload.data && Number.parseInt(payload.data.status, 10);
+                var effectiveStatus = Number.isFinite(headerStatus) && headerStatus > 0
+                    ? headerStatus
+                    : (Number.isFinite(payloadStatus) && payloadStatus > 0 ? payloadStatus : response.status);
+                var applicationError = payload && payload.code && payload.code !== 'rest_ok';
+                if (!response.ok || effectiveStatus >= 400 || applicationError) {
+                    var message = payload && payload.message ? String(payload.message) : '请求失败（' + effectiveStatus + '）';
                     var requestError = new Error(message);
-                    requestError.status = response.status;
+                    requestError.status = effectiveStatus >= 400 ? effectiveStatus : 400;
                     requestError.data = payload;
                     throw requestError;
                 }
@@ -507,6 +513,15 @@
         action.type = 'hidden';
         action.name = 'action';
         action.value = 'logout';
+        var csrfMeta = select('meta[name="nova-csrf-token"]');
+        var csrfToken = csrfMeta ? String(csrfMeta.getAttribute('content') || '') : '';
+        if (csrfToken) {
+            var csrf = createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrf_token';
+            csrf.value = csrfToken;
+            form.appendChild(csrf);
+        }
         var logout = createElement('button', 'dropdown-item');
         logout.type = 'submit';
         appendIconText(logout, 'bi-box-arrow-right', '退出登录');
@@ -863,7 +878,7 @@
     }
 
     var NovaTheme = {
-        version: '2.0.0',
+        version: '2.1.0',
         init: init,
         getTheme: currentTheme,
         setTheme: setTheme,

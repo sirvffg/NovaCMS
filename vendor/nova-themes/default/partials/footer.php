@@ -17,6 +17,90 @@ $githubHost = strtolower((string)parse_url($githubUrl, PHP_URL_HOST));
 if ($githubUrl === '' || !filter_var($githubUrl, FILTER_VALIDATE_URL) || !in_array($githubScheme, ['http', 'https'], true) || !in_array($githubHost, ['github.com', 'www.github.com'], true)) {
     $githubUrl = '';
 }
+$sanitizeFooterHtml = static function (string $html): string {
+    $html = trim($html);
+    if ($html === '') {
+        return '';
+    }
+
+    $allowedTags = '<a><span><strong><b><em><i><small><br>';
+    $filtered = strip_tags($html, $allowedTags);
+    if (!class_exists('DOMDocument')) {
+        return e(trim(strip_tags($filtered)));
+    }
+
+    $previousLibxmlState = libxml_use_internal_errors(true);
+    $document = new DOMDocument('1.0', 'UTF-8');
+    $loaded = $document->loadHTML(
+        '<?xml encoding="UTF-8"><div id="nova-footer-extra-root">' . $filtered . '</div>',
+        LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+    );
+    libxml_clear_errors();
+    libxml_use_internal_errors($previousLibxmlState);
+    if (!$loaded) {
+        return e(trim(strip_tags($filtered)));
+    }
+
+    $root = $document->getElementById('nova-footer-extra-root') ?: $document->getElementsByTagName('div')->item(0);
+    if (!$root) {
+        return e(trim(strip_tags($filtered)));
+    }
+
+    $elements = [];
+    foreach ($root->getElementsByTagName('*') as $element) {
+        $elements[] = $element;
+    }
+    foreach ($elements as $element) {
+        $tag = strtolower($element->tagName);
+        $allowedAttributes = $tag === 'a' ? ['href', 'title', 'target', 'rel', 'class'] : ['class'];
+        for ($index = $element->attributes->length - 1; $index >= 0; $index--) {
+            $attribute = $element->attributes->item($index);
+            if ($attribute && !in_array(strtolower($attribute->name), $allowedAttributes, true)) {
+                $element->removeAttributeNode($attribute);
+            }
+        }
+
+        if ($element->hasAttribute('class')) {
+            $className = trim($element->getAttribute('class'));
+            if ($className === '' || !preg_match('/^[A-Za-z0-9 _-]{1,200}$/', $className)) {
+                $element->removeAttribute('class');
+            }
+        }
+
+        if ($tag !== 'a') {
+            continue;
+        }
+
+        $href = trim($element->getAttribute('href'));
+        $isRelative = preg_match('#^(?:/[^/]|\?|#)#', $href) === 1;
+        $scheme = strtolower((string)parse_url($href, PHP_URL_SCHEME));
+        $isWebUrl = filter_var($href, FILTER_VALIDATE_URL)
+            && in_array($scheme, ['http', 'https'], true)
+            && parse_url($href, PHP_URL_USER) === null
+            && parse_url($href, PHP_URL_PASS) === null;
+        $isEmail = $scheme === 'mailto' && filter_var(substr($href, 7), FILTER_VALIDATE_EMAIL);
+        if (!$isRelative && !$isWebUrl && !$isEmail) {
+            $element->removeAttribute('href');
+        }
+
+        $target = $element->getAttribute('target');
+        if (!in_array($target, ['', '_self', '_blank'], true)) {
+            $element->removeAttribute('target');
+        }
+        if ($element->getAttribute('target') === '_blank') {
+            $element->setAttribute('rel', 'noopener noreferrer');
+        } elseif ($element->hasAttribute('rel')) {
+            $element->removeAttribute('rel');
+        }
+    }
+
+    $output = '';
+    foreach ($root->childNodes as $child) {
+        $output .= $document->saveHTML($child);
+    }
+    return trim($output);
+};
+$footerExtraHtml = $sanitizeFooterHtml((string)($config['footer_extra'] ?? ''));
 $themeScriptVersion = isset($themePath) ? (int)@filemtime($themePath . '/assets/js/theme.js') : 0;
 ?>
     <footer class="site-footer">
@@ -66,8 +150,8 @@ $themeScriptVersion = isset($themePath) ? (int)@filemtime($themePath . '/assets/
                 </nav>
             </div>
 
-            <?php if (!empty($config['footer_extra'])): ?>
-                <p class="site-footer-extra"><?= e(trim(strip_tags((string)$config['footer_extra']))) ?></p>
+            <?php if ($footerExtraHtml !== ''): ?>
+                <div class="site-footer-extra"><?= $footerExtraHtml ?></div>
             <?php endif; ?>
 
             <div class="site-footer-bottom">

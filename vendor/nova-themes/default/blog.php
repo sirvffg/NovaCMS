@@ -63,11 +63,14 @@ include $themePath . '/partials/navbar.php';
                 <span class="comment-count" data-comment-count>0 条</span>
             </header>
             <form class="comment-form" data-comment-form>
-                <label for="comment-content">写下你的想法</label>
+                <label data-comment-label for="comment-content">写下你的想法</label>
                 <textarea id="comment-content" name="content" rows="4" maxlength="2000" placeholder="保持友善，也欢迎补充不同视角。" required></textarea>
                 <div class="comment-form-footer">
                     <p data-comment-feedback aria-live="polite">登录后即可参与讨论。</p>
-                    <button class="site-button site-button-primary" type="submit">发表评论</button>
+                    <div class="comment-form-actions">
+                        <button class="comment-cancel-reply" type="button" data-comment-cancel-reply hidden><i class="bi bi-x-lg" aria-hidden="true"></i><span>取消回复</span></button>
+                        <button class="site-button site-button-primary" type="submit">发表评论</button>
+                    </div>
                 </div>
             </form>
             <div class="comment-list" data-comment-list aria-live="polite" aria-busy="true">
@@ -83,7 +86,7 @@ include $themePath . '/partials/navbar.php';
         <p data-privacy-question>请回答作者设置的问题。</p>
         <form data-privacy-form>
             <label for="privacy-answer">你的回答</label>
-            <textarea id="privacy-answer" name="answer" rows="4" maxlength="1000" required></textarea>
+            <textarea id="privacy-answer" name="answer" rows="4" maxlength="255" required></textarea>
             <p class="form-feedback" data-privacy-feedback aria-live="polite"></p>
             <button class="site-button site-button-primary" type="submit">提交申请</button>
         </form>
@@ -115,7 +118,7 @@ include $themePath . '/partials/navbar.php';
                     <p data-blog-count aria-live="polite">正在整理文章…</p>
                 </div>
                 <nav class="filter-chips" data-blog-categories aria-label="文章分类">
-                    <a class="is-active" href="<?= e($currentSearch === '' ? '/blog' : '/blog?q=' . rawurlencode($currentSearch)) ?>">全部</a>
+                    <a<?= $currentCategory === '' ? ' class="is-active" aria-current="page"' : '' ?> href="<?= e($currentSearch === '' ? '/blog' : '/blog?q=' . rawurlencode($currentSearch)) ?>">全部</a>
                 </nav>
             </div>
 

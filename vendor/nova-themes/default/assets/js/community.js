@@ -56,13 +56,22 @@
         item.payload = payload || null;
         return item;
     }
+    function effectiveResponseStatus(response, payload) {
+        var headerStatus = Number.parseInt(response.headers.get('X-Response-Status') || '', 10);
+        var payloadStatus = payload && payload.data && Number.parseInt(payload.data.status, 10);
+        if (Number.isFinite(headerStatus) && headerStatus > 0) return headerStatus;
+        if (Number.isFinite(payloadStatus) && payloadStatus > 0) return payloadStatus;
+        return response.status;
+    }
     async function requestJson(url, options) {
         var response = await fetch(url, Object.assign({ credentials: 'same-origin', headers: { 'Accept': 'application/json' } }, options || {}));
         var payload;
         try { payload = await response.json(); }
         catch (parseError) { throw error('服务器返回了无法识别的内容', response.status); }
-        if (!response.ok || !payload || payload.code !== 'rest_ok') {
-            throw error(payload && payload.message ? payload.message : '请求没有完成', response.status, payload);
+        var status = effectiveResponseStatus(response, payload);
+        var applicationError = !payload || (payload.code && payload.code !== 'rest_ok');
+        if (!response.ok || status >= 400 || applicationError) {
+            throw error(payload && payload.message ? payload.message : '请求没有完成', status >= 400 ? status : 400, payload);
         }
         return payload.data || {};
     }
@@ -394,7 +403,8 @@
                 nickname: clean(form.elements.nickname.value),
                 email: clean(form.elements.email.value),
                 website: clean(form.elements.website.value),
-                content: clean(form.elements.content.value)
+                content: clean(form.elements.content.value),
+                company: clean(form.elements.company && form.elements.company.value)
             };
             if (!values.nickname || !values.content) {
                 feedback.textContent = '请填写昵称和留言内容。'; feedback.className = 'form-feedback is-error'; return;

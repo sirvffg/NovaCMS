@@ -235,15 +235,20 @@ function getCommentReplies($parent_id) {
 function addComment($post_id, $content, $parent_id = null) {
     $db = getDB();
     if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])) {
-        return ['success' => false, 'message' => '请先登录后再评论'];
+        return ['success' => false, 'message' => '请先登录后再评论', 'status' => 401];
     }
     
     $user_id = $_SESSION['admin_id'] ?? $_SESSION['user_id'] ?? null;
-    $ip_address = $_SERVER['REMOTE_ADDR'] ?? '';
-    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    
-    $rateLimit = checkRateLimit('comment', 10, 300);
-    if (!$rateLimit['allowed']) return ['success' => false, 'message' => $rateLimit['message']];
+    $ip_address = substr((string)($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45);
+    $rawUserAgent = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
+    $user_agent = function_exists('mb_substr') ? mb_substr($rawUserAgent, 0, 255, 'UTF-8') : substr($rawUserAgent, 0, 255);
+
+    $post_id = (int)$post_id;
+    $postStmt = $db->prepare("SELECT id FROM blog_posts WHERE id = ? AND is_published = 1 LIMIT 1");
+    $postStmt->execute([$post_id]);
+    if (!$postStmt->fetch()) {
+        return ['success' => false, 'message' => '文章不存在或尚未公开', 'status' => 404];
+    }
     
     if ($user_id) {
         $stmt = $db->prepare("SELECT username, email FROM admins WHERE id = ?");
@@ -253,20 +258,39 @@ function addComment($post_id, $content, $parent_id = null) {
             $username = $user_info['username'];
             $email = $user_info['email'];
         } else {
-            return ['success' => false, 'message' => '用户信息获取失败'];
+            return ['success' => false, 'message' => '用户信息获取失败', 'status' => 401];
         }
     }
     
     $content = trim($content);
-    if (empty($content)) return ['success' => false, 'message' => '评论内容不能为空'];
-    if (strlen($content) > 1000) return ['success' => false, 'message' => '评论内容不能超过1000个字符'];
+    if ($content === '') return ['success' => false, 'message' => '评论内容不能为空', 'status' => 400];
+    if (function_exists('mb_strlen')) {
+        $contentLength = mb_strlen($content, 'UTF-8');
+    } else {
+        $unicodeLength = preg_match_all('/./us', $content, $matches);
+        $contentLength = $unicodeLength === false ? strlen($content) : $unicodeLength;
+    }
+    if ($contentLength > 2000) return ['success' => false, 'message' => '评论内容不能超过 2000 个字符', 'status' => 400];
+
+    $parent_id = $parent_id ? (int)$parent_id : null;
+    if ($parent_id) {
+        $parentStmt = $db->prepare("SELECT id FROM blog_comments WHERE id = ? AND post_id = ? AND status = 'approved' LIMIT 1");
+        $parentStmt->execute([$parent_id, $post_id]);
+        if (!$parentStmt->fetch()) {
+            return ['success' => false, 'message' => '要回复的评论不存在', 'status' => 404];
+        }
+    }
+
+    $rateLimit = checkRateLimit('comment', 10, 300);
+    if (!$rateLimit['allowed']) {
+        return ['success' => false, 'message' => $rateLimit['message'], 'status' => 429];
+    }
     
     try {
         $stmt = $db->prepare("
             INSERT INTO blog_comments (post_id, user_id, username, email, content, parent_id, status, ip_address, user_agent)
             VALUES (?, ?, ?, ?, ?, ?, 'approved', ?, ?)
         ");
-        $parent_id = $parent_id ? intval($parent_id) : null;
         $result = $stmt->execute([$post_id, $user_id, $username, $email, $content, $parent_id, $ip_address, $user_agent]);
         
         if ($result) {
@@ -291,8 +315,10 @@ function addComment($post_id, $content, $parent_id = null) {
         }
     } catch (Exception $e) {
         error_log('Create comment error: ' . $e->getMessage());
-        return ['success' => false, 'message' => '评论提交失败，请稍后重试'];
+        return ['success' => false, 'message' => '评论提交失败，请稍后重试', 'status' => 500];
     }
+
+    return ['success' => false, 'message' => '评论提交失败，请稍后重试', 'status' => 500];
 }
 
 /**
@@ -398,9 +424,39 @@ function deleteComment($comment_id, $user_id = null) {
         
         if (!$comment) return ['success' => false, 'message' => '评论不存在'];
         if ($user_role !== 'admin' && $comment['user_id'] != $current_user_id) return ['success' => false, 'message' => '无权操作'];
-        
-        $db->prepare("DELETE FROM blog_comments WHERE parent_id = ?")->execute([$comment_id]);
-        $db->prepare("DELETE FROM blog_comments WHERE id = ?")->execute([$comment_id]);
+
+        // 评论支持多级回复；先收集完整子树，再在一个事务中删除。
+        $commentIds = [(int)$comment_id];
+        $knownIds = [(int)$comment_id => true];
+        $pendingIds = [(int)$comment_id];
+        while ($pendingIds) {
+            if (count($commentIds) > 5000) {
+                return ['success' => false, 'message' => '评论回复层级过多，请联系管理员处理'];
+            }
+            $placeholders = implode(',', array_fill(0, count($pendingIds), '?'));
+            $childrenStmt = $db->prepare("SELECT id FROM blog_comments WHERE parent_id IN ({$placeholders})");
+            $childrenStmt->execute($pendingIds);
+            $pendingIds = [];
+            foreach ($childrenStmt->fetchAll() as $child) {
+                $childId = (int)$child['id'];
+                if ($childId <= 0 || isset($knownIds[$childId])) continue;
+                $knownIds[$childId] = true;
+                $commentIds[] = $childId;
+                $pendingIds[] = $childId;
+            }
+        }
+
+        $startedTransaction = !$db->inTransaction();
+        if ($startedTransaction) $db->beginTransaction();
+        try {
+            $placeholders = implode(',', array_fill(0, count($commentIds), '?'));
+            $deleteStmt = $db->prepare("DELETE FROM blog_comments WHERE id IN ({$placeholders})");
+            $deleteStmt->execute($commentIds);
+            if ($startedTransaction) $db->commit();
+        } catch (Exception $e) {
+            if ($startedTransaction && $db->inTransaction()) $db->rollBack();
+            throw $e;
+        }
         return ['success' => true, 'message' => '已删除'];
     } catch (Exception $e) {
         return ['success' => false, 'message' => '删除失败'];

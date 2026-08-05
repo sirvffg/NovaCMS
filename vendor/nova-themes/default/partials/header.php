@@ -50,6 +50,7 @@ $styleVersion = isset($themePath) ? (int)@filemtime($themePath . '/assets/css/st
     <title><?= e($documentTitle) ?></title>
     <meta name="description" content="<?= e($siteDescription) ?>">
     <meta name="author" content="<?= e((string)($config['website_author'] ?? $siteName)) ?>">
+    <meta name="nova-csrf-token" content="<?= e(generateCSRFToken()) ?>">
     <meta name="robots" content="index,follow,max-image-preview:large">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">

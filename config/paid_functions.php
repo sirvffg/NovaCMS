@@ -66,7 +66,7 @@ function processPaidContent($db, $userId, $postId, $content) {
                     $processedContent .= '<div class="paid-notice" style="background-color: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 4px;">
                         <h5 style="color: #28a745; margin-top: 0;">🔒 登录并支付后可见</h5>
                         <p>此内容需要支付 <strong>￥' . $price . '</strong>，请先登录。</p>
-                        <a href="/vendor/login.php?redirect_url=' . urlencode($_SERVER['REQUEST_URI']) . '" class="btn btn-success">
+                        <a href="/vendor/login.php?redirect_url=' . urlencode('/blog?id=' . $postId) . '" class="btn btn-success">
                             <i class="bi bi-box-arrow-in-right"></i> 立即登录
                         </a>
                     </div>';

@@ -29,7 +29,8 @@ function v1_submit_privacy_answer($request) {
     }
 
     $postId = (int)$request->get_param('post_id');
-    $answer = trim($request->get_param('answer') ?: '');
+    $rawAnswer = $request->get_param('answer');
+    $answer = trim($rawAnswer === null ? '' : (string)$rawAnswer);
 
     if ($postId <= 0) {
         return new Nova_REST_Response([
@@ -98,7 +99,7 @@ function v1_submit_privacy_answer($request) {
         $customText = $privacySettings['custom_text'] ?? '';
     }
 
-    if (empty($answer)) {
+    if ($answer === '') {
         return new Nova_REST_Response([
             'code'    => 'rest_need_answer',
             'message' => '请回答隐私问题',
@@ -111,16 +112,28 @@ function v1_submit_privacy_answer($request) {
         ], 400);
     }
 
+    if (privacyAnswerLength($answer) > 255) {
+        return new Nova_REST_Response([
+            'code' => 'rest_answer_too_long',
+            'message' => '回答不能超过 255 个字符',
+            'data' => ['status' => 400],
+        ], 400);
+    }
+
     // 调用已有的验证逻辑
     $result = validatePrivacyAnswer($db, $userId, $postId, $answer);
+    $success = !empty($result['success']);
+    $accessGranted = !empty($result['access_granted']);
 
-    return [
-        'code'    => $result['success'] ? 'rest_ok' : 'rest_privacy_denied',
-        'message' => $result['message'] ?? ($result['success'] ? '验证通过' : '答案错误'),
+    $response = [
+        'code'    => $success ? 'rest_ok' : 'rest_privacy_denied',
+        'message' => $result['message'] ?? ($success ? '验证通过' : '答案错误'),
         'data'    => [
-            'status'         => $result['success'] ? 200 : 403,
-            'access_granted' => $result['success'] ?? false,
+            'status'         => $success ? 200 : 403,
+            'access_granted' => $accessGranted,
             'pending_approval' => !empty($result['pending_approval']),
         ],
     ];
+
+    return $success ? $response : new Nova_REST_Response($response, 403);
 }
