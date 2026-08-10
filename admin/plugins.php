@@ -208,236 +208,1395 @@ require_once 'includes/header.php';
 ?>
 
 <style>
-.plugin-card { transition: all 0.25s; }
-.plugin-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
-.plugin-card.is-active { border-color: #1890ff; }
-.plugin-card.is-inactive { opacity: 0.85; }
-.plugin-card.is-inactive .plugin-name { color: #6c757d; }
+.plugin-page {
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.plugin-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 28px 0 22px;
+}
+
+.plugin-page-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.plugin-page-title-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 110, 253, .1);
+    color: var(--bs-primary);
+    font-size: 22px;
+}
+
+.plugin-page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 650;
+    margin: 0;
+}
+
+.plugin-page-header p {
+    margin: 4px 0 0;
+    color: var(--bs-secondary-color);
+    font-size: .9rem;
+}
+
+
+/* 顶部状态 */
+.plugin-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.plugin-summary-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    font-size: .82rem;
+}
+
+.plugin-summary-item strong {
+    font-weight: 650;
+}
+
+
+/* 工具栏 */
+.plugin-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.plugin-search {
+    position: relative;
+    flex: 1;
+    max-width: 420px;
+}
+
+.plugin-search i {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--bs-secondary-color);
+    pointer-events: none;
+}
+
+.plugin-search input {
+    padding-left: 38px;
+    border-radius: 10px;
+}
+
+.plugin-filters {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--bs-tertiary-bg);
+}
+
+.plugin-filter-btn {
+    border: 0;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+.plugin-filter-btn:hover {
+    color: var(--bs-body-color);
+}
+
+.plugin-filter-btn.active {
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+
+/* 插件卡片 */
+.plugin-card {
+    height: 100%;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 14px;
+    overflow: hidden;
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        transform .2s ease;
+}
+
+.plugin-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0,0,0,.07);
+}
+
+.plugin-card.is-active {
+    border-color: rgba(25, 135, 84, .35);
+}
+
+.plugin-card.is-inactive {
+    opacity: .82;
+}
+
+.plugin-card-body {
+    padding: 20px;
+}
+
+.plugin-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
 .plugin-icon {
-    width: 56px; height: 56px; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px; color: #fff;
-    background: linear-gradient(135deg, #6a8dff 0%, #4a6cf7 100%);
-    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 22px;
+    color: var(--bs-primary);
+    background: rgba(13, 110, 253, .1);
 }
+
+.plugin-card.is-active .plugin-icon {
+    color: var(--bs-success);
+    background: rgba(25, 135, 84, .1);
+}
+
 .plugin-card.is-inactive .plugin-icon {
-    background: linear-gradient(135deg, #b0b8c4 0%, #8a93a0 100%);
+    color: var(--bs-secondary-color);
+    background: var(--bs-tertiary-bg);
 }
-.plugin-meta-item { font-size: 0.8125rem; }
-.plugin-stats-card .stat-value { font-size: 1.75rem; font-weight: 600; line-height: 1; }
-.plugin-id-badge {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.7rem; color: #6c757d;
-    background: rgba(108,117,125,0.1); padding: 2px 6px; border-radius: 4px;
+
+.plugin-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.plugin-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.plugin-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 650;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.plugin-status {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .72rem;
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+.plugin-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.plugin-status.active {
+    color: var(--bs-success);
+    background: rgba(25, 135, 84, .1);
+}
+
+.plugin-status.inactive {
+    color: var(--bs-secondary-color);
+    background: var(--bs-tertiary-bg);
+}
+
+.plugin-description {
+    min-height: 42px;
+    margin: 15px 0;
+    color: var(--bs-secondary-color);
+    font-size: .86rem;
+    line-height: 1.55;
+}
+
+.plugin-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    color: var(--bs-secondary-color);
+    font-size: .78rem;
+}
+
+.plugin-meta span,
+.plugin-meta a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.plugin-meta a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.plugin-meta a:hover {
+    color: var(--bs-primary);
+}
+
+.plugin-id {
+    margin-top: 12px;
+}
+
+.plugin-id code {
+    color: var(--bs-secondary-color);
+    font-size: .7rem;
+}
+
+
+/* 卡片底部按钮 */
+.plugin-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+}
+
+.plugin-actions-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.plugin-actions form {
+    margin: 0;
+}
+
+.plugin-action-btn {
+    border-radius: 8px;
+}
+
+.plugin-enable-btn {
+    min-width: 90px;
+}
+
+.plugin-disable-btn {
+    color: var(--bs-secondary-color);
+}
+
+.plugin-disable-btn:hover {
+    color: var(--bs-danger);
+    border-color: var(--bs-danger);
+}
+
+
+/* 空状态 */
+.plugin-empty {
+    padding: 70px 20px;
+    text-align: center;
+}
+
+.plugin-empty-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    border-radius: 16px;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+    font-size: 28px;
+}
+
+.plugin-search-empty {
+    display: none;
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--bs-secondary-color);
+}
+
+
+/* AJAX 提示 */
+#plugin-alert {
+    position: fixed;
+    z-index: 1090;
+    top: 78px;
+    right: 24px;
+    width: min(380px, calc(100vw - 48px));
+}
+
+
+/* 手机 */
+@media (max-width: 767.98px) {
+
+    .plugin-page-header {
+        flex-direction: column;
+        margin-top: 20px;
+    }
+
+    .plugin-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .plugin-search {
+        max-width: none;
+    }
+
+    .plugin-filters {
+        overflow-x: auto;
+    }
+
+    .plugin-filter-btn {
+        flex: 1;
+    }
+
+    .plugin-actions {
+        align-items: stretch;
+    }
+
+    .plugin-actions-main {
+        flex: 1;
+    }
+
+    .plugin-actions-main .btn {
+        flex: 1;
+    }
 }
 </style>
 
-<div class="container-fluid px-4">
+
+<div class="container-fluid px-4 plugin-page">
+
+    <!-- 页面标题 -->
+    <div class="plugin-page-header">
+
+        <div class="plugin-page-title">
+
+            <div class="plugin-page-title-icon">
+                <i class="bi bi-puzzle"></i>
+            </div>
+
+            <div>
+                <h1>插件</h1>
+                <p>管理 NovaCMS 的扩展功能</p>
+            </div>
+
+        </div>
+
+
+        <a
+            href="https://lygalaxy.cn"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-outline-secondary btn-sm"
+        >
+            <i class="bi bi-box-arrow-up-right me-1"></i>
+            获取插件
+        </a>
+
+    </div>
+
+
     <div id="plugin-alert"></div>
 
-    <!-- 插件列表 -->
+
+    <!-- 简洁统计 -->
+    <div class="plugin-summary">
+
+        <div class="plugin-summary-item">
+            <i class="bi bi-box-seam"></i>
+            已安装
+            <strong id="stat-total"><?= $totalCount ?></strong>
+        </div>
+
+        <div class="plugin-summary-item">
+            <i class="bi bi-check-circle text-success"></i>
+            已启用
+            <strong id="stat-enabled"><?= $enabledCount ?></strong>
+        </div>
+
+        <div class="plugin-summary-item">
+            <i class="bi bi-pause-circle"></i>
+            已停用
+            <strong id="stat-disabled"><?= $disabledCount ?></strong>
+        </div>
+
+    </div>
+
+
+    <!-- 搜索 / 筛选 -->
+    <div class="plugin-toolbar">
+
+        <div class="plugin-search">
+
+            <i class="bi bi-search"></i>
+
+            <input
+                id="plugin-search-input"
+                type="search"
+                class="form-control form-control-sm"
+                placeholder="搜索插件名称、作者或目录…"
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <div class="plugin-filters">
+
+            <button
+                type="button"
+                class="plugin-filter-btn active"
+                data-plugin-filter="all"
+            >
+                全部
+            </button>
+
+            <button
+                type="button"
+                class="plugin-filter-btn"
+                data-plugin-filter="active"
+            >
+                已启用
+            </button>
+
+            <button
+                type="button"
+                class="plugin-filter-btn"
+                data-plugin-filter="inactive"
+            >
+                已停用
+            </button>
+
+        </div>
+
+    </div>
+
+
     <?php if (empty($plugins)): ?>
-    <div class="card border-0 shadow-sm">
-        <div class="card-body text-center py-5">
-            <i class="bi bi-inbox fs-1 text-muted"></i>
-            <p class="mt-3 mb-0 text-muted">暂无已安装的插件</p>
-            <p class="small text-muted">将插件目录放入 <code>/vendor/nova-plugins/</code> 并提供 <code>plugin.json</code> 即可自动识别</p>
-        </div>
-    </div>
-    <?php else: ?>
-    <div class="row g-3" id="plugin-list">
-        <?php foreach ($plugins as $plugin): ?>
-        <div class="col-md-6 col-xl-4">
-            <div class="card plugin-card h-100 <?= $plugin['active'] ? 'is-active' : 'is-inactive' ?>" data-plugin-id="<?= e($plugin['id']) ?>" data-plugin-name="<?= e($plugin['name']) ?>">
-                <div class="card-body">
-                    <div class="d-flex align-items-start mb-3">
-                        <div class="plugin-icon me-3">
-                            <i class="bi bi-puzzle-fill"></i>
-                        </div>
-                        <div class="flex-grow-1 min-w-0">
-                            <h5 class="plugin-name mb-1 text-truncate"><?= e($plugin['name']) ?></h5>
-                            <div class="d-flex flex-wrap gap-2 plugin-meta-item text-muted">
-                                <?php if ($plugin['version']): ?>
-                                <span><i class="bi bi-tag me-1"></i>v<?= e($plugin['version']) ?></span>
-                                <?php endif; ?>
-                                <?php if ($plugin['author']): ?>
-                                <span>
-                                    <i class="bi bi-person me-1"></i>
-                                    <?php if ($plugin['author_uri']): ?>
-                                    <a href="<?= e($plugin['author_uri']) ?>" target="_blank" rel="noopener"><?= e($plugin['author']) ?></a>
-                                    <?php else: ?>
-                                    <?= e($plugin['author']) ?>
-                                    <?php endif; ?>
-                                </span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="mt-1">
-                                <span class="plugin-id-badge" title="系统识别符 ID"><?= e($plugin['id']) ?></span>
-                            </div>
-                        </div>
-                        <span class="badge plugin-status-badge <?= $plugin['active'] ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary bg-opacity-10 text-secondary' ?>">
-                            <?= $plugin['active'] ? '已启用' : '已禁用' ?>
-                        </span>
-                    </div>
 
-                    <?php if ($plugin['description']): ?>
-                    <p class="card-text small text-muted mb-3"><?= e($plugin['description']) ?></p>
-                    <?php else: ?>
-                    <p class="card-text small text-muted mb-3 fst-italic">暂无描述</p>
-                    <?php endif; ?>
+        <div class="card plugin-card">
 
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-muted small" title="插件目录名">
-                            <i class="bi bi-folder me-1"></i><code><?= e($plugin['slug']) ?></code>
-                        </span>
-                        <?php if ($plugin['uri']): ?>
-                        <a href="<?= e($plugin['uri']) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-info-circle"></i> 详情
-                        </a>
-                        <?php endif; ?>
-                    </div>
+            <div class="plugin-empty">
+
+                <div class="plugin-empty-icon">
+                    <i class="bi bi-puzzle"></i>
                 </div>
-                <div class="card-footer bg-transparent border-top">
-                    <form method="POST" class="plugin-toggle-form">
-                        <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
-                        <input type="hidden" name="plugin_id" value="<?= e($plugin['id']) ?>">
-                        <button type="submit" name="plugin_action"
-                                value="<?= $plugin['active'] ? 'deactivate' : 'activate' ?>"
-                                class="btn btn-sm w-100 plugin-toggle-btn <?= $plugin['active'] ? 'btn-outline-secondary' : 'btn-primary' ?>">
-                            <?php if ($plugin['active']): ?>
-                            <i class="bi bi-pause-circle me-1"></i>禁用插件
-                            <?php else: ?>
-                            <i class="bi bi-play-circle me-1"></i>启用插件
-                            <?php endif; ?>
-                        </button>
-                    </form>
-                </div>
+
+                <h5>还没有安装插件</h5>
+
+                <p class="text-muted small mb-2">
+                    将插件放入
+                    <code>/vendor/nova-plugins/</code>
+                    后刷新此页面
+                </p>
+
             </div>
+
         </div>
-        <?php endforeach; ?>
-    </div>
+
+    <?php else: ?>
+
+
+        <div class="row g-3" id="plugin-list">
+
+            <?php foreach ($plugins as $plugin): ?>
+
+                <?php
+                $hasAdminPage = is_file(
+                    $plugin['plugin_dir']
+                    . '/plugin/admin/index.php'
+                );
+
+                $searchText =
+                    $plugin['name'] . ' '
+                    . $plugin['slug'] . ' '
+                    . $plugin['author'] . ' '
+                    . $plugin['description'];
+                ?>
+
+
+                <div
+                    class="col-md-6 col-xl-4 plugin-grid-item"
+                    data-plugin-active="<?= $plugin['active'] ? '1' : '0' ?>"
+                    data-plugin-search="<?= e(mb_strtolower($searchText)) ?>"
+                >
+
+                    <div
+                        class="card plugin-card <?= $plugin['active'] ? 'is-active' : 'is-inactive' ?>"
+                        data-plugin-id="<?= e($plugin['id']) ?>"
+                        data-plugin-name="<?= e($plugin['name']) ?>"
+                    >
+
+                        <div class="plugin-card-body">
+
+                            <div class="plugin-card-head">
+
+                                <div class="plugin-icon">
+                                    <i class="bi bi-puzzle-fill"></i>
+                                </div>
+
+
+                                <div class="plugin-main">
+
+                                    <div class="plugin-name-row">
+
+                                        <h5 class="plugin-name">
+                                            <?= e($plugin['name']) ?>
+                                        </h5>
+
+
+                                        <span class="plugin-status <?= $plugin['active'] ? 'active' : 'inactive' ?>">
+
+                                            <?= $plugin['active']
+                                                ? '运行中'
+                                                : '已停用'
+                                            ?>
+
+                                        </span>
+
+                                    </div>
+
+
+                                    <div class="plugin-meta mt-2">
+
+                                        <?php if ($plugin['version']): ?>
+
+                                            <span>
+                                                <i class="bi bi-tag"></i>
+                                                v<?= e($plugin['version']) ?>
+                                            </span>
+
+                                        <?php endif; ?>
+
+
+                                        <?php if ($plugin['author']): ?>
+
+                                            <?php if ($plugin['author_uri']): ?>
+
+                                                <a
+                                                    href="<?= e($plugin['author_uri']) ?>"
+                                                    target="_blank"
+                                                    rel="noopener"
+                                                >
+                                                    <i class="bi bi-person"></i>
+                                                    <?= e($plugin['author']) ?>
+                                                </a>
+
+                                            <?php else: ?>
+
+                                                <span>
+                                                    <i class="bi bi-person"></i>
+                                                    <?= e($plugin['author']) ?>
+                                                </span>
+
+                                            <?php endif; ?>
+
+                                        <?php endif; ?>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="plugin-description">
+
+                                <?= $plugin['description']
+                                    ? e($plugin['description'])
+                                    : '这个插件没有提供说明。'
+                                ?>
+
+                            </div>
+
+
+                            <div class="plugin-meta">
+
+                                <span title="插件目录">
+                                    <i class="bi bi-folder"></i>
+                                    <?= e($plugin['slug']) ?>
+                                </span>
+
+                                <?php if ($hasAdminPage): ?>
+
+                                    <span>
+                                        <i class="bi bi-sliders"></i>
+                                        提供管理页面
+                                    </span>
+
+                                <?php endif; ?>
+
+                            </div>
+
+
+                            <div class="plugin-id">
+                                <code title="插件内部 ID">
+                                    <?= e($plugin['id']) ?>
+                                </code>
+                            </div>
+
+                        </div>
+
+
+                        <div class="plugin-actions">
+
+
+                            <div class="plugin-actions-main">
+
+                                <?php if ($plugin['active'] && $hasAdminPage): ?>
+
+                                    <a
+                                        href="/admin/plugin-page.php?plugin=<?= rawurlencode($plugin['id']) ?>"
+                                        class="btn btn-primary btn-sm plugin-action-btn"
+                                    >
+                                        <i class="bi bi-sliders me-1"></i>
+                                        管理
+                                    </a>
+
+                                <?php endif; ?>
+
+
+                                <?php if ($plugin['uri']): ?>
+
+                                    <a
+                                        href="<?= e($plugin['uri']) ?>"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="btn btn-outline-secondary btn-sm plugin-action-btn"
+                                        title="查看插件主页"
+                                    >
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+
+                                <?php endif; ?>
+
+                            </div>
+
+
+                            <form
+                                method="POST"
+                                class="plugin-toggle-form"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="<?= e(generateCSRFToken()) ?>"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="plugin_id"
+                                    value="<?= e($plugin['id']) ?>"
+                                >
+
+
+                                <?php if ($plugin['active']): ?>
+
+                                    <button
+                                        type="submit"
+                                        name="plugin_action"
+                                        value="deactivate"
+                                        class="btn btn-sm btn-outline-secondary plugin-action-btn plugin-toggle-btn plugin-disable-btn"
+                                    >
+                                        <i class="bi bi-power me-1"></i>
+                                        停用
+                                    </button>
+
+                                <?php else: ?>
+
+                                    <button
+                                        type="submit"
+                                        name="plugin_action"
+                                        value="activate"
+                                        class="btn btn-sm btn-primary plugin-action-btn plugin-toggle-btn plugin-enable-btn"
+                                    >
+                                        <i class="bi bi-play-fill me-1"></i>
+                                        启用
+                                    </button>
+
+                                <?php endif; ?>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            <?php endforeach; ?>
+
+        </div>
+
+
+        <div
+            class="plugin-search-empty"
+            id="plugin-search-empty"
+        >
+            <i class="bi bi-search fs-3 d-block mb-2"></i>
+            没找到符合条件的插件
+        </div>
+
+
     <?php endif; ?>
+
+
+    <div class="mt-4 mb-4">
+
+        <details class="small text-muted">
+
+            <summary style="cursor:pointer;">
+                插件开发信息
+            </summary>
+
+            <div class="mt-2">
+
+                插件目录：
+
+                <code>
+                    /vendor/nova-plugins/
+                </code>
+
+                <br>
+
+                系统会读取插件目录中的
+
+                <code>plugin.json</code>
+
+                并自动分配唯一 ID。
+
+            </div>
+
+        </details>
+
+    </div>
+
 </div>
+
 
 <script type="text/pjax-script">
 (function () {
+
     var csrfToken = '<?= e(generateCSRFToken()) ?>';
 
-    // 根据激活状态切换卡片 UI
+    var currentFilter = 'all';
+
+
+    /*
+     * 更新插件卡片状态
+     */
     function applyCardState(card, active) {
-        card.classList.toggle('is-active', active);
-        card.classList.toggle('is-inactive', !active);
-        var badge = card.querySelector('.plugin-status-badge');
-        if (badge) {
-            badge.className = 'badge plugin-status-badge ' + (active
-                ? 'bg-success-subtle text-success border border-success-subtle'
-                : 'bg-secondary bg-opacity-10 text-secondary');
-            badge.textContent = active ? '已启用' : '已禁用';
+
+        card.classList.toggle(
+            'is-active',
+            active
+        );
+
+        card.classList.toggle(
+            'is-inactive',
+            !active
+        );
+
+
+        var gridItem =
+            card.closest('.plugin-grid-item');
+
+        if (gridItem) {
+            gridItem.dataset.pluginActive =
+                active ? '1' : '0';
         }
-        var btn = card.querySelector('.plugin-toggle-btn');
+
+
+        var status =
+            card.querySelector('.plugin-status');
+
+        if (status) {
+
+            status.className =
+                'plugin-status '
+                + (active ? 'active' : 'inactive');
+
+            status.textContent =
+                active ? '运行中' : '已停用';
+
+        }
+
+
+        var btn =
+            card.querySelector('.plugin-toggle-btn');
+
         if (btn) {
-            btn.value = active ? 'deactivate' : 'activate';
-            btn.className = 'btn btn-sm w-100 plugin-toggle-btn ' + (active ? 'btn-outline-secondary' : 'btn-primary');
-            btn.innerHTML = active
-                ? '<i class="bi bi-pause-circle me-1"></i>禁用插件'
-                : '<i class="bi bi-play-circle me-1"></i>启用插件';
+
+            btn.value =
+                active
+                    ? 'deactivate'
+                    : 'activate';
+
+            if (active) {
+
+                btn.className =
+                    'btn btn-sm btn-outline-secondary '
+                    + 'plugin-action-btn plugin-toggle-btn '
+                    + 'plugin-disable-btn';
+
+                btn.innerHTML =
+                    '<i class="bi bi-power me-1"></i>'
+                    + '停用';
+
+            } else {
+
+                btn.className =
+                    'btn btn-sm btn-primary '
+                    + 'plugin-action-btn plugin-toggle-btn '
+                    + 'plugin-enable-btn';
+
+                btn.innerHTML =
+                    '<i class="bi bi-play-fill me-1"></i>'
+                    + '启用';
+
+            }
+
             btn.disabled = false;
+
         }
+
+
+        /*
+         * 管理按钮：
+         * 停用后隐藏
+         * 启用后显示
+         */
+        var manageBtn =
+            card.querySelector(
+                'a[href*="plugin-page.php"]'
+            );
+
+        if (manageBtn) {
+
+            manageBtn.style.display =
+                active ? '' : 'none';
+
+        }
+
+
+        filterPlugins();
+
     }
 
-    // 同步刷新侧边栏菜单（启用/禁用后，插件注册的菜单项需要相应增减）
-    function refreshSidebar() {
-        fetch(window.location.pathname + window.location.search, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(function (res) { return res.text(); })
-        .then(function (html) {
-            var doc = new DOMParser().parseFromString(html, 'text/html');
-            var newMenu = doc.querySelector('.sidebar-menu');
-            var currentMenu = document.querySelector('.sidebar-menu');
-            if (newMenu && currentMenu) {
-                currentMenu.innerHTML = newMenu.innerHTML;
-            }
-        })
-        .catch(function () {});
-    }
 
+    /*
+     * 更新统计数字
+     */
     function updateStats(enabled, disabled) {
-        var el = document.getElementById('stat-enabled');
-        if (el) el.textContent = enabled;
-        el = document.getElementById('stat-disabled');
-        if (el) el.textContent = disabled;
+
+        var enabledEl =
+            document.getElementById(
+                'stat-enabled'
+            );
+
+        var disabledEl =
+            document.getElementById(
+                'stat-disabled'
+            );
+
+        if (enabledEl) {
+            enabledEl.textContent = enabled;
+        }
+
+        if (disabledEl) {
+            disabledEl.textContent = disabled;
+        }
+
     }
 
-    function showAlert(type, msg) {
-        var container = document.getElementById('plugin-alert');
-        if (!container) return;
-        var icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
-        var cls = type === 'success' ? 'alert-success' : 'alert-danger';
+
+    /*
+     * 提示
+     */
+    function showAlert(type, message) {
+
+        var container =
+            document.getElementById(
+                'plugin-alert'
+            );
+
+        if (!container) {
+            return;
+        }
+
+
+        var success =
+            type === 'success';
+
+
         container.innerHTML =
-            '<div class="alert ' + cls + ' alert-dismissible fade show" role="alert">' +
-            '<i class="bi ' + icon + ' me-1"></i>' + msg +
-            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-            '</div>';
-        setTimeout(function () {
-            var alert = container.querySelector('.alert');
-            if (alert) {
-                bootstrap.Alert.getOrCreateInstance(alert).close();
+            '<div class="alert '
+            + (success
+                ? 'alert-success'
+                : 'alert-danger')
+            + ' shadow-sm alert-dismissible fade show">'
+            + '<i class="bi '
+            + (success
+                ? 'bi-check-circle'
+                : 'bi-exclamation-triangle')
+            + ' me-2"></i>'
+            + message
+            + '<button type="button" '
+            + 'class="btn-close" '
+            + 'data-bs-dismiss="alert">'
+            + '</button>'
+            + '</div>';
+
+
+        window.setTimeout(function () {
+
+            var alertEl =
+                container.querySelector(
+                    '.alert'
+                );
+
+            if (
+                alertEl
+                && window.bootstrap
+            ) {
+
+                bootstrap.Alert
+                    .getOrCreateInstance(
+                        alertEl
+                    )
+                    .close();
+
             }
+
         }, 3000);
+
     }
 
-    document.querySelectorAll('.plugin-toggle-form').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-            var card = form.closest('[data-plugin-id]');
-            var btn = form.querySelector('.plugin-toggle-btn');
-            var action = btn ? btn.value : '';
-            var pluginId = form.querySelector('[name="plugin_id"]').value;
-            var pluginName = card.getAttribute('data-plugin-name');
 
-            if (action === 'deactivate' && !confirm('确定要禁用插件「' + pluginName + '」吗？相关功能将不可用。')) {
-                return;
-            }
+    /*
+     * 刷新左侧菜单
+     */
+    function refreshSidebar() {
 
-            // 禁用按钮，显示加载状态
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>处理中…';
-            }
-
-            var formData = new FormData();
-            formData.append('csrf_token', csrfToken);
-            formData.append('plugin_id', pluginId);
-            formData.append('plugin_action', action);
-
-            fetch(window.location.pathname, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            })
-            .then(function (res) { return res.json(); })
-            .then(function (data) {
-                if (data.ok) {
-                    applyCardState(card, data.active);
-                    updateStats(data.enabled_count, data.disabled_count);
-                    showAlert('success', data.msg);
-                    // 同步刷新侧边栏（增减插件注册的菜单项）
-                    refreshSidebar();
-                } else {
-                    showAlert('danger', data.msg || '操作失败');
-                    if (btn) btn.disabled = false;
+        fetch(
+            window.location.pathname
+            + window.location.search,
+            {
+                headers: {
+                    'X-Requested-With':
+                        'XMLHttpRequest'
                 }
-            })
-            .catch(function () {
-                showAlert('danger', '网络错误，请重试');
-                if (btn) btn.disabled = false;
-            });
-        });
-    });
+            }
+        )
 
-    // PJAX 导航后无需额外初始化——按钮由 PHP 渲染正确状态
+        .then(function (response) {
+
+            return response.text();
+
+        })
+
+        .then(function (html) {
+
+            var doc =
+                new DOMParser()
+                    .parseFromString(
+                        html,
+                        'text/html'
+                    );
+
+            var newMenu =
+                doc.querySelector(
+                    '.sidebar-menu'
+                );
+
+            var currentMenu =
+                document.querySelector(
+                    '.sidebar-menu'
+                );
+
+            if (
+                newMenu
+                && currentMenu
+            ) {
+
+                currentMenu.innerHTML =
+                    newMenu.innerHTML;
+
+            }
+
+        })
+
+        .catch(function () {});
+
+    }
+
+
+    /*
+     * 搜索 + 筛选
+     */
+    function filterPlugins() {
+
+        var input =
+            document.getElementById(
+                'plugin-search-input'
+            );
+
+        var keyword =
+            input
+                ? input.value
+                    .trim()
+                    .toLowerCase()
+                : '';
+
+
+        var visibleCount = 0;
+
+
+        document
+            .querySelectorAll(
+                '.plugin-grid-item'
+            )
+            .forEach(function (item) {
+
+                var active =
+                    item.dataset.pluginActive
+                    === '1';
+
+                var text =
+                    (
+                        item.dataset.pluginSearch
+                        || ''
+                    ).toLowerCase();
+
+
+                var matchesSearch =
+                    keyword === ''
+                    || text.includes(keyword);
+
+
+                var matchesFilter =
+                    currentFilter === 'all'
+                    || (
+                        currentFilter
+                        === 'active'
+                        && active
+                    )
+                    || (
+                        currentFilter
+                        === 'inactive'
+                        && !active
+                    );
+
+
+                var visible =
+                    matchesSearch
+                    && matchesFilter;
+
+
+                item.style.display =
+                    visible ? '' : 'none';
+
+
+                if (visible) {
+                    visibleCount++;
+                }
+
+            });
+
+
+        var empty =
+            document.getElementById(
+                'plugin-search-empty'
+            );
+
+        if (empty) {
+
+            empty.style.display =
+                visibleCount === 0
+                    ? 'block'
+                    : 'none';
+
+        }
+
+    }
+
+
+    /*
+     * 搜索框
+     */
+    var searchInput =
+        document.getElementById(
+            'plugin-search-input'
+        );
+
+    if (searchInput) {
+
+        searchInput.addEventListener(
+            'input',
+            filterPlugins
+        );
+
+    }
+
+
+    /*
+     * 状态筛选
+     */
+    document
+        .querySelectorAll(
+            '.plugin-filter-btn'
+        )
+        .forEach(function (button) {
+
+            button.addEventListener(
+                'click',
+                function () {
+
+                    currentFilter =
+                        button.dataset
+                            .pluginFilter;
+
+                    document
+                        .querySelectorAll(
+                            '.plugin-filter-btn'
+                        )
+                        .forEach(
+                            function (item) {
+                                item.classList
+                                    .remove(
+                                        'active'
+                                    );
+                            }
+                        );
+
+                    button.classList
+                        .add('active');
+
+                    filterPlugins();
+
+                }
+            );
+
+        });
+
+
+    /*
+     * 启用 / 停用
+     */
+    document
+        .querySelectorAll(
+            '.plugin-toggle-form'
+        )
+        .forEach(function (form) {
+
+            form.addEventListener(
+                'submit',
+                function (event) {
+
+                    event.preventDefault();
+
+
+                    var card =
+                        form.closest(
+                            '[data-plugin-id]'
+                        );
+
+                    var btn =
+                        form.querySelector(
+                            '.plugin-toggle-btn'
+                        );
+
+                    if (!card || !btn) {
+                        return;
+                    }
+
+
+                    var action =
+                        btn.value;
+
+                    var pluginId =
+                        form.querySelector(
+                            '[name="plugin_id"]'
+                        ).value;
+
+                    var pluginName =
+                        card.dataset.pluginName;
+
+
+                    /*
+                     * 启用不询问。
+                     * 停用才确认。
+                     */
+                    if (
+                        action
+                        === 'deactivate'
+                        && !confirm(
+                            '确定停用「'
+                            + pluginName
+                            + '」吗？\n\n'
+                            + '停用后，该插件提供的功能将暂时不可用。'
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    btn.disabled = true;
+
+
+                    if (
+                        action === 'activate'
+                    ) {
+
+                        btn.innerHTML =
+                            '<span class="spinner-border '
+                            + 'spinner-border-sm me-1">'
+                            + '</span>'
+                            + '正在启用…';
+
+                    } else {
+
+                        btn.innerHTML =
+                            '<span class="spinner-border '
+                            + 'spinner-border-sm me-1">'
+                            + '</span>'
+                            + '正在停用…';
+
+                    }
+
+
+                    var formData =
+                        new FormData();
+
+                    formData.append(
+                        'csrf_token',
+                        csrfToken
+                    );
+
+                    formData.append(
+                        'plugin_id',
+                        pluginId
+                    );
+
+                    formData.append(
+                        'plugin_action',
+                        action
+                    );
+
+
+                    fetch(
+                        window.location.pathname,
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'X-Requested-With':
+                                    'XMLHttpRequest'
+                            },
+
+                            body: formData
+                        }
+                    )
+
+                    .then(function (response) {
+
+                        return response.json();
+
+                    })
+
+                    .then(function (data) {
+
+                        if (!data.ok) {
+
+                            throw new Error(
+                                data.msg
+                                || '操作失败'
+                            );
+
+                        }
+
+
+                        applyCardState(
+                            card,
+                            data.active
+                        );
+
+                        updateStats(
+                            data.enabled_count,
+                            data.disabled_count
+                        );
+
+                        showAlert(
+                            'success',
+                            data.msg
+                        );
+
+                        refreshSidebar();
+
+                    })
+
+                    .catch(function (error) {
+
+                        btn.disabled = false;
+
+                        applyCardState(
+                            card,
+                            action
+                                === 'deactivate'
+                        );
+
+                        showAlert(
+                            'danger',
+                            error.message
+                            || '操作失败，请重试'
+                        );
+
+                    });
+
+                }
+            );
+
+        });
+
+
 })();
 </script>
-
-<?php require_once 'includes/footer.php'; ?>
