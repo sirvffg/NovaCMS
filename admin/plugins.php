@@ -233,65 +233,7 @@ require_once 'includes/header.php';
 </style>
 
 <div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-        <div>
-            <h1 class="h3 mb-1"><i class="bi bi-puzzle me-2"></i>插件管理</h1>
-            <p class="text-muted mb-0 small">管理已安装的插件，启用或禁用功能模块</p>
-        </div>
-        <a href="https://lygalaxy.cn" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-box-arrow-up-right me-1"></i>获取更多插件
-        </a>
-    </div>
-
     <div id="plugin-alert"></div>
-
-    <!-- 统计卡片 -->
-    <div class="row g-3 mb-4 plugin-stats-card">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small">已安装插件</div>
-                        <div class="stat-value" id="stat-total"><?= $totalCount ?></div>
-                    </div>
-                    <div class="text-primary fs-1"><i class="bi bi-puzzle"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small">已启用</div>
-                        <div class="stat-value text-success" id="stat-enabled"><?= $enabledCount ?></div>
-                    </div>
-                    <div class="text-success fs-1"><i class="bi bi-check2-circle"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small">已禁用</div>
-                        <div class="stat-value text-secondary" id="stat-disabled"><?= $disabledCount ?></div>
-                    </div>
-                    <div class="text-secondary fs-1"><i class="bi bi-pause-circle"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small">插件目录</div>
-                        <div class="text-truncate" style="font-size: 0.875rem;"><code>/vendor/nova-plugins/</code></div>
-                    </div>
-                    <div class="text-info fs-1"><i class="bi bi-folder2"></i></div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- 插件列表 -->
     <?php if (empty($plugins)): ?>
@@ -375,20 +317,6 @@ require_once 'includes/header.php';
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
-
-    <div class="mt-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="mb-2"><i class="bi bi-info-circle me-1"></i>说明</h6>
-                <ul class="small text-muted mb-0 ps-3">
-                    <li>插件存放于 <code>/vendor/nova-plugins/{插件目录}/plugin.json</code>，系统自动扫描识别。</li>
-                    <li>系统首次识别插件时会自动生成唯一 <strong>id</strong> 并写入 <code>plugin.json</code>，作为启用/禁用的识别依据。</li>
-                    <li>禁用插件后，该插件注册的 REST API 路由、钩子和后台菜单将不再生效。</li>
-                    <li>新增插件后刷新本页即可自动识别并生成 id，无需额外配置。</li>
-                </ul>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script type="text/pjax-script">
