@@ -1,0 +1,10 @@
+{
+    "name": "Backup",
+    "uri": "https://lygalaxy.cn",
+    "description": "网站备份插件 - 自动备份文件和数据库",
+    "version": "1.0.0",
+    "author": "LyGalaxy",
+    "author_uri": "https://lygalaxy.cn",
+    "entry": "plugin/plugin.php",
+    "min_nova_version": "1.0"
+}

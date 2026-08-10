@@ -12,7 +12,8 @@ class Backup_Core {
     private $allowedUserAgent = 'BackupApp_lygalaxy.cn_2019_Galaxy';
 
     public function __construct() {
-        $this->backupDir = __DIR__ . DIRECTORY_SEPARATOR . 'backups';
+        // 备份数据目录位于插件根目录的 backups/（class-backup.php 在 plugin/ 子目录）
+        $this->backupDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'backups';
         if (!is_dir($this->backupDir)) {
             @mkdir($this->backupDir, 0755, true);
         }

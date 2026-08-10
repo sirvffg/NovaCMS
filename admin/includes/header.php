@@ -60,13 +60,50 @@ Nova_Backend_Menu::add_menu('网站配置', 'config', '/admin/config.php', 'bi-s
 Nova_Backend_Menu::add_menu('用户管理', 'admins', '/admin/admins.php', 'bi-people', 20, $systemMenu);
 Nova_Backend_Menu::add_menu('隐私与付费', 'privacy', '/admin/privacy_access.php', 'bi-shield-check', 30, $systemMenu);
 Nova_Backend_Menu::add_menu('主题管理', 'themes', '/admin/themes.php', 'bi-palette', 40, $systemMenu);
+Nova_Backend_Menu::add_menu('插件管理', 'plugins', '/admin/plugins.php', 'bi-puzzle', 50, $systemMenu);
 
 Nova_Backend_Menu::add_menu('访问统计', 'stats', '/admin/stats.php', 'bi-bar-chart', 10, $toolMenu);
 Nova_Backend_Menu::add_menu('留言管理', 'guestbook', '/admin/guestbook.php', 'bi-chat-left-dots', 20, $toolMenu);
 Nova_Backend_Menu::add_menu('邮件测试', 'email_test', '/admin/email_test.php', 'bi-envelope-check', 30, $toolMenu);
 Nova_Backend_Menu::add_menu('SEO 工具集', 'seo_tools', '/admin/seo_tools.php', 'bi-search', 40, $toolMenu);
 Nova_Backend_Menu::add_menu('系统日志', 'view_logs', '/admin/view_logs.php', 'bi-journal-text', 50, $toolMenu);
-Nova_Backend_Menu::add_menu('备份管理', 'backup', '/admin/backup.php', 'bi-database-check', 60, $toolMenu);
+
+// 自动注册已启用插件的后台菜单（插件提供 plugin/admin/index.php 即可）
+require_once __DIR__ . '/../../vendor/nova-json/class/plugin/class-plugin-registry.php';
+$_novaActivePluginIds = null;
+try {
+    $_novaPluginDb = getDB();
+    $_novaPluginCfg = $_novaPluginDb->query("SELECT active_plugins FROM website_config LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    if (!empty($_novaPluginCfg['active_plugins'])) {
+        $_novaDecoded = json_decode($_novaPluginCfg['active_plugins'], true);
+        if (is_array($_novaDecoded)) {
+            $_novaActivePluginIds = $_novaDecoded;
+        }
+    }
+} catch (Exception $e) {
+    // 查询失败时保持全部启用
+}
+foreach (Nova_Plugin_Registry::scan_all() as $_novaPlugin) {
+    // 跳过已禁用的插件
+    if ($_novaActivePluginIds !== null && !in_array($_novaPlugin['id'], $_novaActivePluginIds, true)) {
+        continue;
+    }
+    // 仅当插件提供后台管理页面时才注册菜单
+    $_novaPluginAdminFile = $_novaPlugin['plugin_dir'] . '/plugin/admin/index.php';
+    if (!is_file($_novaPluginAdminFile)) {
+        continue;
+    }
+    Nova_Backend_Menu::add_menu(
+        $_novaPlugin['name'],
+        'plugin-' . $_novaPlugin['slug'],
+        '/admin/plugin-page.php?plugin=' . urlencode($_novaPlugin['id']),
+        'bi-puzzle',
+        60,
+        $toolMenu
+    );
+}
+unset($_novaActivePluginIds, $_novaPluginDb, $_novaPluginCfg, $_novaDecoded, $_novaPlugin, $_novaPluginAdminFile);
+
 Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-right', 70, $toolMenu + ['target' => '_blank']);
 ?>
 <!DOCTYPE html>

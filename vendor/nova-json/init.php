@@ -81,6 +81,7 @@ require_once $novaDir . '/class/database/class-db-seeder.php';
 require_once $novaDir . '/class/system/class-hooks.php';
 require_once $novaDir . '/class/system/class-api.php';
 require_once $novaDir . '/class/plugin/class-plugin.php';
+require_once $novaDir . '/class/plugin/class-plugin-registry.php';
 require_once $novaDir . '/class/theme/class-theme.php';
 require_once $novaDir . '/class/filesystem/class-file.php';
 require_once $novaDir . '/class/filesystem/class-upload.php';
@@ -151,10 +152,30 @@ function nova_auth_bearer_token() {
 // 4. 加载第三方插件和主题
 // =============================================
 
-$pluginsDir = dirname($novaDir) . '/nova-plugins';
-if (is_dir($pluginsDir)) {
-    foreach (glob($pluginsDir . '/*/plugin.php') as $plugin) {
-        require_once $plugin;
+// 读取已启用的插件 id 列表：若 active_plugins 为 NULL/空，则视为全部启用（向后兼容）
+$activePluginIds = null;
+try {
+    $pluginCfgDb = getDB();
+    $cfgRow = $pluginCfgDb->query("SELECT active_plugins FROM website_config LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    if (!empty($cfgRow['active_plugins'])) {
+        $decoded = json_decode($cfgRow['active_plugins'], true);
+        if (is_array($decoded)) {
+            $activePluginIds = $decoded;
+        }
+    }
+} catch (Exception $e) {
+    // 字段不存在或查询失败时，保持全部启用
+}
+
+// 扫描插件（自动生成缺失的 id），按启用状态加载入口文件
+$installedPlugins = Nova_Plugin_Registry::scan_all();
+foreach ($installedPlugins as $pluginInfo) {
+    // 若已配置启用列表，则只加载列表中 id 对应的插件
+    if ($activePluginIds !== null && !in_array($pluginInfo['id'], $activePluginIds, true)) {
+        continue;
+    }
+    if (!empty($pluginInfo['entry_path']) && is_file($pluginInfo['entry_path'])) {
+        require_once $pluginInfo['entry_path'];
     }
 }
 

@@ -101,22 +101,58 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
 
 ### 目录结构
 
-NovaCMS 的插件系统约定插件应放置在 `vendor/nova-plugins/` 目录，每个插件一个独立文件夹：
+NovaCMS 的插件系统约定插件应放置在 `vendor/nova-plugins/` 目录，每个插件一个独立文件夹。**自 NovaCMS 1.1 起，插件采用统一的目录规范**：代码统一放在 `plugin/` 子目录，元数据通过根目录的 `plugin.json` 声明，系统在首次识别时自动生成唯一 `id` 写入 `plugin.json`：
 
 ```
 vendor/nova-plugins/
-├── my-plugin/
-│   ├── plugin.php              # 插件入口文件
-│   ├── class-my-plugin.php     # 插件主类（推荐）
-│   ├── routes/                 # 路由文件目录（自动加载）
-│   │   ├── api.php
-│   │   └── web.php
-│   ├── views/                  # 视图模板目录
-│   │   └── settings.php
-│   └── assets/                 # 静态资源目录
-│       ├── css/
-│       └── js/
+├── my-plugin/                  # 插件目录（slug，唯一）
+│   ├── plugin/                 # 插件代码目录（所有 PHP 代码）
+│   │   ├── plugin.php          # 入口文件（默认 entry）
+│   │   ├── class-my-plugin.php # 插件主类（推荐）
+│   │   ├── routes/             # 路由文件目录（自动加载）
+│   │   │   ├── api.php
+│   │   │   └── web.php
+│   │   ├── views/              # 视图模板目录
+│   │   │   └── settings.php
+│   │   └── admin/              # 后台管理页面
+│   │       └── index.php
+│   ├── plugin.json             # 元数据 + 系统生成的 id
+│   ├── LICENSE                 # 许可证文件
+│   ├── assets/                 # 静态资源目录（可选）
+│   │   ├── css/
+│   │   └── js/
+│   └── data/                   # 运行时数据目录（可选，如备份、缓存等）
 ```
+
+#### plugin.json 格式
+
+```json
+{
+    "id": "p_a1b2c3d4e5f67890",
+    "name": "My Plugin",
+    "uri": "https://example.com/my-plugin",
+    "description": "我的第一个 NovaCMS 插件",
+    "version": "1.0.0",
+    "author": "你的名字",
+    "author_uri": "https://example.com",
+    "entry": "plugin/plugin.php",
+    "min_nova_version": "1.0"
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | 系统生成 | 唯一识别符（`p_` + 16 位十六进制），由系统首次识别时自动写入，**启用/禁用以此 id 为准** |
+| `name` | string | 是 | 插件显示名称 |
+| `uri` | string | 否 | 插件主页 URL |
+| `description` | string | 否 | 插件描述 |
+| `version` | string | 是 | 版本号 |
+| `author` | string | 否 | 作者 |
+| `author_uri` | string | 否 | 作者主页 |
+| `entry` | string | 否 | 入口文件相对路径，默认 `plugin/plugin.php` |
+| `min_nova_version` | string | 否 | 最低 NovaCMS 版本要求 |
+
+> **注意**：`id` 字段不需要手动填写。将插件放入 `vendor/nova-plugins/` 后，系统首次扫描时会自动生成并写入 `plugin.json`。
 
 ### 快速启动模板
 
@@ -124,8 +160,19 @@ vendor/nova-plugins/
 
 ```bash
 cd vendor/nova-plugins/
-mkdir -p my-plugin/routes my-plugin/views my-plugin/assets
-touch my-plugin/class-my-plugin.php
+mkdir -p my-plugin/plugin/routes my-plugin/plugin/views my-plugin/plugin/admin my-plugin/assets
+# 创建元数据文件
+cat > my-plugin/plugin.json << 'EOF'
+{
+    "name": "My Plugin",
+    "description": "插件描述",
+    "version": "1.0.0",
+    "author": "你的名字",
+    "entry": "plugin/plugin.php"
+}
+EOF
+# 创建入口文件
+touch my-plugin/plugin/plugin.php
 ```
 
 ---
@@ -136,17 +183,11 @@ touch my-plugin/class-my-plugin.php
 
 ### 创建插件类
 
-在 `vendor/nova-plugins/my-plugin/class-my-plugin.php` 中创建插件主类：
+在 `vendor/nova-plugins/my-plugin/plugin/class-my-plugin.php` 中创建插件主类：
 
 ```php
 <?php
-/**
- * Plugin Name: My Plugin
- * Plugin URI:  https://example.com/my-plugin
- * Description: 我的第一个 NovaCMS 插件
- * Version:     1.0.0
- * Author:      你的名字
- */
+// vendor/nova-plugins/my-plugin/plugin/class-my-plugin.php
 
 defined('NOVA_API') or exit('禁止直接访问');
 
@@ -209,22 +250,43 @@ class MyPlugin extends Nova_Plugin {
 new MyPlugin();
 ```
 
-### 文件引用
+### 创建入口文件
 
-如需遵循 MVC 风格，可创建 `plugin.php` 作为入口文件：
+在 `vendor/nova-plugins/my-plugin/plugin/plugin.php` 中创建入口文件：
 
 ```php
 <?php
-// vendor/nova-plugins/my-plugin/plugin.php
+// vendor/nova-plugins/my-plugin/plugin/plugin.php
+defined('NOVA_API') or exit('禁止直接访问');
 require_once __DIR__ . '/class-my-plugin.php';
 // 系统会自动扫描并加载此文件
 ```
 
+### 创建 plugin.json
+
+在 `vendor/nova-plugins/my-plugin/plugin.json` 中声明元数据：
+
+```json
+{
+    "name": "My Plugin",
+    "uri": "https://example.com/my-plugin",
+    "description": "我的第一个 NovaCMS 插件",
+    "version": "1.0.0",
+    "author": "你的名字",
+    "author_uri": "https://example.com",
+    "entry": "plugin/plugin.php",
+    "min_nova_version": "1.0"
+}
+```
+
+> `id` 字段无需填写，系统首次识别时会自动生成并写入。
+
 ### 验证插件
 
-1. 将插件目录 `my-plugin` 放入 `vendor/nova-plugins/`
-2. 访问任意前台页面，插件即自动加载
-3. 访问 `GET /nova-json/v1/my-plugin/hello` 测试 API
+1. 将插件目录 `my-plugin` 放入 `vendor/nova-plugins/`，确保包含 `plugin.json` 和 `plugin/plugin.php`
+2. 访问后台「插件管理」页面，系统会自动识别并生成 `id`
+3. 访问任意前台页面，插件即自动加载（需处于启用状态）
+4. 访问 `GET /nova-json/v1/my-plugin/hello` 测试 API
 
 **响应示例：**
 
@@ -1252,10 +1314,13 @@ new ShortcodePlugin();
 ### 插件开发检查清单
 
 - [ ] 创建插件目录 `vendor/nova-plugins/{plugin-name}/`
+- [ ] 创建 `plugin.json` 元数据文件（name、version、entry 等字段）
+- [ ] 创建 `plugin/plugin.php` 入口文件
 - [ ] 创建插件主类，继承 `Nova_Plugin`
 - [ ] 在 `init()` 方法中注册路由、钩子、菜单
 - [ ] 如果需要数据库表，使用 `Nova_DB_Schema` 创建
 - [ ] 如果需要后台页面，继承 `Nova_Backend_Page`
+- [ ] 提供 `LICENSE` 许可证文件
 - [ ] 使用 `Nova_Hooks` 进行扩展，而非修改核心文件
 - [ ] 使用 `Nova_DB` 的参数绑定查询防止 SQL 注入
 
@@ -1263,17 +1328,23 @@ new ShortcodePlugin();
 
 | 文件路径 | 说明 |
 |----------|------|
-| `vendor/nova-plugins/{name}/class-{name}.php` | 插件主类文件 |
-| `vendor/nova-plugins/{name}/routes/*.php` | REST 路由文件（自动加载） |
-| `vendor/nova-plugins/{name}/views/*.php` | 后台视图模板 |
-| `vendor/nova-plugins/{name}/assets/` | 静态资源目录 |
+| `vendor/nova-plugins/{name}/plugin.json` | 插件元数据 + 系统生成的 id |
+| `vendor/nova-plugins/{name}/plugin/plugin.php` | 插件入口文件（默认 entry） |
+| `vendor/nova-plugins/{name}/plugin/class-{name}.php` | 插件主类文件 |
+| `vendor/nova-plugins/{name}/plugin/routes/*.php` | REST 路由文件（自动加载） |
+| `vendor/nova-plugins/{name}/plugin/views/*.php` | 后台视图模板 |
+| `vendor/nova-plugins/{name}/plugin/admin/*.php` | 后台管理页面 |
+| `vendor/nova-plugins/{name}/assets/` | 静态资源目录（可选） |
+| `vendor/nova-plugins/{name}/LICENSE` | 许可证文件 |
+| `vendor/nova-plugins/{name}/data/` | 运行时数据目录（可选） |
 
 ### 版本兼容性
 
 | NovaCMS 版本 | 插件 API 版本 | 变更说明 |
 |-------------|--------------|----------|
 | 1.0+ | 1.0 | 初始版本 |
+| 1.1+ | 1.1 | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；系统自动生成唯一 `id`；启用/禁用以 `id` 为准 |
 
 ---
 
-> 最后更新：2026-07-28
+> 最后更新：2026-08-10
