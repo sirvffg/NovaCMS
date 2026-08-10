@@ -60,14 +60,6 @@ Nova_Backend_Menu::add_menu('网站配置', 'config', '/admin/config.php', 'bi-s
 Nova_Backend_Menu::add_menu('用户管理', 'admins', '/admin/admins.php', 'bi-people', 20, $systemMenu);
 Nova_Backend_Menu::add_menu('隐私与付费', 'privacy', '/admin/privacy_access.php', 'bi-shield-check', 30, $systemMenu);
 Nova_Backend_Menu::add_menu('主题管理', 'themes', '/admin/themes.php', 'bi-palette', 40, $systemMenu);
-Nova_Backend_Menu::add_menu(
-    '插件管理',
-    'plugins',
-    '/admin/plugins.php',
-    'bi-plug',
-    50,
-    $systemMenu
-);
 
 Nova_Backend_Menu::add_menu('访问统计', 'stats', '/admin/stats.php', 'bi-bar-chart', 10, $toolMenu);
 Nova_Backend_Menu::add_menu('留言管理', 'guestbook', '/admin/guestbook.php', 'bi-chat-left-dots', 20, $toolMenu);

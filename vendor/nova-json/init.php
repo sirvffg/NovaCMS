@@ -81,7 +81,6 @@ require_once $novaDir . '/class/database/class-db-seeder.php';
 require_once $novaDir . '/class/system/class-hooks.php';
 require_once $novaDir . '/class/system/class-api.php';
 require_once $novaDir . '/class/plugin/class-plugin.php';
-require_once $novaDir . '/class/plugin/class-plugin-manager.php';
 require_once $novaDir . '/class/theme/class-theme.php';
 require_once $novaDir . '/class/filesystem/class-file.php';
 require_once $novaDir . '/class/filesystem/class-upload.php';
@@ -152,21 +151,12 @@ function nova_auth_bearer_token() {
 // 4. 加载第三方插件和主题
 // =============================================
 
-//$pluginsDir = dirname($novaDir) . '/nova-plugins';
-//if (is_dir($pluginsDir)) {
-//    foreach (glob($pluginsDir . '/*/plugin.php') as $plugin) {
- //       require_once $plugin;
-//    }
-//}
-
 $pluginsDir = dirname($novaDir) . '/nova-plugins';
-
-$pluginManager = new Nova_Plugin_Manager(
-    getDB(),
-    $pluginsDir
-);
-
-$pluginManager->loadEnabled();
+if (is_dir($pluginsDir)) {
+    foreach (glob($pluginsDir . '/*/plugin.php') as $plugin) {
+        require_once $plugin;
+    }
+}
 
 $themesDir = dirname($novaDir) . '/nova-themes';
 if (is_dir($themesDir)) {
