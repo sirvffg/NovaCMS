@@ -338,93 +338,76 @@ require_once 'includes/header.php';
 }
 
 
-/* 插件卡片 */
-.plugin-card {
-    height: 100%;
+/* 插件表格 */
+.plugin-table-card {
     border: 1px solid var(--bs-border-color);
     border-radius: 14px;
     overflow: hidden;
-    transition:
-        border-color .2s ease,
-        box-shadow .2s ease,
-        transform .2s ease;
 }
 
-.plugin-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(0,0,0,.07);
+.plugin-table {
+    margin-bottom: 0;
+    font-size: .9rem;
 }
 
-.plugin-card.is-active {
-    border-color: rgba(25, 135, 84, .35);
+.plugin-table thead th {
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    letter-spacing: .03em;
+    white-space: nowrap;
 }
 
-.plugin-card.is-inactive {
-    opacity: .82;
+.plugin-table tbody td {
+    vertical-align: middle;
 }
 
-.plugin-card-body {
-    padding: 20px;
+.plugin-row {
+    transition: background-color .15s ease;
 }
 
-.plugin-card-head {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
+.plugin-row-inactive {
+    opacity: .78;
 }
 
 .plugin-icon {
-    width: 48px;
-    height: 48px;
-    flex: 0 0 48px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    font-size: 22px;
+    border-radius: 10px;
+    font-size: 18px;
     color: var(--bs-primary);
     background: rgba(13, 110, 253, .1);
 }
 
-.plugin-card.is-active .plugin-icon {
+.plugin-row:not(.plugin-row-inactive) .plugin-icon {
     color: var(--bs-success);
     background: rgba(25, 135, 84, .1);
 }
 
-.plugin-card.is-inactive .plugin-icon {
+.plugin-row-inactive .plugin-icon {
     color: var(--bs-secondary-color);
     background: var(--bs-tertiary-bg);
 }
 
-.plugin-main {
-    min-width: 0;
-    flex: 1;
-}
-
-.plugin-name-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-}
-
 .plugin-name {
     margin: 0;
-    font-size: 1rem;
     font-weight: 650;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .plugin-status {
-    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     gap: 5px;
     font-size: .72rem;
-    padding: 3px 8px;
+    padding: 2px 8px;
     border-radius: 999px;
+    white-space: nowrap;
 }
 
 .plugin-status::before {
@@ -445,63 +428,20 @@ require_once 'includes/header.php';
     background: var(--bs-tertiary-bg);
 }
 
-.plugin-description {
-    min-height: 42px;
-    margin: 15px 0;
-    color: var(--bs-secondary-color);
-    font-size: .86rem;
-    line-height: 1.55;
+.plugin-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 320px;
 }
 
-.plugin-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-    color: var(--bs-secondary-color);
-    font-size: .78rem;
-}
-
-.plugin-meta span,
-.plugin-meta a {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.plugin-meta a {
-    color: inherit;
-    text-decoration: none;
-}
-
-.plugin-meta a:hover {
-    color: var(--bs-primary);
-}
-
-.plugin-id {
-    margin-top: 12px;
-}
-
-.plugin-id code {
-    color: var(--bs-secondary-color);
-    font-size: .7rem;
-}
-
-
-/* 卡片底部按钮 */
 .plugin-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 12px 16px;
-    border-top: 1px solid var(--bs-border-color);
-    background: var(--bs-tertiary-bg);
-}
-
-.plugin-actions-main {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    justify-content: flex-end;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 .plugin-actions form {
@@ -513,7 +453,7 @@ require_once 'includes/header.php';
 }
 
 .plugin-enable-btn {
-    min-width: 90px;
+    min-width: 84px;
 }
 
 .plugin-disable-btn {
@@ -585,18 +525,6 @@ require_once 'includes/header.php';
     }
 
     .plugin-filter-btn {
-        flex: 1;
-    }
-
-    .plugin-actions {
-        align-items: stretch;
-    }
-
-    .plugin-actions-main {
-        flex: 1;
-    }
-
-    .plugin-actions-main .btn {
         flex: 1;
     }
 }
@@ -713,7 +641,7 @@ require_once 'includes/header.php';
 
     <?php if (empty($plugins)): ?>
 
-        <div class="card plugin-card">
+        <div class="card border-0 shadow-sm">
 
             <div class="plugin-empty">
 
@@ -736,235 +664,236 @@ require_once 'includes/header.php';
     <?php else: ?>
 
 
-        <div class="row g-3" id="plugin-list">
+        <div class="card border-0 shadow-sm plugin-table-card">
 
-            <?php foreach ($plugins as $plugin): ?>
+            <div class="table-responsive">
 
-                <?php
-                $hasAdminPage = is_file(
-                    $plugin['plugin_dir']
-                    . '/plugin/admin/index.php'
-                );
+                <table class="table plugin-table align-middle">
 
-                $searchText =
-                    $plugin['name'] . ' '
-                    . $plugin['slug'] . ' '
-                    . $plugin['author'] . ' '
-                    . $plugin['description'];
-                ?>
+                    <thead>
+
+                        <tr>
+                            <th scope="col" style="width: 30%;">插件</th>
+                            <th scope="col">版本</th>
+                            <th scope="col">作者</th>
+                            <th scope="col">ID</th>
+                            <th scope="col" class="text-end">操作</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="plugin-list">
+
+                        <?php foreach ($plugins as $plugin): ?>
+
+                            <?php
+                            $hasAdminPage = is_file(
+                                $plugin['plugin_dir']
+                                . '/plugin/admin/index.php'
+                            );
+
+                            $searchText =
+                                $plugin['name'] . ' '
+                                . $plugin['slug'] . ' '
+                                . $plugin['author'] . ' '
+                                . $plugin['description'];
+                            ?>
+
+                            <tr
+                                class="plugin-row <?= $plugin['active'] ? '' : 'plugin-row-inactive' ?>"
+                                data-plugin-id="<?= e($plugin['id']) ?>"
+                                data-plugin-name="<?= e($plugin['name']) ?>"
+                                data-plugin-active="<?= $plugin['active'] ? '1' : '0' ?>"
+                                data-plugin-search="<?= e(mb_strtolower($searchText)) ?>"
+                            >
+
+                                <td>
+
+                                    <div class="d-flex align-items-center gap-2">
+
+                                        <div class="plugin-icon">
+                                            <i class="bi bi-puzzle-fill"></i>
+                                        </div>
+
+                                        <div class="min-w-0">
+
+                                            <div class="d-flex align-items-center gap-2">
+
+                                                <strong class="plugin-name text-truncate">
+                                                    <?= e($plugin['name']) ?>
+                                                </strong>
+
+                                                <span class="plugin-status <?= $plugin['active'] ? 'active' : 'inactive' ?>">
+
+                                                    <?= $plugin['active']
+                                                        ? '运行中'
+                                                        : '已停用'
+                                                    ?>
+
+                                                </span>
+
+                                            </div>
 
 
-                <div
-                    class="col-md-6 col-xl-4 plugin-grid-item"
-                    data-plugin-active="<?= $plugin['active'] ? '1' : '0' ?>"
-                    data-plugin-search="<?= e(mb_strtolower($searchText)) ?>"
-                >
+                                            <span
+                                                class="plugin-desc small text-muted mt-1"
+                                                title="<?= e($plugin['description']) ?>"
+                                            >
 
-                    <div
-                        class="card plugin-card <?= $plugin['active'] ? 'is-active' : 'is-inactive' ?>"
-                        data-plugin-id="<?= e($plugin['id']) ?>"
-                        data-plugin-name="<?= e($plugin['name']) ?>"
-                    >
+                                                <?= $plugin['description']
+                                                    ? e($plugin['description'])
+                                                    : '这个插件没有提供说明。'
+                                                ?>
 
-                        <div class="plugin-card-body">
+                                            </span>
 
-                            <div class="plugin-card-head">
-
-                                <div class="plugin-icon">
-                                    <i class="bi bi-puzzle-fill"></i>
-                                </div>
-
-
-                                <div class="plugin-main">
-
-                                    <div class="plugin-name-row">
-
-                                        <h5 class="plugin-name">
-                                            <?= e($plugin['name']) ?>
-                                        </h5>
-
-
-                                        <span class="plugin-status <?= $plugin['active'] ? 'active' : 'inactive' ?>">
-
-                                            <?= $plugin['active']
-                                                ? '运行中'
-                                                : '已停用'
-                                            ?>
-
-                                        </span>
+                                        </div>
 
                                     </div>
 
+                                </td>
 
-                                    <div class="plugin-meta mt-2">
+                                <td class="text-nowrap">
 
-                                        <?php if ($plugin['version']): ?>
+                                    <?php if ($plugin['version']): ?>
 
-                                            <span>
-                                                <i class="bi bi-tag"></i>
-                                                v<?= e($plugin['version']) ?>
+                                        <span class="text-muted small">
+                                            <i class="bi bi-tag me-1"></i>
+                                            v<?= e($plugin['version']) ?>
+                                        </span>
+
+                                    <?php endif; ?>
+
+                                </td>
+
+                                <td>
+
+                                    <?php if ($plugin['author']): ?>
+
+                                        <?php if ($plugin['author_uri']): ?>
+
+                                            <a
+                                                href="<?= e($plugin['author_uri']) ?>"
+                                                target="_blank"
+                                                rel="noopener"
+                                                class="small text-decoration-none"
+                                            >
+                                                <i class="bi bi-person me-1"></i>
+                                                <?= e($plugin['author']) ?>
+                                            </a>
+
+                                        <?php else: ?>
+
+                                            <span class="small text-muted">
+                                                <i class="bi bi-person me-1"></i>
+                                                <?= e($plugin['author']) ?>
                                             </span>
 
                                         <?php endif; ?>
 
+                                    <?php endif; ?>
 
-                                        <?php if ($plugin['author']): ?>
+                                </td>
 
-                                            <?php if ($plugin['author_uri']): ?>
+                                <td>
 
-                                                <a
-                                                    href="<?= e($plugin['author_uri']) ?>"
-                                                    target="_blank"
-                                                    rel="noopener"
-                                                >
-                                                    <i class="bi bi-person"></i>
-                                                    <?= e($plugin['author']) ?>
-                                                </a>
+                                    <code class="small" title="插件内部 ID">
+                                        <?= e($plugin['id']) ?>
+                                    </code>
 
-                                            <?php else: ?>
+                                </td>
 
-                                                <span>
-                                                    <i class="bi bi-person"></i>
-                                                    <?= e($plugin['author']) ?>
-                                                </span>
+                                <td class="text-end">
 
-                                            <?php endif; ?>
+                                    <div class="plugin-actions">
+
+                                        <?php if ($plugin['active'] && $hasAdminPage): ?>
+
+                                            <a
+                                                href="/admin/plugin-page.php?plugin=<?= rawurlencode($plugin['id']) ?>"
+                                                class="btn btn-primary btn-sm plugin-action-btn"
+                                            >
+                                                <i class="bi bi-sliders me-1"></i>
+                                                管理
+                                            </a>
 
                                         <?php endif; ?>
 
+
+                                        <?php if ($plugin['uri']): ?>
+
+                                            <a
+                                                href="<?= e($plugin['uri']) ?>"
+                                                target="_blank"
+                                                rel="noopener"
+                                                class="btn btn-outline-secondary btn-sm plugin-action-btn"
+                                                title="查看插件主页"
+                                            >
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+
+                                        <?php endif; ?>
+
+
+                                        <form
+                                            method="POST"
+                                            class="plugin-toggle-form"
+                                        >
+
+                                            <input
+                                                type="hidden"
+                                                name="csrf_token"
+                                                value="<?= e(generateCSRFToken()) ?>"
+                                            >
+
+                                            <input
+                                                type="hidden"
+                                                name="plugin_id"
+                                                value="<?= e($plugin['id']) ?>"
+                                            >
+
+
+                                            <?php if ($plugin['active']): ?>
+
+                                                <button
+                                                    type="submit"
+                                                    name="plugin_action"
+                                                    value="deactivate"
+                                                    class="btn btn-sm btn-outline-secondary plugin-action-btn plugin-toggle-btn plugin-disable-btn"
+                                                >
+                                                    <i class="bi bi-power me-1"></i>
+                                                    停用
+                                                </button>
+
+                                            <?php else: ?>
+
+                                                <button
+                                                    type="submit"
+                                                    name="plugin_action"
+                                                    value="activate"
+                                                    class="btn btn-sm btn-primary plugin-action-btn plugin-toggle-btn plugin-enable-btn"
+                                                >
+                                                    <i class="bi bi-play-fill me-1"></i>
+                                                    启用
+                                                </button>
+
+                                            <?php endif; ?>
+
+                                        </form>
+
                                     </div>
 
-                                </div>
+                                </td>
 
-                            </div>
+                            </tr>
 
+                        <?php endforeach; ?>
 
-                            <div class="plugin-description">
+                    </tbody>
 
-                                <?= $plugin['description']
-                                    ? e($plugin['description'])
-                                    : '这个插件没有提供说明。'
-                                ?>
+                </table>
 
-                            </div>
-
-
-                            <div class="plugin-meta">
-
-                                <span title="插件目录">
-                                    <i class="bi bi-folder"></i>
-                                    <?= e($plugin['slug']) ?>
-                                </span>
-
-                                <?php if ($hasAdminPage): ?>
-
-                                    <span>
-                                        <i class="bi bi-sliders"></i>
-                                        提供管理页面
-                                    </span>
-
-                                <?php endif; ?>
-
-                            </div>
-
-
-                            <div class="plugin-id">
-                                <code title="插件内部 ID">
-                                    <?= e($plugin['id']) ?>
-                                </code>
-                            </div>
-
-                        </div>
-
-
-                        <div class="plugin-actions">
-
-
-                            <div class="plugin-actions-main">
-
-                                <?php if ($plugin['active'] && $hasAdminPage): ?>
-
-                                    <a
-                                        href="/admin/plugin-page.php?plugin=<?= rawurlencode($plugin['id']) ?>"
-                                        class="btn btn-primary btn-sm plugin-action-btn"
-                                    >
-                                        <i class="bi bi-sliders me-1"></i>
-                                        管理
-                                    </a>
-
-                                <?php endif; ?>
-
-
-                                <?php if ($plugin['uri']): ?>
-
-                                    <a
-                                        href="<?= e($plugin['uri']) ?>"
-                                        target="_blank"
-                                        rel="noopener"
-                                        class="btn btn-outline-secondary btn-sm plugin-action-btn"
-                                        title="查看插件主页"
-                                    >
-                                        <i class="bi bi-box-arrow-up-right"></i>
-                                    </a>
-
-                                <?php endif; ?>
-
-                            </div>
-
-
-                            <form
-                                method="POST"
-                                class="plugin-toggle-form"
-                            >
-
-                                <input
-                                    type="hidden"
-                                    name="csrf_token"
-                                    value="<?= e(generateCSRFToken()) ?>"
-                                >
-
-                                <input
-                                    type="hidden"
-                                    name="plugin_id"
-                                    value="<?= e($plugin['id']) ?>"
-                                >
-
-
-                                <?php if ($plugin['active']): ?>
-
-                                    <button
-                                        type="submit"
-                                        name="plugin_action"
-                                        value="deactivate"
-                                        class="btn btn-sm btn-outline-secondary plugin-action-btn plugin-toggle-btn plugin-disable-btn"
-                                    >
-                                        <i class="bi bi-power me-1"></i>
-                                        停用
-                                    </button>
-
-                                <?php else: ?>
-
-                                    <button
-                                        type="submit"
-                                        name="plugin_action"
-                                        value="activate"
-                                        class="btn btn-sm btn-primary plugin-action-btn plugin-toggle-btn plugin-enable-btn"
-                                    >
-                                        <i class="bi bi-play-fill me-1"></i>
-                                        启用
-                                    </button>
-
-                                <?php endif; ?>
-
-                            </form>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            <?php endforeach; ?>
+            </div>
 
         </div>
 
@@ -1028,23 +957,12 @@ require_once 'includes/header.php';
     function applyCardState(card, active) {
 
         card.classList.toggle(
-            'is-active',
-            active
-        );
-
-        card.classList.toggle(
-            'is-inactive',
+            'plugin-row-inactive',
             !active
         );
 
-
-        var gridItem =
-            card.closest('.plugin-grid-item');
-
-        if (gridItem) {
-            gridItem.dataset.pluginActive =
-                active ? '1' : '0';
-        }
+        card.dataset.pluginActive =
+            active ? '1' : '0';
 
 
         var status =
@@ -1294,7 +1212,7 @@ require_once 'includes/header.php';
 
         document
             .querySelectorAll(
-                '.plugin-grid-item'
+                '.plugin-row'
             )
             .forEach(function (item) {
 
