@@ -170,12 +170,33 @@ try {
 // 扫描插件（自动生成缺失的 id），按启用状态加载入口文件
 $installedPlugins = Nova_Plugin_Registry::scan_all();
 foreach ($installedPlugins as $pluginInfo) {
-    // 若已配置启用列表，则只加载列表中 id 对应的插件
-    if ($activePluginIds !== null && !in_array($pluginInfo['id'], $activePluginIds, true)) {
-        continue;
-    }
-    if (!empty($pluginInfo['entry_path']) && is_file($pluginInfo['entry_path'])) {
-        require_once $pluginInfo['entry_path'];
+    $isActive = $activePluginIds === null ? true : in_array($pluginInfo['id'], $activePluginIds, true);
+
+    if ($isActive) {
+        // 已启用插件：正常加载入口（入口中实例化 Nova_Plugin 子类，会自动加载 routes 并设置上下文）
+        if (!empty($pluginInfo['entry_path']) && is_file($pluginInfo['entry_path'])) {
+            require_once $pluginInfo['entry_path'];
+        }
+    } else {
+        // 已禁用插件：不加载入口类（避免副作用），仅单独加载 routes 目录以便路由被注册
+        // 路由注册后由 Nova_REST_Server::dispatch() 在访问时拦截并返回「此插件已禁用」
+        $pluginCodeDir = $pluginInfo['plugin_dir'] . '/plugin';
+        $routesDir = $pluginCodeDir . '/routes';
+        if (is_dir($routesDir)) {
+            $files = glob($routesDir . '/*.php');
+            if ($files) {
+                Nova_REST_Server::set_current_plugin_context($pluginInfo['id'], $pluginInfo['slug']);
+                foreach ($files as $file) {
+                    // 用错误抑制 + 输出缓冲保护，防止禁用插件的 routes 中因依赖未加载（如类缺失）而崩溃
+                    try {
+                        @include_once $file;
+                    } catch (Throwable $e) {
+                        // 忽略错误：该插件路由未成功注册，访问时返回 404 而非禁用提示，但保证系统稳定
+                    }
+                }
+                Nova_REST_Server::clear_current_plugin_context();
+            }
+        }
     }
 }
 

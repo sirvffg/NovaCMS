@@ -17,9 +17,16 @@ defined('NOVA_API') or exit('禁止直接访问');
 
 class Nova_Plugin_Registry {
 
+    /** @var array|null 已启用插件 id 列表缓存 */
+    protected static $cached_active_ids = null;
+
+    /** @var array|null 已扫描插件缓存 */
+    protected static $cached_plugins = null;
+
     /**
      * 扫描所有已安装的插件，自动为缺失 id 的插件生成并写入 id
      *
+     * @param bool $force 是否强制刷新缓存
      * @return array 插件信息数组，每项包含：
      *   - slug:             目录名
      *   - id:               唯一识别符（p_ + 16位十六进制）
@@ -29,11 +36,16 @@ class Nova_Plugin_Registry {
      *   - plugin_dir:       插件根目录绝对路径
      *   - min_nova_version: 最低 NovaCMS 版本要求
      */
-    public static function scan_all() {
+    public static function scan_all($force = false) {
+        if (!$force && self::$cached_plugins !== null) {
+            return self::$cached_plugins;
+        }
+
         $pluginsDir = dirname(__DIR__, 3) . '/nova-plugins';
         $plugins = [];
 
         if (!is_dir($pluginsDir)) {
+            self::$cached_plugins = $plugins;
             return $plugins;
         }
 
@@ -70,7 +82,83 @@ class Nova_Plugin_Registry {
             ];
         }
 
+        self::$cached_plugins = $plugins;
         return $plugins;
+    }
+
+    /**
+     * 根据 id 或 slug 查找插件信息
+     *
+     * @param string $key 插件 id 或 slug
+     * @return array|null
+     */
+    public static function find_plugin($key) {
+        $plugins = self::scan_all();
+        foreach ($plugins as $p) {
+            if ($p['id'] === $key || $p['slug'] === $key) {
+                return $p;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 获取已启用的插件 id 列表
+     *
+     * @param bool $force 是否强制刷新缓存
+     * @return array|null 返回数组；若返回 null 表示未配置（全部启用）
+     */
+    public static function get_active_plugin_ids($force = false) {
+        if (!$force && self::$cached_active_ids !== null) {
+            return self::$cached_active_ids;
+        }
+
+        $result = null;
+        try {
+            if (class_exists('Nova_DB')) {
+                $db = new Nova_DB();
+            } else {
+                $baseDir = dirname(__DIR__, 4);
+                require_once $baseDir . '/config/database.php';
+                $db = getDB();
+            }
+            $stmt = $db->query("SELECT active_plugins FROM website_config LIMIT 1");
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!empty($row['active_plugins'])) {
+                $decoded = json_decode($row['active_plugins'], true);
+                if (is_array($decoded)) {
+                    $result = $decoded;
+                }
+            }
+        } catch (Exception $e) {
+            // 字段不存在或查询失败时，保持全部启用
+        }
+
+        self::$cached_active_ids = $result;
+        return $result;
+    }
+
+    /**
+     * 检查插件是否已启用
+     *
+     * @param string $pluginId 插件 id
+     * @return bool
+     */
+    public static function is_plugin_active($pluginId) {
+        $activeIds = self::get_active_plugin_ids();
+        // 若未配置（null），表示全部启用
+        if ($activeIds === null) {
+            return true;
+        }
+        return in_array($pluginId, $activeIds, true);
+    }
+
+    /**
+     * 清除缓存（例如在启用/禁用插件后调用）
+     */
+    public static function clear_cache() {
+        self::$cached_active_ids = null;
+        self::$cached_plugins = null;
     }
 
     /**

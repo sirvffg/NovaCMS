@@ -119,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax) {
             $activePluginIds[] = $pluginId;
         }
         save_active_plugins($db, $activePluginIds);
+        Nova_Plugin_Registry::clear_cache();
         echo json_encode([
             'ok' => true,
             'active' => true,
@@ -129,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax) {
     } elseif ($action === 'deactivate') {
         $activePluginIds = array_values(array_diff($activePluginIds, [$pluginId]));
         save_active_plugins($db, $activePluginIds);
+        Nova_Plugin_Registry::clear_cache();
         echo json_encode([
             'ok' => true,
             'active' => false,
@@ -176,6 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['plugin_action']) && !
                 }
                 if (!isset($error)) {
                     save_active_plugins($db, $activePluginIds);
+                    Nova_Plugin_Registry::clear_cache();
                 }
             }
         }

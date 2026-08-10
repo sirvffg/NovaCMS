@@ -21,12 +21,57 @@ class Nova_REST_Server {
     /** @var callable[] rest_api_init 钩子队列 */
     protected static $init_hooks = [];
 
+    /** @var array 当前插件上下文，供 routes 目录中 register_rest_route() 使用 */
+    protected static $current_plugin_context = null;
+
+    // ==================== 插件上下文管理 ====================
+
+    /**
+     * 设置当前插件上下文（routes 文件加载时使用）
+     *
+     * @param string $pluginId
+     * @param string $pluginSlug
+     */
+    public static function set_current_plugin_context($pluginId, $pluginSlug = '') {
+        self::$current_plugin_context = [
+            'plugin_id'   => $pluginId,
+            'plugin_slug' => $pluginSlug,
+        ];
+    }
+
+    /**
+     * 清除当前插件上下文
+     */
+    public static function clear_current_plugin_context() {
+        self::$current_plugin_context = null;
+    }
+
+    /**
+     * 获取当前插件上下文
+     *
+     * @return array|null
+     */
+    public static function get_current_plugin_context() {
+        return self::$current_plugin_context;
+    }
+
     // ==================== 路由注册 ====================
 
     /**
      * 注册 REST 路由。
+     * 自动从当前上下文附加 plugin_id / plugin_slug（若 args 中未指定）
      */
     public function register_route($route_namespace, $route, $route_args, $override = false) {
+        // 从上下文注入插件归属信息（如果 args 未明确指定）
+        if (self::$current_plugin_context !== null) {
+            if (!isset($route_args['plugin_id']) && !empty(self::$current_plugin_context['plugin_id'])) {
+                $route_args['plugin_id'] = self::$current_plugin_context['plugin_id'];
+            }
+            if (!isset($route_args['plugin_slug']) && !empty(self::$current_plugin_context['plugin_slug'])) {
+                $route_args['plugin_slug'] = self::$current_plugin_context['plugin_slug'];
+            }
+        }
+
         if (!isset($this->namespaces[$route_namespace])) {
             $this->namespaces[$route_namespace] = [];
             $this->register_route(
@@ -140,6 +185,23 @@ class Nova_REST_Server {
         $route   = $matched['route'];
         $handler = $matched['handler'];
         $matches = $matched['matches'];
+
+        // ── 插件禁用拦截 ──
+        if (!empty($handler['plugin_id'])) {
+            if (!Nova_Plugin_Registry::is_plugin_active($handler['plugin_id'])) {
+                $pluginName = '';
+                $pluginInfo = Nova_Plugin_Registry::find_plugin($handler['plugin_id']);
+                if ($pluginInfo) {
+                    $pluginName = $pluginInfo['name'];
+                }
+                $msg = $pluginName ? "插件「{$pluginName}」已禁用" : '此插件已禁用';
+                return $this->error_to_response([
+                    'code'    => 'plugin_disabled',
+                    'message' => $msg,
+                    'status'  => 403,
+                ]);
+            }
+        }
 
         $url_params = [];
         foreach ($matches as $key => $value) {
@@ -299,6 +361,16 @@ class Nova_REST_Server {
 
 function register_rest_route($namespace, $route, $args, $override = false) {
     Nova_REST_Server::add_init_hook(function($server) use ($namespace, $route, $args, $override) {
+        // 如果 args 中没有 plugin_id，尝试从当前上下文补充
+        $ctx = Nova_REST_Server::get_current_plugin_context();
+        if ($ctx !== null) {
+            if (!isset($args['plugin_id']) && !empty($ctx['plugin_id'])) {
+                $args['plugin_id'] = $ctx['plugin_id'];
+            }
+            if (!isset($args['plugin_slug']) && !empty($ctx['plugin_slug'])) {
+                $args['plugin_slug'] = $ctx['plugin_slug'];
+            }
+        }
         $server->register_route($namespace, $route, $args, $override);
     });
 }

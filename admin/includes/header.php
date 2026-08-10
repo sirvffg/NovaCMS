@@ -103,8 +103,6 @@ foreach (Nova_Plugin_Registry::scan_all() as $_novaPlugin) {
     );
 }
 unset($_novaActivePluginIds, $_novaPluginDb, $_novaPluginCfg, $_novaDecoded, $_novaPlugin, $_novaPluginAdminFile);
-
-Nova_Backend_Menu::add_menu('查看网站', 'view-site', '/', 'bi-box-arrow-up-right', 70, $toolMenu + ['target' => '_blank']);
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN" data-bs-theme="light">
