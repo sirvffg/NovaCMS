@@ -1,354 +1,287 @@
 <?php
-/**
- * Backup Class - 备份核心功能类
- */
 
 defined('NOVA_API') or exit('禁止直接访问');
 
-class Backup_Core {
+class Nova_Plugin_Manager
+{
+    private $db;
+    private $pluginsDir;
 
-    private $backupDir;
-    private $maxBackups = 10;
-    private $allowedUserAgent = 'BackupApp_lygalaxy.cn_2019_Galaxy';
-
-    public function __construct() {
-        $this->backupDir = __DIR__ . DIRECTORY_SEPARATOR . 'backups';
-        if (!is_dir($this->backupDir)) {
-            @mkdir($this->backupDir, 0755, true);
-        }
+    public function __construct(PDO $db, $pluginsDir)
+    {
+        $this->db = $db;
+        $this->pluginsDir = rtrim($pluginsDir, '/\\');
     }
 
     /**
-     * 验证 User-Agent
+     * 扫描插件目录
      */
-    public function validateRequest() {
-        $clientUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        return strpos($clientUserAgent, $this->allowedUserAgent) !== false;
-    }
+    public function discover()
+    {
+        $plugins = [];
 
-    /**
-     * 记录访问日志
-     */
-    public function logAccess($action) {
-        $logFile = $this->backupDir . '/backup.log';
-        $maxSize = 3 * 1024 * 1024;
-
-        if (@file_exists($logFile) && @filesize($logFile) > $maxSize) {
-            @file_put_contents($logFile, '');
+        if (!is_dir($this->pluginsDir)) {
+            return $plugins;
         }
 
-        $logEntry = sprintf("[%s] IP: %s | Action: %s | URI: %s\n",
-            date('Y-m-d H:i:s'),
-            $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-            $action,
-            $_SERVER['REQUEST_URI'] ?? 'unknown'
-        );
-        @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
-    }
-
-    /**
-     * 导出数据库为SQL文件
-     */
-    private function exportDatabaseToFile($filePath) {
-        $pdo = getDB();
-        if (!$pdo) return false;
-
-        $fp = fopen($filePath, 'w');
-        if (!$fp) return false;
-
-        fwrite($fp, "-- Database Backup: " . DB_NAME . "\n");
-        fwrite($fp, "-- Date: " . date('Y-m-d H:i:s') . "\n");
-        fwrite($fp, "-- Host: " . DB_HOST . "\n\n");
-        fwrite($fp, "SET NAMES utf8mb4;\n");
-        fwrite($fp, "SET FOREIGN_KEY_CHECKS = 0;\n\n");
-
-        try {
-            $pdo->exec("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
-            $pdo->beginTransaction();
-
-            $tables = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_COLUMN);
-            $views  = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'VIEW'")->fetchAll(PDO::FETCH_COLUMN);
-
-            foreach ($tables as $table) {
-                $createRow = $pdo->query("SHOW CREATE TABLE `$table`")->fetch(PDO::FETCH_ASSOC);
-                $createSql = $createRow['Create Table'] ?? '';
-
-                fwrite($fp, "-- ----------------------------\n");
-                fwrite($fp, "-- Table structure for `$table`\n");
-                fwrite($fp, "-- ----------------------------\n");
-                fwrite($fp, "DROP TABLE IF EXISTS `$table`;\n");
-                fwrite($fp, $createSql . ";\n\n");
-
-                $dataStmt = $pdo->query("SELECT * FROM `$table`");
-                $batchSize = 500;
-                $batch = [];
-
-                fwrite($fp, "-- ----------------------------\n");
-                fwrite($fp, "-- Records of `$table`\n");
-                fwrite($fp, "-- ----------------------------\n");
-
-                while ($row = $dataStmt->fetch(PDO::FETCH_NUM)) {
-                    $values = array_map(function($v) use ($pdo) {
-                        if ($v === null) return 'NULL';
-                        if (!mb_check_encoding($v, 'UTF-8')) {
-                            return '0x' . bin2hex($v);
-                        }
-                        return "'" . addslashes($v) . "'";
-                    }, $row);
-
-                    $batch[] = '(' . implode(', ', $values) . ')';
-
-                    if (count($batch) >= $batchSize) {
-                        fwrite($fp, "INSERT INTO `$table` VALUES\n" . implode(",\n", $batch) . ";\n");
-                        $batch = [];
-                    }
-                }
-
-                if (!empty($batch)) {
-                    fwrite($fp, "INSERT INTO `$table` VALUES\n" . implode(",\n", $batch) . ";\n");
-                }
-
-                fwrite($fp, "\n");
+        foreach (scandir($this->pluginsDir) as $dir) {
+            if ($dir === '.' || $dir === '..') {
+                continue;
             }
 
-            foreach ($views as $view) {
-                $createRow = $pdo->query("SHOW CREATE VIEW `$view`")->fetch(PDO::FETCH_ASSOC);
-                $createSql = $createRow['Create View'] ?? '';
-
-                fwrite($fp, "-- ----------------------------\n");
-                fwrite($fp, "-- View structure for `$view`\n");
-                fwrite($fp, "-- ----------------------------\n");
-                fwrite($fp, "DROP VIEW IF EXISTS `$view`;\n");
-                fwrite($fp, $createSql . ";\n\n");
+            // 插件目录名只允许字母、数字、-、_
+            if (!preg_match('/^[a-zA-Z0-9_-]+$/', $dir)) {
+                continue;
             }
 
-            $pdo->rollBack();
+            $pluginDir = $this->pluginsDir . DIRECTORY_SEPARATOR . $dir;
 
-        } catch (Exception $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            fclose($fp);
-            @unlink($filePath);
-            return false;
-        }
-
-        fwrite($fp, "SET FOREIGN_KEY_CHECKS = 1;\n");
-        fclose($fp);
-        return true;
-    }
-
-    /**
-     * 递归复制目录
-     */
-    private function copyDirectory($src, $dest, $excludeDirs = []) {
-        if (!is_dir($src)) return;
-        if (!is_dir($dest)) @mkdir($dest, 0755, true);
-
-        foreach (scandir($src) as $file) {
-            if ($file === '.' || $file === '..') continue;
-
-            $srcPath = $src . DIRECTORY_SEPARATOR . $file;
-            $destPath = $dest . DIRECTORY_SEPARATOR . $file;
-
-            $isExcluded = false;
-            foreach ($excludeDirs as $exclude) {
-                if (basename($srcPath) === $exclude) {
-                    $isExcluded = true;
-                    break;
-                }
+            if (!is_dir($pluginDir)) {
+                continue;
             }
-            if ($isExcluded) continue;
 
-            if (is_dir($srcPath)) {
-                $this->copyDirectory($srcPath, $destPath, $excludeDirs);
-            } else {
-                @copy($srcPath, $destPath);
+            $jsonFile = $pluginDir . DIRECTORY_SEPARATOR . 'plugin.json';
+
+            if (!is_file($jsonFile)) {
+                continue;
             }
-        }
-    }
 
-    /**
-     * 递归删除目录
-     */
-    private function removeDirectory($dir) {
-        if (!is_dir($dir)) return;
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $dir . DIRECTORY_SEPARATOR . $file;
-            is_dir($path) ? $this->removeDirectory($path) : @unlink($path);
-        }
-        return @rmdir($dir);
-    }
+            $json = file_get_contents($jsonFile);
+            $info = json_decode($json, true);
 
-    /**
-     * 递归添加目录到 ZipArchive
-     */
-    private function addDirectoryToZip($zip, $dirPath, $zipPath) {
-        $files = scandir($dirPath);
-        foreach ($files as $file) {
-            if ($file === '.' || $file === '..') continue;
-
-            $filePath = $dirPath . DIRECTORY_SEPARATOR . $file;
-            $localPath = $zipPath ? $zipPath . '/' . $file : $file;
-
-            if (is_dir($filePath)) {
-                $zip->addEmptyDir($localPath);
-                $this->addDirectoryToZip($zip, $filePath, $localPath);
-            } else {
-                $zip->addFile($filePath, $localPath);
+            if (!is_array($info)) {
+                continue;
             }
-        }
-    }
 
-    /**
-     * 格式化大小
-     */
-    private function formatBytes($bytes) {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        for ($i = 0; $bytes >= 1024 && $i < 3; $i++) $bytes /= 1024;
-        return round($bytes, 2) . ' ' . $units[$i];
-    }
+            $slug = $info['slug'] ?? $dir;
 
-    /**
-     * 创建备份
-     */
-    public function createBackup() {
-        $projectRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
-
-        $timestamp = date('Ymd_His');
-        $tempFolderName = 'temp_' . $timestamp;
-        $tempDirPath = $this->backupDir . DIRECTORY_SEPARATOR . $tempFolderName;
-        $backupFilename = "backup_{$timestamp}.zip";
-        $backupPath = $this->backupDir . DIRECTORY_SEPARATOR . $backupFilename;
-
-        if (!@mkdir($tempDirPath, 0755, true)) {
-            return ['success' => false, 'message' => '权限不足，无法创建临时目录'];
-        }
-
-        $directories = ['admin', 'assets', 'config', 'license', 'phpmailer', 'logs', 'uploads', 'vendor'];
-        $excludeDirs = ['.git', 'node_modules', 'Backup'];
-
-        foreach ($directories as $dir) {
-            $src = $projectRoot . DIRECTORY_SEPARATOR . $dir;
-            if (is_dir($src)) {
-                $this->copyDirectory($src, $tempDirPath . DIRECTORY_SEPARATOR . $dir, $excludeDirs);
+            // plugin.json 里的 slug 必须和文件夹名字一样
+            if ($slug !== $dir) {
+                continue;
             }
-        }
 
-        foreach (scandir($projectRoot) as $item) {
-            if ($item === '.' || $item === '..') continue;
-            $src = $projectRoot . DIRECTORY_SEPARATOR . $item;
-            if (is_file($src)) @copy($src, $tempDirPath . DIRECTORY_SEPARATOR . $item);
-        }
+            $entry = $info['entry'] ?? 'plugin.php';
 
-        $this->exportDatabaseToFile($tempDirPath . DIRECTORY_SEPARATOR . 'database.sql');
+            // 防止 ../ 路径穿越
+            if (
+                strpos($entry, '..') !== false ||
+                strpos($entry, "\0") !== false
+            ) {
+                continue;
+            }
 
-        $zip = new ZipArchive();
-        if ($zip->open($backupPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
-            $this->addDirectoryToZip($zip, $tempDirPath, $tempFolderName);
-            $zip->setArchiveComment("Backup created at " . date('Y-m-d H:i:s'));
-            $zip->close();
-        } else {
-            $this->removeDirectory($tempDirPath);
-            return ['success' => false, 'message' => 'ZIP 创建失败'];
-        }
+            $entryFile = $pluginDir . DIRECTORY_SEPARATOR . $entry;
 
-        $this->removeDirectory($tempDirPath);
+            if (!is_file($entryFile)) {
+                continue;
+            }
 
-        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $downloadUrl = $protocol . '://' . $host . '/vendor/nova-plugins/backup/backups/' . $backupFilename;
-
-        // 检查并删除旧备份
-        $this->cleanupOldBackups();
-
-        return [
-            'success' => true,
-            'message' => '备份创建成功',
-            'file' => $backupFilename,
-            'size' => $this->formatBytes(filesize($backupPath)),
-            'download_url' => $downloadUrl,
-            'created_at' => date('Y-m-d H:i:s')
-        ];
-    }
-
-    /**
-     * 获取备份列表
-     */
-    public function getBackupList() {
-        $backups = [];
-
-        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-
-        foreach (glob($this->backupDir . DIRECTORY_SEPARATOR . 'backup_*.zip') as $file) {
-            $filename = basename($file);
-            $downloadUrl = $protocol . '://' . $host . '/vendor/nova-plugins/backup/backups/' . $filename;
-            $backups[] = [
-                'filename' => $filename,
-                'size' => $this->formatBytes(filesize($file)),
-                'created_at' => date('Y-m-d H:i:s', filemtime($file)),
-                'download_url' => $downloadUrl
+            $plugins[$slug] = [
+                'slug' => $slug,
+                'name' => $info['name'] ?? $slug,
+                'version' => $info['version'] ?? '1.0.0',
+                'author' => $info['author'] ?? '',
+                'description' => $info['description'] ?? '',
+                'entry' => $entryFile
             ];
         }
 
-        usort($backups, function($a, $b) {
-            return strtotime($b['created_at']) - strtotime($a['created_at']);
-        });
-
-        return [
-            'backups' => $backups,
-            'count' => count($backups)
-        ];
+        return $plugins;
     }
 
     /**
-     * 删除备份
+     * 把硬盘上的插件同步到数据库
      */
-    public function deleteBackup($filename = 'all') {
-        if ($filename === 'all') {
-            $deletedCount = 0;
-            $files = glob($this->backupDir . DIRECTORY_SEPARATOR . 'backup_*.zip');
-            foreach ($files as $file) {
-                if (is_file($file) && @unlink($file)) {
-                    $deletedCount++;
-                }
-            }
-            return [
-                'success' => true,
-                'message' => "已删除全部备份，共 {$deletedCount} 个文件"
-            ];
-        } else {
-            $target = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
-            if (preg_match('/^backup_\d{8}_\d{6}\.zip$/', $filename) && file_exists($target)) {
-                @unlink($target);
-                return ['success' => true, 'message' => '删除成功'];
+    public function sync()
+    {
+        $plugins = $this->discover();
+
+        foreach ($plugins as $plugin) {
+            $check = $this->db->prepare(
+                "SELECT slug FROM nova_plugins WHERE slug = ? LIMIT 1"
+            );
+
+            $check->execute([$plugin['slug']]);
+
+            if ($check->fetch()) {
+                $stmt = $this->db->prepare("
+                    UPDATE nova_plugins
+                    SET name = ?,
+                        version = ?,
+                        author = ?,
+                        description = ?
+                    WHERE slug = ?
+                ");
+
+                $stmt->execute([
+                    $plugin['name'],
+                    $plugin['version'],
+                    $plugin['author'],
+                    $plugin['description'],
+                    $plugin['slug']
+                ]);
             } else {
-                return ['success' => false, 'message' => '文件不存在'];
+                $stmt = $this->db->prepare("
+                    INSERT INTO nova_plugins
+                    (
+                        slug,
+                        name,
+                        version,
+                        author,
+                        description,
+                        enabled
+                    )
+                    VALUES (?, ?, ?, ?, ?, 0)
+                ");
+
+                $stmt->execute([
+                    $plugin['slug'],
+                    $plugin['name'],
+                    $plugin['version'],
+                    $plugin['author'],
+                    $plugin['description']
+                ]);
+            }
+        }
+
+        return $plugins;
+    }
+
+    /**
+     * 获取插件列表
+     */
+    public function getPlugins()
+    {
+        $plugins = $this->sync();
+
+        $stmt = $this->db->query("
+            SELECT slug, enabled, activated_at, last_error
+            FROM nova_plugins
+        ");
+
+        $states = [];
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $states[$row['slug']] = $row;
+        }
+
+        foreach ($plugins as $slug => &$plugin) {
+            $state = $states[$slug] ?? [];
+
+            $plugin['enabled'] =
+                isset($state['enabled'])
+                && (int)$state['enabled'] === 1;
+
+            $plugin['activated_at'] =
+                $state['activated_at'] ?? null;
+
+            $plugin['last_error'] =
+                $state['last_error'] ?? null;
+        }
+
+        unset($plugin);
+
+        return $plugins;
+    }
+
+    /**
+     * 插件是否启用
+     */
+    public function isEnabled($slug)
+    {
+        $stmt = $this->db->prepare("
+            SELECT enabled
+            FROM nova_plugins
+            WHERE slug = ?
+            LIMIT 1
+        ");
+
+        $stmt->execute([$slug]);
+
+        return (int)$stmt->fetchColumn() === 1;
+    }
+
+    /**
+     * 启用或禁用插件
+     */
+    public function setEnabled($slug, $enabled)
+    {
+        $plugins = $this->sync();
+
+        if (!isset($plugins[$slug])) {
+            throw new RuntimeException('插件不存在');
+        }
+
+        if ($enabled) {
+            $stmt = $this->db->prepare("
+                UPDATE nova_plugins
+                SET enabled = 1,
+                    activated_at = NOW(),
+                    last_error = NULL
+                WHERE slug = ?
+            ");
+        } else {
+            $stmt = $this->db->prepare("
+                UPDATE nova_plugins
+                SET enabled = 0
+                WHERE slug = ?
+            ");
+        }
+
+        $stmt->execute([$slug]);
+    }
+
+    /**
+     * 加载所有已启用插件
+     */
+    public function loadEnabled()
+    {
+        $plugins = $this->sync();
+
+        foreach ($plugins as $slug => $plugin) {
+            if (!$this->isEnabled($slug)) {
+                continue;
+            }
+
+            try {
+                require_once $plugin['entry'];
+
+                $this->clearError($slug);
+            } catch (Throwable $e) {
+                $this->saveError($slug, $e->getMessage());
+
+                error_log(
+                    '[NovaCMS Plugin][' .
+                    $slug .
+                    '] ' .
+                    $e->getMessage()
+                );
             }
         }
     }
 
-    /**
-     * 清理旧备份
-     */
-    private function cleanupOldBackups() {
-        $files = glob($this->backupDir . DIRECTORY_SEPARATOR . 'backup_*.zip');
-        if (count($files) > $this->maxBackups) {
-            usort($files, function($a, $b) {
-                return filemtime($a) - filemtime($b);
-            });
+    private function saveError($slug, $message)
+    {
+        $stmt = $this->db->prepare("
+            UPDATE nova_plugins
+            SET last_error = ?
+            WHERE slug = ?
+        ");
 
-            $toDelete = count($files) - $this->maxBackups;
-            for ($i = 0; $i < $toDelete; $i++) {
-                @unlink($files[$i]);
-            }
-        }
+        $stmt->execute([
+            mb_substr($message, 0, 2000),
+            $slug
+        ]);
     }
 
-    /**
-     * 设置最大备份数
-     */
-    public function setMaxBackups($max) {
-        $this->maxBackups = intval($max);
+    private function clearError($slug)
+    {
+        $stmt = $this->db->prepare("
+            UPDATE nova_plugins
+            SET last_error = NULL
+            WHERE slug = ?
+        ");
+
+        $stmt->execute([$slug]);
     }
 }

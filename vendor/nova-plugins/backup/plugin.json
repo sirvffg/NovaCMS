@@ -1,0 +1,8 @@
+{
+    "slug": "backup",
+    "name": "备份管理",
+    "description": "NovaCMS 数据库与网站文件备份插件",
+    "version": "1.0.0",
+    "author": "LyGalaxy",
+    "entry": "plugin.php"
+}
