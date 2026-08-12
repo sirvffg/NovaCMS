@@ -18,10 +18,10 @@ if (!$checkStmt->fetch()) {
     $db->exec("ALTER TABLE website_config ADD COLUMN active_plugins TEXT NULL COMMENT '已启用的插件 id(JSON 数组)，NULL 表示全部启用' AFTER active_theme");
 }
 
-// 确保 plugin_dirs 字段存在（存储所有已扫描的插件目录名）
+// 确保 plugin_dirs 字段存在（存储插件 id → 目录名的映射）
 $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'plugin_dirs'");
 if (!$checkStmt->fetch()) {
-    $db->exec("ALTER TABLE website_config ADD COLUMN plugin_dirs TEXT NULL COMMENT '已扫描的插件目录名(JSON 数组)' AFTER active_plugins");
+    $db->exec("ALTER TABLE website_config ADD COLUMN plugin_dirs TEXT NULL COMMENT '插件目录映射(JSON 对象：id→目录名)' AFTER active_plugins");
 }
 
 /**
@@ -51,57 +51,44 @@ function save_active_plugins($db, array $ids) {
 // 扫描所有已安装插件
 $plugins = Nova_Plugin_Registry::scan_all();
 
-// 读取数据库中已保存的插件目录名（作为"旧"目录基准，优先保留）
-$stmt = $db->query("SELECT plugin_dirs FROM website_config LIMIT 1");
-$savedDirsRow = $stmt->fetch(PDO::FETCH_ASSOC);
-$savedDirs = !empty($savedDirsRow['plugin_dirs']) ? json_decode($savedDirsRow['plugin_dirs'], true) : [];
-if (!is_array($savedDirs)) $savedDirs = [];
-
-// 按优先级排序：数据库中已记录的目录排前面（旧目录优先保留）
-usort($plugins, function ($a, $b) use ($savedDirs) {
-    $aOld = in_array($a['slug'], $savedDirs, true);
-    $bOld = in_array($b['slug'], $savedDirs, true);
-    if ($aOld !== $bOld) return $aOld ? -1 : 1;
-    return strcmp($a['slug'], $b['slug']);
-});
-
-// 检测重复 id：旧目录优先保留，新重复的插件目录直接删除
+// 检测重复 id 的插件，删除重复的插件目录（保留第一个）
 $seenIds = [];
+$cleanedPlugins = [];
+$deletedDirs = [];
 foreach ($plugins as $p) {
     if (in_array($p['id'], $seenIds, true)) {
-        // id 重复，删除此插件目录
+        // 重复插件：删除其目录
         $dir = $p['plugin_dir'];
         if (is_dir($dir)) {
-            $items = scandir($dir);
-            foreach ($items as $item) {
-                if ($item === '.' || $item === '..') continue;
-                $path = $dir . DIRECTORY_SEPARATOR . $item;
-                if (is_dir($path)) {
-                    $subItems = scandir($path);
-                    foreach ($subItems as $sub) {
-                        if ($sub === '.' || $sub === '..') continue;
-                        @unlink($path . DIRECTORY_SEPARATOR . $sub);
-                    }
-                    @rmdir($path);
-                } else {
-                    @unlink($path);
-                }
+            // 递归删除目录
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
+            foreach ($iterator as $file) {
+                @unlink($file->getRealPath()) ?: @rmdir($file->getRealPath());
             }
             @rmdir($dir);
         }
-    } else {
-        $seenIds[] = $p['id'];
+        $deletedDirs[] = $p['slug'];
+        continue;
     }
+    $seenIds[] = $p['id'];
+    $cleanedPlugins[] = $p;
+}
+if (!empty($deletedDirs)) {
+    $plugins = $cleanedPlugins;
+    Nova_Plugin_Registry::clear_cache();
 }
 
-// 重新扫描（如果删除了重复目录）
-Nova_Plugin_Registry::clear_cache();
-$plugins = Nova_Plugin_Registry::scan_all(true);
-
-// 更新 plugin_dirs 字段为当前有效插件目录名
-$currentDirs = array_map(fn($p) => $p['slug'], $plugins);
-$db->prepare("UPDATE website_config SET plugin_dirs = ? WHERE id = 1")
-   ->execute([json_encode($currentDirs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+// 构建 plugin_dirs 映射（id → 目录名）并保存到数据库
+$pluginDirs = [];
+foreach ($plugins as $p) {
+    $pluginDirs[$p['id']] = $p['slug'];
+}
+$dirsJson = json_encode($pluginDirs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$stmt = $db->prepare("UPDATE website_config SET plugin_dirs = ? WHERE id = 1");
+$stmt->execute([$dirsJson]);
 
 $activePluginIds = get_active_plugins($db);
 
@@ -219,11 +206,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['plugin_action']) && !
 $message = $message ?? '';
 $error = $error ?? '';
 
-// 校验插件 id 格式（重复的已在上方自动删除）
+// 校验插件 id：必须为英文格式，且不能重复
 $idWarnings = [];
+$seenIds = [];
 foreach ($plugins as $p) {
     if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $p['id'])) {
         $idWarnings[] = "插件「{$p['name']}」的 id「{$p['id']}」格式无效，id 必须为英文（字母开头，仅含字母、数字、下划线、连字符）";
+    }
+    if (in_array($p['id'], $seenIds, true)) {
+        $idWarnings[] = "插件 id「{$p['id']}」重复（插件「{$p['name']}」与其他插件使用了相同的 id）";
+    } else {
+        $seenIds[] = $p['id'];
     }
 }
 
