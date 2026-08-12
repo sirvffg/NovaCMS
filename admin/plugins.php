@@ -52,15 +52,13 @@ function save_active_plugins($db, array $ids) {
 $plugins = Nova_Plugin_Registry::scan_all();
 
 // 检测重复 id 的插件，删除重复的插件目录（保留第一个）
-$seenIds = [];
-$cleanedPlugins = [];
 $deletedDirs = [];
+$cleanedPlugins = [];
 foreach ($plugins as $p) {
-    if (in_array($p['id'], $seenIds, true)) {
+    if (!empty($p['duplicate'])) {
         // 重复插件：删除其目录
         $dir = $p['plugin_dir'];
         if (is_dir($dir)) {
-            // 递归删除目录
             $iterator = new RecursiveIteratorIterator(
                 new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
                 RecursiveIteratorIterator::CHILD_FIRST
@@ -71,9 +69,8 @@ foreach ($plugins as $p) {
             @rmdir($dir);
         }
         $deletedDirs[] = $p['slug'];
-        continue;
+        continue; // 不加入清理后的列表
     }
-    $seenIds[] = $p['id'];
     $cleanedPlugins[] = $p;
 }
 if (!empty($deletedDirs)) {
@@ -596,6 +593,21 @@ require_once 'includes/header.php';
 
 
     <div id="plugin-alert"></div>
+
+    <?php if (!empty($deletedDirs)): ?>
+        <div class="alert alert-danger border-0 shadow-sm">
+            <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-trash-fill text-danger fs-5 mt-1"></i>
+                <div>
+                    <strong>已删除重复插件目录</strong>
+                    <p class="mb-0 mt-1 small">
+                        以下插件目录因 id 与其他插件重复，已被自动删除：
+                        <strong><?= e(implode('、', $deletedDirs)) ?></strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <?php if (!empty($idWarnings)): ?>
         <div class="alert alert-warning border-0 shadow-sm">

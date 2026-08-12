@@ -70,16 +70,13 @@ class Nova_Plugin_Registry {
                 self::write_json($jsonFile, $info);
             }
 
-             // 跳过重复 id 的插件（仅保留第一个，重复的由后台管理页清理目录）
+             // 检测重复 id：标记但不跳过，由后台管理页负责删除重复目录
             $isDuplicate = false;
             foreach ($plugins as $existing) {
                 if ($existing['id'] === $info['id']) {
                     $isDuplicate = true;
                     break;
                 }
-            }
-            if ($isDuplicate) {
-                continue;
             }
 
             $entry = !empty($info['entry']) ? $info['entry'] : 'plugin/plugin.php';
@@ -98,6 +95,7 @@ class Nova_Plugin_Registry {
                 'entry_path'       => $entryPath,
                 'plugin_dir'       => $pluginDir,
                 'min_nova_version' => $info['min_nova_version'] ?? '',
+                'duplicate'        => $isDuplicate,
             ];
         }
 

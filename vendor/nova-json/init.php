@@ -167,9 +167,14 @@ try {
     // 字段不存在或查询失败时，保持全部启用
 }
 
-// 扫描插件（自动生成缺失的 id），按启用状态加载入口文件
+// 扫描插件，按启用状态加载入口文件
 $installedPlugins = Nova_Plugin_Registry::scan_all();
 foreach ($installedPlugins as $pluginInfo) {
+    // 跳过重复 id 的插件（由后台管理页负责删除目录）
+    if (!empty($pluginInfo['duplicate'])) {
+        continue;
+    }
+
     $isActive = $activePluginIds === null ? true : in_array($pluginInfo['id'], $activePluginIds, true);
 
     if ($isActive) {
