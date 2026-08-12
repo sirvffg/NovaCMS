@@ -42,37 +42,10 @@ function save_active_plugins($db, array $ids) {
     $stmt->execute([$json]);
 }
 
-// 扫描所有已安装插件（同时自动生成缺失的 id）
+// 扫描所有已安装插件
 $plugins = Nova_Plugin_Registry::scan_all();
 
-// 旧版数据迁移：若 active_plugins 中存在非 id 格式（不以 p_ 开头）的条目，
-// 视为旧版基于 slug 的记录，自动转换为对应的 id
 $activePluginIds = get_active_plugins($db);
-if ($activePluginIds !== null) {
-    $needsMigration = false;
-    foreach ($activePluginIds as $entry) {
-        if (!is_string($entry) || strpos($entry, 'p_') !== 0) {
-            $needsMigration = true;
-            break;
-        }
-    }
-    if ($needsMigration) {
-        $slugToId = [];
-        foreach ($plugins as $p) {
-            $slugToId[$p['slug']] = $p['id'];
-        }
-        $migrated = [];
-        foreach ($activePluginIds as $entry) {
-            if (is_string($entry) && strpos($entry, 'p_') === 0) {
-                $migrated[] = $entry;
-            } elseif (isset($slugToId[$entry])) {
-                $migrated[] = $slugToId[$entry];
-            }
-        }
-        $activePluginIds = $migrated;
-        save_active_plugins($db, $migrated);
-    }
-}
 
 // AJAX 端点：处理启用/禁用请求，返回 JSON
 $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
@@ -187,6 +160,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['plugin_action']) && !
 
 $message = $message ?? '';
 $error = $error ?? '';
+
+// 校验插件 id：必须为英文格式，且不能重复
+$idWarnings = [];
+$seenIds = [];
+foreach ($plugins as $p) {
+    if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $p['id'])) {
+        $idWarnings[] = "插件「{$p['name']}」的 id「{$p['id']}」格式无效，id 必须为英文（字母开头，仅含字母、数字、下划线、连字符）";
+    }
+    if (in_array($p['id'], $seenIds, true)) {
+        $idWarnings[] = "插件 id「{$p['id']}」重复（插件「{$p['name']}」与其他插件使用了相同的 id）";
+    } else {
+        $seenIds[] = $p['id'];
+    }
+}
 
 // 为每个插件附加 active 状态
 foreach ($plugins as &$p) {
@@ -565,6 +552,22 @@ require_once 'includes/header.php';
 
     <div id="plugin-alert"></div>
 
+    <?php if (!empty($idWarnings)): ?>
+        <div class="alert alert-warning border-0 shadow-sm">
+            <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-5 mt-1"></i>
+                <div>
+                    <strong>插件 id 校验警告</strong>
+                    <ul class="mb-0 mt-1 small">
+                        <?php foreach ($idWarnings as $w): ?>
+                            <li><?= e($w) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
 
     <!-- 简洁统计 -->
     <div class="plugin-summary">
@@ -815,21 +818,6 @@ require_once 'includes/header.php';
                                             >
                                                 <i class="bi bi-sliders me-1"></i>
                                                 管理
-                                            </a>
-
-                                        <?php endif; ?>
-
-
-                                        <?php if ($plugin['uri']): ?>
-
-                                            <a
-                                                href="<?= e($plugin['uri']) ?>"
-                                                target="_blank"
-                                                rel="noopener"
-                                                class="btn btn-outline-secondary btn-sm plugin-action-btn"
-                                                title="查看插件主页"
-                                            >
-                                                <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
 
                                         <?php endif; ?>

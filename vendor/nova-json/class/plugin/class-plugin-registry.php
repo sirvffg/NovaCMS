@@ -2,14 +2,20 @@
 /**
  * Nova JSON API: Nova_Plugin_Registry
  *
- * 插件注册表：扫描已安装插件、解析 plugin.json、自动生成唯一 id。
- * init.php 和 admin/plugins.php 共用此类，确保 id 生成逻辑一致。
+ * 插件注册表：扫描已安装插件、解析 plugin.json。
+ * init.php 和 admin/plugins.php 共用此类。
+ *
+ * 插件 id 规范（自 NovaCMS 1.1 起）：
+ *   - 由开发者在 plugin.json 中手动填写，必须为英文（字母、数字、下划线、连字符）
+ *   - 排在 plugin.json 中 name 字段之前
+ *   - 若未填写，系统自动以目录名（slug）作为 id 回退
+ *   - 启用/禁用状态以此 id 为准
  *
  * 插件目录规范：
  *   vendor/nova-plugins/{slug}/
  *     ├── plugin/            插件代码目录
  *     │   └── plugin.php     入口文件（默认）
- *     ├── plugin.json        元数据 + 系统 id
+ *     ├── plugin.json        元数据（含 id）
  *     └── LICENSE            许可证
  */
 
@@ -24,12 +30,12 @@ class Nova_Plugin_Registry {
     protected static $cached_plugins = null;
 
     /**
-     * 扫描所有已安装的插件，自动为缺失 id 的插件生成并写入 id
+     * 扫描所有已安装的插件
      *
      * @param bool $force 是否强制刷新缓存
      * @return array 插件信息数组，每项包含：
+     *   - id:               插件唯一识别符（英文，由开发者填写或以 slug 回退）
      *   - slug:             目录名
-     *   - id:               唯一识别符（p_ + 16位十六进制）
      *   - name, version, description, author, author_uri, uri
      *   - entry:            入口文件相对路径
      *   - entry_path:       入口文件绝对路径
@@ -57,9 +63,10 @@ class Nova_Plugin_Registry {
                 continue;
             }
 
-            // 系统安装识别：自动生成唯一 id 并写回 plugin.json
+            // id 处理：开发者应在 plugin.json 中填写英文 id
+            // 若未填写，以目录名（slug）作为 id 回退并写回
             if (empty($info['id'])) {
-                $info['id'] = self::generate_id();
+                $info = array_merge(['id' => $slug], $info);
                 self::write_json($jsonFile, $info);
             }
 
@@ -162,9 +169,11 @@ class Nova_Plugin_Registry {
     }
 
     /**
-     * 生成唯一插件 ID
-     * 格式：p_ + 16 位十六进制随机字符串
+     * 生成唯一插件 ID（已废弃）
+     * 旧格式：p_ + 16 位十六进制随机字符串
+     * 新版插件 id 由开发者手动填写英文标识符，此方法仅保留向后兼容
      *
+     * @deprecated 不再默认调用，请开发者在 plugin.json 中手动填写英文 id
      * @return string
      */
     public static function generate_id() {

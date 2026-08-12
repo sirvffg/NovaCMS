@@ -101,7 +101,7 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
 
 ### 目录结构
 
-NovaCMS 的插件系统约定插件应放置在 `vendor/nova-plugins/` 目录，每个插件一个独立文件夹。**自 NovaCMS 1.1 起，插件采用统一的目录规范**：代码统一放在 `plugin/` 子目录，元数据通过根目录的 `plugin.json` 声明，系统在首次识别时自动生成唯一 `id` 写入 `plugin.json`：
+NovaCMS 的插件系统约定插件应放置在 `vendor/nova-plugins/` 目录，每个插件一个独立文件夹。**自 NovaCMS 1.1 起，插件采用统一的目录规范**：代码统一放在 `plugin/` 子目录，元数据通过根目录的 `plugin.json` 声明，其中 `id` 字段由开发者手动填写（必须为英文）：
 
 ```
 vendor/nova-plugins/
@@ -116,7 +116,7 @@ vendor/nova-plugins/
 │   │   │   └── settings.php
 │   │   └── admin/              # 后台管理页面
 │   │       └── index.php
-│   ├── plugin.json             # 元数据 + 系统生成的 id
+│   ├── plugin.json             # 元数据（含 id，必须为英文）
 │   ├── LICENSE                 # 许可证文件
 │   ├── assets/                 # 静态资源目录（可选）
 │   │   ├── css/
@@ -128,7 +128,7 @@ vendor/nova-plugins/
 
 ```json
 {
-    "id": "p_a1b2c3d4e5f67890",
+    "id": "my-plugin",
     "name": "My Plugin",
     "uri": "https://example.com/my-plugin",
     "description": "我的第一个 NovaCMS 插件",
@@ -142,7 +142,7 @@ vendor/nova-plugins/
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `id` | string | 系统生成 | 唯一识别符（`p_` + 16 位十六进制），由系统首次识别时自动写入，**启用/禁用以此 id 为准** |
+| `id` | string | 是 | 插件唯一标识符，**必须为英文**（字母、数字、下划线 `_`、连字符 `-`），**不可与其他插件重复**，建议与目录名一致。排在 `name` 之前。启用/禁用以此 id 为准。若未填写，系统自动以目录名（slug）作为 id 回退 |
 | `name` | string | 是 | 插件显示名称 |
 | `uri` | string | 否 | 插件主页 URL |
 | `description` | string | 否 | 插件描述 |
@@ -152,7 +152,7 @@ vendor/nova-plugins/
 | `entry` | string | 否 | 入口文件相对路径，默认 `plugin/plugin.php` |
 | `min_nova_version` | string | 否 | 最低 NovaCMS 版本要求 |
 
-> **注意**：`id` 字段不需要手动填写。将插件放入 `vendor/nova-plugins/` 后，系统首次扫描时会自动生成并写入 `plugin.json`。
+> **注意**：`id` 字段必须为英文（字母、数字、下划线、连字符），由开发者在 `plugin.json` 中手动填写，排在 `name` 字段之前。**每个插件的 id 必须唯一，不可重复**。若未填写，系统会自动以插件目录名（slug）作为 id 回退并写回文件。
 
 ### 快速启动模板
 
@@ -164,6 +164,7 @@ mkdir -p my-plugin/plugin/routes my-plugin/plugin/views my-plugin/plugin/admin m
 # 创建元数据文件
 cat > my-plugin/plugin.json << 'EOF'
 {
+    "id": "my-plugin",
     "name": "My Plugin",
     "description": "插件描述",
     "version": "1.0.0",
@@ -268,6 +269,7 @@ require_once __DIR__ . '/class-my-plugin.php';
 
 ```json
 {
+    "id": "my-plugin",
     "name": "My Plugin",
     "uri": "https://example.com/my-plugin",
     "description": "我的第一个 NovaCMS 插件",
@@ -279,12 +281,12 @@ require_once __DIR__ . '/class-my-plugin.php';
 }
 ```
 
-> `id` 字段无需填写，系统首次识别时会自动生成并写入。
+> `id` 字段必须为英文（字母、数字、下划线、连字符），由开发者手动填写，排在 `name` 之前。每个插件的 id 必须唯一，不可重复。若未填写，系统自动以目录名作为 id 回退。
 
 ### 验证插件
 
-1. 将插件目录 `my-plugin` 放入 `vendor/nova-plugins/`，确保包含 `plugin.json` 和 `plugin/plugin.php`
-2. 访问后台「插件管理」页面，系统会自动识别并生成 `id`
+1. 将插件目录 `my-plugin` 放入 `vendor/nova-plugins/`，确保包含 `plugin.json`（含英文 `id`）和 `plugin/plugin.php`
+2. 访问后台「插件管理」页面，系统会自动识别插件
 3. 访问任意前台页面，插件即自动加载（需处于启用状态）
 4. 访问 `GET /nova-json/v1/my-plugin/hello` 测试 API
 
@@ -1314,7 +1316,7 @@ new ShortcodePlugin();
 ### 插件开发检查清单
 
 - [ ] 创建插件目录 `vendor/nova-plugins/{plugin-name}/`
-- [ ] 创建 `plugin.json` 元数据文件（name、version、entry 等字段）
+- [ ] 创建 `plugin.json` 元数据文件（**id 必须为英文且唯一**，排在 name 前；name、version、entry 等字段）
 - [ ] 创建 `plugin/plugin.php` 入口文件
 - [ ] 创建插件主类，继承 `Nova_Plugin`
 - [ ] 在 `init()` 方法中注册路由、钩子、菜单
@@ -1328,7 +1330,7 @@ new ShortcodePlugin();
 
 | 文件路径 | 说明 |
 |----------|------|
-| `vendor/nova-plugins/{name}/plugin.json` | 插件元数据 + 系统生成的 id |
+| `vendor/nova-plugins/{name}/plugin.json` | 插件元数据（含英文 id） |
 | `vendor/nova-plugins/{name}/plugin/plugin.php` | 插件入口文件（默认 entry） |
 | `vendor/nova-plugins/{name}/plugin/class-{name}.php` | 插件主类文件 |
 | `vendor/nova-plugins/{name}/plugin/routes/*.php` | REST 路由文件（自动加载） |
@@ -1343,7 +1345,7 @@ new ShortcodePlugin();
 | NovaCMS 版本 | 插件 API 版本 | 变更说明 |
 |-------------|--------------|----------|
 | 1.0+ | 1.0 | 初始版本 |
-| 1.1+ | 1.1 | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；系统自动生成唯一 `id`；启用/禁用以 `id` 为准 |
+| 1.1+ | 1.1 | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；`id` 由开发者手动填写（必须为英文），排在 `name` 之前；启用/禁用以 `id` 为准 |
 
 ---
 
