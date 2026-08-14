@@ -18,7 +18,7 @@
  *   Nova_Backend_Notice::hasCapability('manage_options');
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_Backend_Notice {
 

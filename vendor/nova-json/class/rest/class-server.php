@@ -5,7 +5,7 @@
  * 模仿 WP_REST_Server，核心路由引擎。
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_REST_Server {
 

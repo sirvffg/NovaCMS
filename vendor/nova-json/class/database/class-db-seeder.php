@@ -15,7 +15,7 @@
  *   $seeder->table('users')->columns(['username', 'email'])->count(50)->generate();
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_DB_Seeder {
 

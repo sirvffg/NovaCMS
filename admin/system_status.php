@@ -7,10 +7,6 @@
 
 require_once __DIR__ . '/includes/admin-bootstrap.php';
 
-if (!defined('NOVA_API')) {
-    define('NOVA_API', true);
-}
-
 require_once __DIR__ . '/../vendor/nova-json/class/plugin/class-plugin-registry.php';
 
 

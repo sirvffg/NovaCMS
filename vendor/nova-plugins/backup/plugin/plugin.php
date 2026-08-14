@@ -10,7 +10,7 @@
  * 菜单由 admin/includes/header.php 扫描插件目录时自动注册。
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 require_once __DIR__ . '/class-backup.php';
 

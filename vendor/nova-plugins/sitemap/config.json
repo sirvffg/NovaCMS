@@ -1,0 +1,96 @@
+{
+    "tabs": [
+        {
+            "title": "基本设置",
+            "description": "站点地图的基本配置",
+            "fields": [
+                {
+                    "type": "select",
+                    "name": "homepage_changefreq",
+                    "label": "首页更新频率",
+                    "value": "daily",
+                    "options": {
+                        "always": "每次访问都变",
+                        "hourly": "每小时",
+                        "daily": "每天",
+                        "weekly": "每周",
+                        "monthly": "每月",
+                        "yearly": "每年",
+                        "never": "从不"
+                    }
+                },
+                {
+                    "type": "number",
+                    "name": "homepage_priority",
+                    "label": "首页优先级",
+                    "value": 1.0,
+                    "min": 0,
+                    "max": 1,
+                    "step": 0.1,
+                    "help": "0.0 - 1.0 之间"
+                },
+                {
+                    "type": "number",
+                    "name": "post_priority",
+                    "label": "文章优先级",
+                    "value": 0.8,
+                    "min": 0,
+                    "max": 1,
+                    "step": 0.1
+                },
+                {
+                    "type": "switch",
+                    "name": "include_blog",
+                    "label": "包含博客文章",
+                    "value": true
+                },
+                {
+                    "type": "switch",
+                    "name": "include_gallery",
+                    "label": "包含相册",
+                    "value": true
+                },
+                {
+                    "type": "switch",
+                    "name": "include_guestbook",
+                    "label": "包含留言板",
+                    "value": true
+                },
+                {
+                    "type": "switch",
+                    "name": "include_shuoshuo",
+                    "label": "包含说说",
+                    "value": true
+                },
+                {
+                    "type": "switch",
+                    "name": "include_friend_links",
+                    "label": "包含友情链接页",
+                    "value": true
+                },
+                {
+                    "type": "switch",
+                    "name": "include_images",
+                    "label": "包含文章封面图",
+                    "value": true,
+                    "help": "生成 Google 图片站点地图"
+                }
+            ]
+        },
+        {
+            "title": "自定义链接",
+            "description": "在站点地图中添加额外的 URL（每行一个，格式：路径|优先级|更新频率，例如 /about|0.6|monthly）",
+            "fields": [
+                {
+                    "type": "textarea",
+                    "name": "custom_urls",
+                    "label": "自定义 URL",
+                    "value": "",
+                    "rows": 8,
+                    "placeholder": "/about|0.6|monthly\n/contact|0.5|yearly\n/page/privacy|0.3|yearly",
+                    "help": "每行一个，格式：路径|优先级|更新频率。路径以 / 开头，优先级 0.0-1.0，频率可选 always/hourly/daily/weekly/monthly/yearly/never"
+                }
+            ]
+        }
+    ]
+}

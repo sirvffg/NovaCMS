@@ -3,7 +3,7 @@
  * Backup Plugin Routes - 注册到 Nova JSON API 路由系统
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 $backup = new Backup_Core();
 

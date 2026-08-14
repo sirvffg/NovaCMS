@@ -22,7 +22,7 @@
  *   $data = Nova_Proxy::internal('/v1/posts', 'GET', ['per_page' => 5]);
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_Proxy {
 

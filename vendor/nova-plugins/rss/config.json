@@ -1,0 +1,73 @@
+{
+    "tabs": [
+        {
+            "title": "基本设置",
+            "description": "RSS 订阅源的基本配置",
+            "fields": [
+                {
+                    "type": "text",
+                    "name": "feed_title",
+                    "label": "订阅标题",
+                    "value": "",
+                    "placeholder": "留空则使用网站名称",
+                    "help": "显示在 RSS 订阅器中的频道标题"
+                },
+                {
+                    "type": "text",
+                    "name": "feed_description",
+                    "label": "订阅描述",
+                    "value": "最新文章订阅",
+                    "placeholder": "订阅描述文字",
+                    "help": "显示在 RSS 订阅器中的频道描述"
+                },
+                {
+                    "type": "number",
+                    "name": "max_items",
+                    "label": "最大条目数",
+                    "value": 20,
+                    "min": 1,
+                    "max": 100,
+                    "help": "RSS 中最多显示的文章数量"
+                },
+                {
+                    "type": "switch",
+                    "name": "enable_full_text",
+                    "label": "全文输出",
+                    "value": true,
+                    "help": "开启后 RSS 将输出完整文章内容，关闭则仅输出摘要"
+                },
+                {
+                    "type": "switch",
+                    "name": "enable_image",
+                    "label": "输出封面图",
+                    "value": true,
+                    "help": "在 RSS 条目中包含文章封面图"
+                }
+            ]
+        },
+        {
+            "title": "自定义标签",
+            "description": "在 RSS channel 中注入额外的 XML 标签（每行一个，格式：&lt;tag&gt;value&lt;/tag&gt;）",
+            "fields": [
+                {
+                    "type": "textarea",
+                    "name": "custom_channel_tags",
+                    "label": "频道自定义标签",
+                    "value": "",
+                    "rows": 6,
+                    "placeholder": "<ttl>60</ttl>\n<copyright>Copyright 2026</copyright>\n<managingEditor>admin@example.com</managingEditor>",
+                    "help": "这些标签会插入到 RSS 的 <channel> 中，每行一个完整的 XML 标签"
+                },
+                {
+                    "type": "textarea",
+                    "name": "custom_item_tags",
+                    "label": "条目自定义标签",
+                    "value": "",
+                    "rows": 6,
+                    "placeholder": "<author>noreply@example.com</author>\n<category>博客</category>",
+                    "help": "这些标签会插入到每个 <item> 中，每行一个完整的 XML 标签"
+                }
+            ]
+        }
+    ]
+}

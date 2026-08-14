@@ -3,7 +3,7 @@
  * Backup Class - 备份核心功能类
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Backup_Core {
 

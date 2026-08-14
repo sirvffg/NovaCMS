@@ -12,7 +12,7 @@
  *   $data = Nova_Hooks::apply_filters('nova_post_data', $data);
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_Hooks {
 

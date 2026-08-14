@@ -1,6 +1,9 @@
 <?php
 session_start();
 
+// 框架启动标记，用于防止直接访问敏感 PHP 文件
+define('NOVA_BOOTSTRAP', true);
+
 // =============================================
 // Nova JSON API 路由拦截
 // =============================================
@@ -16,6 +19,95 @@ require_once 'config/content_module_functions.php';
 
 // 记录访问
 recordVisit($requestPath);
+
+// =============================================
+// 插件页面路由拦截
+// 在主题路由之前，检查是否有插件注册了自定义页面路由
+// =============================================
+$pluginPageHandled = false;
+$pluginPageDisabled = false;
+$pluginPageName = '';
+try {
+    require_once __DIR__ . '/vendor/nova-json/class/plugin/class-plugin-registry.php';
+    $allPlugins = Nova_Plugin_Registry::scan_all();
+
+    // 读取启用列表
+    $db0 = getDB();
+    $activeIds = null;
+    $cfgRow = $db0->query("SELECT active_plugins FROM website_config LIMIT 1")->fetch();
+    if ($cfgRow && $cfgRow['active_plugins'] !== null) {
+        $activeIds = json_decode($cfgRow['active_plugins'], true);
+        if (!is_array($activeIds)) {
+            $activeIds = [];
+        }
+    }
+
+    foreach ($allPlugins as $pi) {
+        if (!empty($pi['duplicate'])) {
+            continue;
+        }
+        $pageRoutes = $pi['page_routes'] ?? [];
+        if (empty($pageRoutes) || !is_array($pageRoutes)) {
+            continue;
+        }
+        $isActive = $activeIds === null ? true : in_array($pi['id'], $activeIds, true);
+
+        foreach ($pageRoutes as $pattern => $file) {
+            // 将 {param} 转为正则捕获组
+            $regex = preg_replace('/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/', '(?P<$1>[^/]+)', $pattern);
+            $regex = '#^' . $regex . '$#u';
+
+            if (preg_match($regex, $requestPath, $paramMatches)) {
+                if (!$isActive) {
+                    $pluginPageDisabled = true;
+                    $pluginPageName = $pi['name'];
+                    $pluginPageHandled = true;
+                    break 2;
+                }
+
+                // 设置参数到 $_GET 供插件文件使用
+                foreach ($paramMatches as $key => $val) {
+                    if (is_string($key)) {
+                        $_GET[$key] = $val;
+                    }
+                }
+
+                // 定义常量让插件文件知道自己被页面路由调用
+                if (!defined('NOVA_PAGE_ROUTE')) {
+                    define('NOVA_PAGE_ROUTE', $pattern);
+                }
+                if (!defined('NOVA_PAGE_ROUTE_PLUGIN')) {
+                    define('NOVA_PAGE_ROUTE_PLUGIN', $pi['id']);
+                }
+
+                $targetFile = $pi['plugin_dir'] . '/' . ltrim($file, '/');
+                if (is_file($targetFile)) {
+                    require_once $targetFile;
+                }
+                $pluginPageHandled = true;
+                break 2;
+            }
+        }
+    }
+} catch (Throwable $e) {
+    error_log('Plugin page route error: ' . $e->getMessage());
+}
+
+if ($pluginPageHandled) {
+    if ($pluginPageDisabled) {
+        http_response_code(403);
+        header('Content-Type: text/html; charset=utf-8');
+        $name = $pluginPageName !== '' ? "「{$pluginPageName}」" : '';
+        echo '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>插件已禁用</title>'
+           . '<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8f9fa;">'
+           . '<div style="text-align:center;padding:2rem;">'
+           . '<div style="font-size:3rem;margin-bottom:1rem;">🔒</div>'
+           . '<h1 style="font-size:1.5rem;color:#dc3545;margin:0 0 .5rem;">此插件已禁用</h1>'
+           . '<p style="color:#6c757d;margin:0;">插件' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '已被禁用，无法访问此页面。</p>'
+           . '</div></body></html>';
+    }
+    exit;
+}
 
 // 处理退出登录
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'logout') {

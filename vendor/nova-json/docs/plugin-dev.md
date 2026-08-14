@@ -116,7 +116,8 @@ vendor/nova-plugins/
 │   │   │   └── settings.php
 │   │   └── admin/              # 后台管理页面
 │   │       └── index.php
-│   ├── plugin.json             # 元数据（含 id，必须为英文）
+│   ├── plugin.json             # 元数据（含 id，必须为英文；可声明 page_routes）
+│   ├── config.json             # 插件配置表单定义及存储（可选，详见 4.3.2）
 │   ├── LICENSE                 # 许可证文件
 │   ├── assets/                 # 静态资源目录（可选）
 │   │   ├── css/
@@ -151,6 +152,7 @@ vendor/nova-plugins/
 | `author_uri` | string | 否 | 作者主页 |
 | `entry` | string | 否 | 入口文件相对路径，默认 `plugin/plugin.php` |
 | `min_nova_version` | string | 否 | 最低 NovaCMS 版本要求 |
+| `page_routes` | object | 否 | 自定义页面路由映射，key 为 URL 路径，value 为要执行的 PHP 文件路径（相对插件目录）。详见 [4.3.1 注册自定义页面路由](#431-注册自定义页面路由) |
 
 > **注意**：`id` 字段必须为英文（字母、数字、下划线、连字符），由开发者在 `plugin.json` 中手动填写，排在 `name` 字段之前。**每个插件的 id 必须唯一，不可重复**。若未填写，系统会自动以插件目录名（slug）作为 id 回退并写回文件。
 
@@ -190,7 +192,7 @@ touch my-plugin/plugin/plugin.php
 <?php
 // vendor/nova-plugins/my-plugin/plugin/class-my-plugin.php
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class MyPlugin extends Nova_Plugin {
 
@@ -258,7 +260,7 @@ new MyPlugin();
 ```php
 <?php
 // vendor/nova-plugins/my-plugin/plugin/plugin.php
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 require_once __DIR__ . '/class-my-plugin.php';
 // 系统会自动扫描并加载此文件
 ```
@@ -526,7 +528,202 @@ $token = $request->get_header('authorization');
 
 ---
 
-### 4.4 数据库操作
+### 4.3.1 注册自定义页面路由
+
+除了 REST API 路由（`/nova-json/v1/...`）之外，插件还可以注册**前台自定义页面路由**，让插件接管特定 URL 的页面输出。
+
+#### 工作原理
+
+在 `plugin.json` 中声明 `page_routes` 字段，系统会在主题路由之前检查当前请求路径是否匹配某个插件注册的页面路由。如果匹配：
+- **插件已启用** → 加载对应的 PHP 文件，由该文件完全控制页面输出（可以输出 HTML、XML、JSON 等任意内容）
+- **插件已禁用** → 返回 403 + "此插件已禁用" 提示页面
+
+#### plugin.json 示例
+
+```json
+{
+    "id": "rss",
+    "name": "RSS 订阅",
+    "version": "1.0.0",
+    "entry": "plugin/plugin.php",
+    "page_routes": {
+        "/rss.xml": "plugin/rss.php",
+        "/feed": "plugin/feed.php",
+        "/feed/{category}": "plugin/feed.php"
+    }
+}
+```
+
+- **key** — URL 路径模式（相对于站点根目录），支持 `{param}` 参数占位符
+- **value** — 要执行的 PHP 文件路径（相对于插件目录根目录）
+
+#### 路由参数
+
+路径中的 `{param}` 会被自动提取并设置到 `$_GET` 中，供插件文件使用：
+
+```
+/feed/{category}  →  访问 /feed/tech  →  $_GET['category'] = 'tech'
+```
+
+#### 插件文件示例
+
+```php
+<?php
+// vendor/nova-plugins/rss/plugin/rss.php
+
+// 设置 Content-Type 为 XML
+header('Content-Type: application/xml; charset=utf-8');
+
+// 可以通过 $_GET 获取路由参数
+$category = $_GET['category'] ?? 'all';
+
+// 输出 RSS XML 内容
+echo '<?xml version="1.0" encoding="UTF-8"?>';
+echo '<rss version="2.0">';
+echo '<channel>';
+echo '<title>My Site RSS</title>';
+echo '<link>https://example.com</link>';
+echo '<description>最新文章订阅</description>';
+// ... 输出文章列表
+echo '</channel>';
+echo '</rss>';
+```
+
+#### 可用常量
+
+在页面路由文件中，以下常量已定义：
+
+| 常量 | 说明 |
+|------|------|
+| `NOVA_PAGE_ROUTE` | 匹配的路由模式（如 `/rss.xml`） |
+| `NOVA_PAGE_ROUTE_PLUGIN` | 插件 id（如 `rss`） |
+
+#### 特点
+
+- **零代码加载** — 仅扫描 `plugin.json`，无需加载插件入口代码即可判断路由匹配
+- **任意扩展名** — `/rss.xml`、`/sitemap.xml`、`/manifest.json` 等均可注册，实际由 PHP 处理
+- **参数支持** — `{category}` 等占位符自动注入 `$_GET`
+- **禁用拦截** — 插件禁用后访问其页面路由会返回"此插件已禁用"提示
+- **优先级** — 页面路由在主题路由之前执行，不会与现有页面冲突
+
+> **注意**：`page_routes` 中的路径不要以 `/nova-json` 开头，该前缀保留给 REST API。
+
+---
+
+### 4.3.2 插件配置（config.json）
+
+插件可以在目录根下创建 `config.json` 文件，声明配置表单。系统会自动在**插件详情页**（`/admin/plugin-detail.php?plugin=xxx`）中渲染配置标签页，无需编写任何 HTML。
+
+#### 与 plugin-page.php 的区别
+
+| | plugin-detail.php | plugin-page.php |
+|---|---|---|
+| 来源 | 系统自动生成 | 插件自定义 `plugin/admin/index.php` |
+| 配置 | `config.json` 声明式表单 | 插件自行编写 HTML/PHP |
+| 存储 | `config.json` 文件 | 插件自行管理 |
+| 适用 | 简单键值对配置 | 复杂管理界面 |
+
+#### config.json 格式
+
+```json
+{
+    "tabs": [
+        {
+            "title": "基本设置",
+            "description": "RSS 订阅的基本配置",
+            "fields": [
+                {
+                    "type": "text",
+                    "name": "rss_title",
+                    "label": "RSS 标题",
+                    "value": "我的站点订阅",
+                    "placeholder": "输入 RSS 标题",
+                    "help": "显示在 RSS 订阅中的标题"
+                },
+                {
+                    "type": "switch",
+                    "name": "enable_full_text",
+                    "label": "全文输出",
+                    "value": true,
+                    "help": "开启后 RSS 将输出完整文章内容"
+                },
+                {
+                    "type": "select",
+                    "name": "update_interval",
+                    "label": "更新频率",
+                    "value": "hourly",
+                    "options": {
+                        "hourly": "每小时",
+                        "daily": "每天",
+                        "weekly": "每周"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "高级设置",
+            "fields": [
+                {
+                    "type": "number",
+                    "name": "max_items",
+                    "label": "最大条目数",
+                    "value": 20,
+                    "min": 1,
+                    "max": 100,
+                    "help": "RSS 中最多显示的文章数量"
+                },
+                {
+                    "type": "textarea",
+                    "name": "custom_css",
+                    "label": "自定义样式",
+                    "value": "",
+                    "rows": 6,
+                    "placeholder": "输入自定义 CSS"
+                }
+            ]
+        }
+    ]
+}
+```
+
+#### 支持的字段类型
+
+| type | 说明 | 额外属性 |
+|------|------|----------|
+| `text` | 文本输入框 | `placeholder` |
+| `number` | 数字输入框 | `min`, `max`, `step`, `placeholder` |
+| `textarea` | 多行文本 | `rows`, `placeholder` |
+| `switch` | 开关 | 值为 `true`/`false` |
+| `select` | 下拉选择 | `options`（key-value 对象） |
+
+#### 通用字段属性
+
+| 属性 | 说明 |
+|------|------|
+| `name` | 字段名（唯一标识，保存时使用） |
+| `label` | 显示标签 |
+| `value` | 当前值（保存后自动更新） |
+| `help` | 帮助文本（显示在字段下方） |
+
+#### 在插件代码中读取配置
+
+```php
+class MyPlugin extends Nova_Plugin {
+    public function init() {
+        // 读取 config.json
+        $configFile = $this->plugin_path . '/../config.json';
+        if (is_file($configFile)) {
+            $config = json_decode(file_get_contents($configFile), true);
+            $rssTitle = $config['tabs'][0]['fields'][0]['value'] ?? '默认标题';
+            $enableFullText = $config['tabs'][0]['fields'][1]['value'] ?? false;
+        }
+    }
+}
+```
+
+> **注意**：`config.json` 路径是插件**目录根**（与 `plugin.json` 同级），不是 `plugin/` 子目录内。插件主类中通过 `$this->plugin_path` 获取的是 `plugin/` 目录，因此需要 `dirname($this->plugin_path) . '/config.json'`。
+
+---
 
 插件可以使用 `Nova_DB` 系列类操作数据库。
 
@@ -639,7 +836,58 @@ $cache->delete('my_plugin_stats');
 
 ---
 
-### 4.5 后台页面与菜单
+### 4.5 访问控制
+
+NovaCMS 使用 `NOVA_BOOTSTRAP` 常量防止 PHP 文件被直接 HTTP 访问。
+
+#### 原理
+
+- `index.php` 在启动时定义 `NOVA_BOOTSTRAP`
+- 所有敏感 PHP 文件（类文件、插件入口、路由文件、page_routes 文件）在开头检查此常量
+- 通过 `require_once` 加载的文件继承常量（进程内操作）
+- 直接 HTTP 访问是新进程，常量不存在 → `exit('禁止直接访问')`
+
+#### 插件文件必须添加的检查
+
+**入口文件**（`plugin/plugin.php`）：
+```php
+<?php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+```
+
+**类文件**（`plugin/class-*.php`）：
+```php
+<?php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+```
+
+**API 路由文件**（`plugin/routes/api.php`）：
+```php
+<?php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+```
+
+**page_routes 文件**（如 `plugin/rss.php`）：
+```php
+<?php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+```
+
+#### 额外防护
+
+- `vendor/nova-json/.htaccess` 和 `vendor/nova-plugins/.htaccess` 阻止直接 HTTP 访问（Apache 级别）
+- `NOVA_BOOTSTRAP` 是 PHP 级别的次级防线（Nginx 等环境也有效）
+
+#### 常量说明
+
+| 常量 | 定义位置 | 用途 |
+|------|---------|------|
+| `NOVA_BOOTSTRAP` | `index.php` / `admin-bootstrap.php` | 访问控制 — 表示请求经过框架 |
+| `NOVA_API` | `init.php` | 业务逻辑 — 区分是否为 API 请求（仅 `/nova-json` 路径） |
+
+---
+
+### 4.6 后台页面与菜单
 
 #### 注册菜单
 
@@ -1320,6 +1568,8 @@ new ShortcodePlugin();
 - [ ] 创建 `plugin/plugin.php` 入口文件
 - [ ] 创建插件主类，继承 `Nova_Plugin`
 - [ ] 在 `init()` 方法中注册路由、钩子、菜单
+- [ ] 如果需要自定义页面路由（如 `/rss.xml`），在 `plugin.json` 中声明 `page_routes`
+- [ ] 如果需要配置表单，创建 `config.json`（声明式配置，自动渲染到插件详情页）
 - [ ] 如果需要数据库表，使用 `Nova_DB_Schema` 创建
 - [ ] 如果需要后台页面，继承 `Nova_Backend_Page`
 - [ ] 提供 `LICENSE` 许可证文件
@@ -1331,6 +1581,7 @@ new ShortcodePlugin();
 | 文件路径 | 说明 |
 |----------|------|
 | `vendor/nova-plugins/{name}/plugin.json` | 插件元数据（含英文 id） |
+| `vendor/nova-plugins/{name}/config.json` | 插件配置表单定义及存储（可选） |
 | `vendor/nova-plugins/{name}/plugin/plugin.php` | 插件入口文件（默认 entry） |
 | `vendor/nova-plugins/{name}/plugin/class-{name}.php` | 插件主类文件 |
 | `vendor/nova-plugins/{name}/plugin/routes/*.php` | REST 路由文件（自动加载） |
@@ -1345,7 +1596,7 @@ new ShortcodePlugin();
 | NovaCMS 版本 | 插件 API 版本 | 变更说明 |
 |-------------|--------------|----------|
 | 1.0+ | 1.0 | 初始版本 |
-| 1.1+ | 1.1 | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；`id` 由开发者手动填写（必须为英文），排在 `name` 之前；启用/禁用以 `id` 为准 |
+| 1.1+ | 1.1 | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；`id` 由开发者手动填写（必须为英文），排在 `name` 之前；启用/禁用以 `id` 为准；支持 `page_routes` 自定义页面路由；支持 `config.json` 声明式配置表单 |
 
 ---
 

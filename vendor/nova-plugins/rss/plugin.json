@@ -1,0 +1,12 @@
+{
+    "id": "rss",
+    "name": "RSS 订阅",
+    "description": "为站点生成 RSS 订阅源，支持自定义标签和配置",
+    "version": "1.0.0",
+    "author": "NovaCMS",
+    "entry": "plugin/plugin.php",
+    "page_routes": {
+        "/rss.xml": "plugin/rss.php",
+        "/rss.php": "plugin/rss.php"
+    }
+}

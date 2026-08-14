@@ -1,5 +1,5 @@
 <?php
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 // 自加载依赖，使本文件可通过 admin/plugin-page.php 通用渲染器独立引入
 require_once __DIR__ . '/../class-backup.php';

@@ -1,0 +1,12 @@
+{
+    "id": "sitemap",
+    "name": "站点地图",
+    "description": "自动生成 sitemap.xml 站点地图，支持自定义页面和配置",
+    "version": "1.0.0",
+    "author": "NovaCMS",
+    "entry": "plugin/plugin.php",
+    "page_routes": {
+        "/sitemap.xml": "plugin/sitemap.php",
+        "/sitemap.php": "plugin/sitemap.php"
+    }
+}

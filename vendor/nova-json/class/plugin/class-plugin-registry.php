@@ -19,7 +19,7 @@
  *     └── LICENSE            许可证
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_Plugin_Registry {
 
@@ -96,6 +96,7 @@ class Nova_Plugin_Registry {
                 'plugin_dir'       => $pluginDir,
                 'min_nova_version' => $info['min_nova_version'] ?? '',
                 'duplicate'        => $isDuplicate,
+                'page_routes'      => $info['page_routes'] ?? [],
             ];
         }
 

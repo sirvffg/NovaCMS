@@ -29,8 +29,8 @@ $currentAdminPage = pathinfo(basename($_SERVER['PHP_SELF'] ?? 'index.php'), PATH
 $adminCssPath = __DIR__ . '/../../assets/css/admin.css';
 $adminCssVersion = is_file($adminCssPath) ? (string)filemtime($adminCssPath) : '1';
 
-if (!defined('NOVA_API')) {
-    define('NOVA_API', true);
+if (!defined('NOVA_BOOTSTRAP')) {
+    define('NOVA_BOOTSTRAP', true);
 }
 require_once __DIR__ . '/../../vendor/nova-json/class/backend/class-backend-menu.php';
 

@@ -14,7 +14,7 @@
  *   Nova_File::copy('src.txt', 'dst.txt');
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_File {
 

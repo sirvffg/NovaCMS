@@ -9,6 +9,11 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/functions.php';
 
+// 框架启动标记（admin 页面直接访问，需自行定义）
+if (!defined('NOVA_BOOTSTRAP')) {
+    define('NOVA_BOOTSTRAP', true);
+}
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

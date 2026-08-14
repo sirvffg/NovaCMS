@@ -1,0 +1,8 @@
+# 禁止直接 HTTP 访问插件文件（PHP require_once 不受影响）
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

@@ -7,9 +7,6 @@
 
 require_once __DIR__ . '/includes/admin-bootstrap.php';
 
-if (!defined('NOVA_API')) {
-    define('NOVA_API', true);
-}
 require_once __DIR__ . '/../vendor/nova-json/class/plugin/class-plugin-registry.php';
 
 // 确保 active_plugins 字段存在
@@ -159,6 +156,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax) {
     exit;
 }
 
+// AJAX：保存插件配置（config.json）
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '') === 'save_plugin_config') {
+    header('Content-Type: application/json; charset=utf-8');
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'msg' => '安全验证失败，请刷新页面后重试']);
+        exit;
+    }
+
+    $cfgPluginKey = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['plugin'] ?? '');
+    $cfgTarget = null;
+    foreach ($plugins as $p) {
+        if ($p['id'] === $cfgPluginKey || $p['slug'] === $cfgPluginKey) {
+            $cfgTarget = $p;
+            break;
+        }
+    }
+    if ($cfgTarget === null) {
+        echo json_encode(['ok' => false, 'msg' => '插件不存在']);
+        exit;
+    }
+    $cfgIsActive = $activePluginIds === null ? true : in_array($cfgTarget['id'], $activePluginIds, true);
+    if (!$cfgIsActive) {
+        echo json_encode(['ok' => false, 'msg' => '插件已禁用，无法保存配置']);
+        exit;
+    }
+
+    $cfgFile = $cfgTarget['plugin_dir'] . '/config.json';
+    $cfgRaw = is_file($cfgFile) ? file_get_contents($cfgFile) : '{"tabs":[]}';
+    $cfgData = json_decode($cfgRaw, true);
+    if (!is_array($cfgData)) {
+        $cfgData = ['tabs' => []];
+    }
+
+    $savedValues = json_decode($_POST['values'] ?? '{}', true);
+    if (is_array($savedValues) && !empty($cfgData['tabs'])) {
+        foreach ($cfgData['tabs'] as &$tab) {
+            if (empty($tab['fields'])) continue;
+            foreach ($tab['fields'] as &$field) {
+                $fName = $field['name'] ?? '';
+                if ($fName === '') continue;
+                if (isset($savedValues[$fName])) {
+                    $val = $savedValues[$fName];
+                    if ($field['type'] === 'switch') {
+                        $field['value'] = ($val === '1' || $val === true || $val === 'on');
+                    } elseif ($field['type'] === 'number') {
+                        $field['value'] = is_numeric($val) ? $val + 0 : $val;
+                    } else {
+                        $field['value'] = $val;
+                    }
+                } elseif ($field['type'] === 'switch') {
+                    $field['value'] = false;
+                }
+            }
+        }
+    }
+
+    $writeResult = file_put_contents(
+        $cfgFile,
+        json_encode($cfgData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+    );
+
+    if ($writeResult === false) {
+        echo json_encode(['ok' => false, 'msg' => '写入 config.json 失败，请检查目录权限']);
+    } else {
+        Nova_Plugin_Registry::clear_cache();
+        echo json_encode(['ok' => true, 'msg' => '配置已保存']);
+    }
+    exit;
+}
+
 // 非 AJAX 的 POST 回退（禁用 JS 时仍可用）
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['plugin_action']) && !$isAjax) {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
@@ -234,6 +302,239 @@ usort($plugins, function ($a, $b) {
 $enabledCount = count(array_filter($plugins, fn($p) => $p['active']));
 $disabledCount = max(0, count($plugins) - $enabledCount);
 $totalCount = count($plugins);
+
+// =============================================
+// 插件详情视图（?plugin=xxx 时显示）
+// =============================================
+$detailPluginKey = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['plugin'] ?? '');
+if ($detailPluginKey !== '') {
+    $detailPlugin = null;
+    foreach ($plugins as $p) {
+        if ($p['id'] === $detailPluginKey || $p['slug'] === $detailPluginKey) {
+            $detailPlugin = $p;
+            break;
+        }
+    }
+    if ($detailPlugin !== null) {
+        $detailPluginId = $detailPlugin['id'];
+        $detailIsActive = $detailPlugin['active'];
+        $detailConfigFile = $detailPlugin['plugin_dir'] . '/config.json';
+        $detailConfigSchema = [];
+        if (is_file($detailConfigFile)) {
+            $decoded = json_decode(file_get_contents($detailConfigFile), true);
+            if (is_array($decoded) && !empty($decoded['tabs'])) {
+                $detailConfigSchema = $decoded;
+            }
+        }
+        $detailCsrfToken = generateCSRFToken();
+
+        $page_title = $detailPlugin['name'] . ' - 插件详情';
+        require_once 'includes/header.php';
+        ?>
+        <style>
+        .plugin-detail-header { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--bs-border-color); }
+        .plugin-detail-header .plugin-icon-lg { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; flex-shrink:0; }
+        .plugin-detail-tabs { border-bottom:2px solid var(--bs-border-color); padding:0 1.5rem; display:flex; gap:.25rem; }
+        .plugin-detail-tab { padding:.75rem 1.25rem; cursor:pointer; border:none; background:none; color:var(--bs-secondary-color); font-weight:500; font-size:.9rem; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .2s; white-space:nowrap; }
+        .plugin-detail-tab:hover { color:var(--bs-primary); }
+        .plugin-detail-tab.active { color:var(--bs-primary); border-bottom-color:var(--bs-primary); }
+        .plugin-detail-body { padding:1.5rem; }
+        .plugin-info-list dt { width:140px; color:var(--bs-secondary-color); font-weight:500; font-size:.875rem; }
+        .plugin-info-list dd { color:var(--bs-body-color); font-size:.875rem; }
+        .config-field-row { margin-bottom:1.25rem; }
+        .config-field-row label { font-weight:500; font-size:.875rem; margin-bottom:.375rem; display:block; }
+        .config-field-help { font-size:.75rem; color:var(--bs-secondary-color); margin-top:.25rem; }
+        .form-switch-lg .form-check-input { width:2.5em; height:1.25em; cursor:pointer; }
+        </style>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="plugin-detail-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="plugin-icon-lg"><i class="bi bi-puzzle-fill"></i></div>
+                    <div>
+                        <h4 class="mb-0"><?= e($detailPlugin['name']) ?></h4>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="badge bg-<?= $detailIsActive ? 'success' : 'secondary' ?>"><?= $detailIsActive ? '运行中' : '已停用' ?></span>
+                            <?php if (!empty($detailPlugin['version'])): ?>
+                                <span class="text-muted small">v<?= e($detailPlugin['version']) ?></span>
+                            <?php endif; ?>
+                            <code class="small text-muted"><?= e($detailPluginId) ?></code>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <?php if ($detailIsActive && is_file($detailPlugin['plugin_dir'] . '/plugin/admin/index.php')): ?>
+                        <a href="/admin/plugin-page.php?plugin=<?= rawurlencode($detailPluginId) ?>" class="btn btn-outline-primary btn-sm" data-pjax>
+                            <i class="bi bi-sliders me-1"></i>管理
+                        </a>
+                    <?php endif; ?>
+                    <a href="plugins.php" class="btn btn-outline-secondary btn-sm" data-pjax>
+                        <i class="bi bi-arrow-left me-1"></i>返回
+                    </a>
+                </div>
+            </div>
+
+            <div class="plugin-detail-tabs">
+                <button class="plugin-detail-tab active" data-tab="info" type="button">详情</button>
+                <?php if (!empty($detailConfigSchema['tabs'])): ?>
+                    <?php foreach ($detailConfigSchema['tabs'] as $dIdx => $dTab): ?>
+                        <button class="plugin-detail-tab" data-tab="config-<?= $dIdx ?>" type="button"><?= e($dTab['title'] ?? '配置') ?></button>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <div class="plugin-detail-body">
+                <!-- 详情 Tab -->
+                <div class="tab-pane-content" id="tab-info">
+                    <dl class="row plugin-info-list mb-0">
+                        <dt class="col-sm-3">ID</dt>
+                        <dd class="col-sm-9"><code><?= e($detailPluginId) ?></code></dd>
+                        <dt class="col-sm-3">名称</dt>
+                        <dd class="col-sm-9"><?= e($detailPlugin['name']) ?></dd>
+                        <?php if (!empty($detailPlugin['description'])): ?>
+                            <dt class="col-sm-3">描述</dt>
+                            <dd class="col-sm-9"><?= e($detailPlugin['description']) ?></dd>
+                        <?php endif; ?>
+                        <?php if (!empty($detailPlugin['version'])): ?>
+                            <dt class="col-sm-3">版本</dt>
+                            <dd class="col-sm-9"><?= e($detailPlugin['version']) ?></dd>
+                        <?php endif; ?>
+                        <?php if (!empty($detailPlugin['author'])): ?>
+                            <dt class="col-sm-3">作者</dt>
+                            <dd class="col-sm-9">
+                                <?php if (!empty($detailPlugin['author_uri'])): ?>
+                                    <a href="<?= e($detailPlugin['author_uri']) ?>" target="_blank"><?= e($detailPlugin['author']) ?></a>
+                                <?php else: ?>
+                                    <?= e($detailPlugin['author']) ?>
+                                <?php endif; ?>
+                            </dd>
+                        <?php endif; ?>
+                        <dt class="col-sm-3">目录</dt>
+                        <dd class="col-sm-9"><code><?= e($detailPlugin['slug']) ?></code></dd>
+                        <dt class="col-sm-3">入口文件</dt>
+                        <dd class="col-sm-9"><code><?= e($detailPlugin['entry']) ?></code></dd>
+                        <?php if (!empty($detailPlugin['min_nova_version'])): ?>
+                            <dt class="col-sm-3">最低版本要求</dt>
+                            <dd class="col-sm-9">NovaCMS <?= e($detailPlugin['min_nova_version']) ?>+</dd>
+                        <?php endif; ?>
+                        <?php if (!empty($detailPlugin['page_routes'])): ?>
+                            <dt class="col-sm-3">页面路由</dt>
+                            <dd class="col-sm-9">
+                                <?php foreach ($detailPlugin['page_routes'] as $route => $file): ?>
+                                    <code class="me-2"><?= e($route) ?></code>
+                                <?php endforeach; ?>
+                            </dd>
+                        <?php endif; ?>
+                        <?php if (is_file($detailConfigFile)): ?>
+                            <dt class="col-sm-3">配置文件</dt>
+                            <dd class="col-sm-9"><code>config.json</code> <span class="text-muted small">（<?= filesize($detailConfigFile) ?> 字节）</span></dd>
+                        <?php endif; ?>
+                    </dl>
+                </div>
+
+                <!-- 配置 Tab -->
+                <?php if (!empty($detailConfigSchema['tabs'])): ?>
+                    <?php foreach ($detailConfigSchema['tabs'] as $tabIdx => $tab): ?>
+                        <div class="tab-pane-content d-none" id="tab-config-<?= $tabIdx ?>">
+                            <form class="plugin-config-form">
+                                <?php if (!empty($tab['description'])): ?>
+                                    <p class="text-muted small mb-3"><?= e($tab['description']) ?></p>
+                                <?php endif; ?>
+                                <?php foreach ($tab['fields'] ?? [] as $field):
+                                    $fName = $field['name'] ?? ''; $fType = $field['type'] ?? 'text';
+                                    $fLabel = $field['label'] ?? $fName; $fValue = $field['value'] ?? '';
+                                    $fHelp = $field['help'] ?? ''; $fPlaceholder = $field['placeholder'] ?? '';
+                                ?>
+                                    <div class="config-field-row">
+                                        <label><?= e($fLabel) ?></label>
+                                        <?php if ($fType === 'text'): ?>
+                                            <input type="text" class="form-control" name="<?= e($fName) ?>" value="<?= e($fValue) ?>" placeholder="<?= e($fPlaceholder) ?>">
+                                        <?php elseif ($fType === 'number'): ?>
+                                            <input type="number" class="form-control" name="<?= e($fName) ?>" value="<?= e($fValue) ?>" placeholder="<?= e($fPlaceholder) ?>"
+                                                <?= isset($field['min']) ? 'min="' . e($field['min']) . '"' : '' ?>
+                                                <?= isset($field['max']) ? 'max="' . e($field['max']) . '"' : '' ?>
+                                                <?= isset($field['step']) ? 'step="' . e($field['step']) . '"' : '' ?>>
+                                        <?php elseif ($fType === 'textarea'): ?>
+                                            <textarea class="form-control" name="<?= e($fName) ?>" rows="<?= $field['rows'] ?? 4 ?>" placeholder="<?= e($fPlaceholder) ?>"><?= e($fValue) ?></textarea>
+                                        <?php elseif ($fType === 'switch'): ?>
+                                            <div class="form-check form-switch form-switch-lg">
+                                                <input class="form-check-input" type="checkbox" name="<?= e($fName) ?>" value="1" <?= $fValue ? 'checked' : '' ?>>
+                                            </div>
+                                        <?php elseif ($fType === 'select'): $options = $field['options'] ?? []; ?>
+                                            <select class="form-select" name="<?= e($fName) ?>">
+                                                <?php foreach ($options as $optVal => $optLabel): ?>
+                                                    <option value="<?= e($optVal) ?>" <?= (string)$fValue === (string)$optVal ? 'selected' : '' ?>><?= e($optLabel) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        <?php endif; ?>
+                                        <?php if ($fHelp): ?>
+                                            <div class="config-field-help"><?= e($fHelp) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                                <?php if ($detailIsActive): ?>
+                                    <button type="button" class="btn btn-primary btn-save-config">
+                                        <i class="bi bi-check-lg me-1"></i>保存配置
+                                    </button>
+                                <?php else: ?>
+                                    <div class="alert alert-warning mb-0">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>插件已禁用，请先启用后再修改配置。
+                                    </div>
+                                <?php endif; ?>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <script type="text/pjax-script">
+        (function() {
+            document.querySelectorAll('.plugin-detail-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.plugin-detail-tab').forEach(function(t) { t.classList.remove('active'); });
+                    document.querySelectorAll('.tab-pane-content').forEach(function(p) { p.classList.add('d-none'); });
+                    tab.classList.add('active');
+                    var target = document.getElementById('tab-' + tab.dataset.tab);
+                    if (target) target.classList.remove('d-none');
+                });
+            });
+            document.querySelectorAll('.btn-save-config').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var form = btn.closest('.plugin-config-form');
+                    var values = {};
+                    form.querySelectorAll('input[type="text"], input[type="number"], textarea, select').forEach(function(input) { values[input.name] = input.value; });
+                    form.querySelectorAll('input[type="checkbox"]').forEach(function(input) { values[input.name] = input.checked ? '1' : '0'; });
+                    var formData = new FormData();
+                    formData.append('action', 'save_plugin_config');
+                    formData.append('csrf_token', '<?= $detailCsrfToken ?>');
+                    formData.append('plugin', '<?= e($detailPluginKey) ?>');
+                    formData.append('values', JSON.stringify(values));
+                    btn.disabled = true;
+                    var orig = btn.innerHTML;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>保存中…';
+                    fetch('plugins.php', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:formData })
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        var t = document.createElement('div');
+                        t.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 p-2 rounded shadow-lg';
+                        t.style.cssText = 'z-index:9999;background:' + (data.ok ? '#198754' : '#dc3545') + ';color:#fff;font-size:.875rem;';
+                        t.textContent = data.msg || (data.ok ? '保存成功' : '保存失败');
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 2500);
+                    })
+                    .catch(function(){ alert('网络错误，请重试'); })
+                    .finally(function(){ btn.disabled = false; btn.innerHTML = orig; });
+                });
+            });
+        })();
+        </script>
+
+        <?php
+        require_once 'includes/footer.php';
+        exit;
+    }
+}
 
 $page_title = '插件管理';
 require_once 'includes/header.php';
@@ -427,6 +728,11 @@ require_once 'includes/header.php';
 .plugin-name {
     margin: 0;
     font-weight: 650;
+    color: var(--bs-body-color);
+    transition: color .2s;
+}
+.plugin-name:hover {
+    color: var(--bs-primary);
 }
 
 .plugin-status {
@@ -779,9 +1085,12 @@ require_once 'includes/header.php';
 
                                             <div class="d-flex align-items-center gap-2">
 
-                                                <strong class="plugin-name text-truncate">
+                                                <a href="plugins.php?plugin=<?= rawurlencode($plugin['id']) ?>"
+                                                   class="plugin-name text-truncate text-decoration-none"
+                                                   data-pjax
+                                                   style="cursor:pointer;">
                                                     <?= e($plugin['name']) ?>
-                                                </strong>
+                                                </a>
 
                                                 <span class="plugin-status <?= $plugin['active'] ? 'active' : 'inactive' ?>">
 

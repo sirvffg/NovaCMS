@@ -6,7 +6,7 @@
  * 用法：$db = new Nova_DB();
  */
 
-defined('NOVA_API') or exit('禁止直接访问');
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
 class Nova_DB {
 

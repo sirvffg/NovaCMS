@@ -9,6 +9,9 @@
  *   4. Server::serve_request() → dispatch → JSON 输出
  */
 
+// 访问控制：必须通过 index.php 框架入口加载
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+
 // 确保 Session 已启动（根 index.php 可能已调用，但直接访问时仍需启动）
 if (session_status() === PHP_SESSION_NONE) {
     $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443;
@@ -33,7 +36,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
 header('X-XSS-Protection: 0');
 
-// NOVA_API 常量：标识 API 入口，防止核心类文件被直接访问
+// NOVA_API 常量：标识 API 请求（用于业务逻辑区分）
 if (!defined('NOVA_API')) {
     define('NOVA_API', true);
 }
