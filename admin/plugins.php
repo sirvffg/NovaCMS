@@ -89,7 +89,7 @@ $activePluginIds = get_active_plugins($db);
 // AJAX 端点：处理启用/禁用请求，返回 JSON
 $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
         || ($_SERVER['HTTP_X_PJAX'] ?? '') === 'true';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '') !== 'save_plugin_config') {
     header('Content-Type: application/json; charset=utf-8');
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         http_response_code(403);
