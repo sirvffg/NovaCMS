@@ -339,8 +339,8 @@ if ($detailPluginKey !== '') {
         .plugin-detail-tab:hover { color:var(--bs-primary); }
         .plugin-detail-tab.active { color:var(--bs-primary); border-bottom-color:var(--bs-primary); }
         .plugin-detail-body { padding:1.5rem; }
-        .plugin-info-list dt { width:140px; color:var(--bs-secondary-color); font-weight:500; font-size:.875rem; }
-        .plugin-info-list dd { color:var(--bs-body-color); font-size:.875rem; }
+        .plugin-info-table th { color:var(--bs-secondary-color); font-weight:500; font-size:.875rem; vertical-align:top; padding:.5rem .75rem; }
+        .plugin-info-table td { color:var(--bs-body-color); font-size:.875rem; vertical-align:top; padding:.5rem .75rem; }
         .config-field-row { margin-bottom:1.25rem; }
         .config-field-row label { font-weight:500; font-size:.875rem; margin-bottom:.375rem; display:block; }
         .config-field-help { font-size:.75rem; color:var(--bs-secondary-color); margin-top:.25rem; }
@@ -386,50 +386,72 @@ if ($detailPluginKey !== '') {
             <div class="plugin-detail-body">
                 <!-- 详情 Tab -->
                 <div class="tab-pane-content" id="tab-info">
-                    <dl class="row plugin-info-list mb-0">
-                        <dt class="col-sm-3">ID</dt>
-                        <dd class="col-sm-9"><code><?= e($detailPluginId) ?></code></dd>
-                        <dt class="col-sm-3">名称</dt>
-                        <dd class="col-sm-9"><?= e($detailPlugin['name']) ?></dd>
-                        <?php if (!empty($detailPlugin['description'])): ?>
-                            <dt class="col-sm-3">描述</dt>
-                            <dd class="col-sm-9"><?= e($detailPlugin['description']) ?></dd>
-                        <?php endif; ?>
-                        <?php if (!empty($detailPlugin['version'])): ?>
-                            <dt class="col-sm-3">版本</dt>
-                            <dd class="col-sm-9"><?= e($detailPlugin['version']) ?></dd>
-                        <?php endif; ?>
-                        <?php if (!empty($detailPlugin['author'])): ?>
-                            <dt class="col-sm-3">作者</dt>
-                            <dd class="col-sm-9">
-                                <?php if (!empty($detailPlugin['author_uri'])): ?>
-                                    <a href="<?= e($detailPlugin['author_uri']) ?>" target="_blank"><?= e($detailPlugin['author']) ?></a>
-                                <?php else: ?>
-                                    <?= e($detailPlugin['author']) ?>
-                                <?php endif; ?>
-                            </dd>
-                        <?php endif; ?>
-                        <dt class="col-sm-3">目录</dt>
-                        <dd class="col-sm-9"><code><?= e($detailPlugin['slug']) ?></code></dd>
-                        <dt class="col-sm-3">入口文件</dt>
-                        <dd class="col-sm-9"><code><?= e($detailPlugin['entry']) ?></code></dd>
-                        <?php if (!empty($detailPlugin['min_nova_version'])): ?>
-                            <dt class="col-sm-3">最低版本要求</dt>
-                            <dd class="col-sm-9">NovaCMS <?= e($detailPlugin['min_nova_version']) ?>+</dd>
-                        <?php endif; ?>
-                        <?php if (!empty($detailPlugin['page_routes'])): ?>
-                            <dt class="col-sm-3">页面路由</dt>
-                            <dd class="col-sm-9">
-                                <?php foreach ($detailPlugin['page_routes'] as $route => $file): ?>
-                                    <code class="me-2"><?= e($route) ?></code>
-                                <?php endforeach; ?>
-                            </dd>
-                        <?php endif; ?>
-                        <?php if (is_file($detailConfigFile)): ?>
-                            <dt class="col-sm-3">配置文件</dt>
-                            <dd class="col-sm-9"><code>config.json</code> <span class="text-muted small">（<?= filesize($detailConfigFile) ?> 字节）</span></dd>
-                        <?php endif; ?>
-                    </dl>
+                    <table class="table table-borderless mb-0 plugin-info-table">
+                        <tbody>
+                            <tr>
+                                <th scope="row" style="width:160px;">ID</th>
+                                <td><code><?= e($detailPluginId) ?></code></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">名称</th>
+                                <td><?= e($detailPlugin['name']) ?></td>
+                            </tr>
+                            <?php if (!empty($detailPlugin['description'])): ?>
+                            <tr>
+                                <th scope="row">描述</th>
+                                <td><?= e($detailPlugin['description']) ?></td>
+                            </tr>
+                            <?php endif; ?>
+                            <?php if (!empty($detailPlugin['version'])): ?>
+                            <tr>
+                                <th scope="row">版本</th>
+                                <td><?= e($detailPlugin['version']) ?></td>
+                            </tr>
+                            <?php endif; ?>
+                            <?php if (!empty($detailPlugin['author'])): ?>
+                            <tr>
+                                <th scope="row">作者</th>
+                                <td>
+                                    <?php if (!empty($detailPlugin['author_uri'])): ?>
+                                        <a href="<?= e($detailPlugin['author_uri']) ?>" target="_blank"><?= e($detailPlugin['author']) ?></a>
+                                    <?php else: ?>
+                                        <?= e($detailPlugin['author']) ?>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+                            <tr>
+                                <th scope="row">目录</th>
+                                <td><code><?= e($detailPlugin['slug']) ?></code></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">入口文件</th>
+                                <td><code><?= e($detailPlugin['entry']) ?></code></td>
+                            </tr>
+                            <?php if (!empty($detailPlugin['min_nova_version'])): ?>
+                            <tr>
+                                <th scope="row">最低版本要求</th>
+                                <td>NovaCMS <?= e($detailPlugin['min_nova_version']) ?>+</td>
+                            </tr>
+                            <?php endif; ?>
+                            <?php if (!empty($detailPlugin['page_routes'])): ?>
+                            <tr>
+                                <th scope="row">页面路由</th>
+                                <td>
+                                    <?php foreach ($detailPlugin['page_routes'] as $route => $file): ?>
+                                        <code class="me-2"><?= e($route) ?></code>
+                                    <?php endforeach; ?>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+                            <?php if (is_file($detailConfigFile)): ?>
+                            <tr>
+                                <th scope="row">配置文件</th>
+                                <td><code>config.json</code> <span class="text-muted small">（<?= filesize($detailConfigFile) ?> 字节）</span></td>
+                            </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- 配置 Tab -->

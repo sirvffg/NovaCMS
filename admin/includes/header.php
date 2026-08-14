@@ -65,7 +65,6 @@ Nova_Backend_Menu::add_menu('插件管理', 'plugins', '/admin/plugins.php', 'bi
 Nova_Backend_Menu::add_menu('访问统计', 'stats', '/admin/stats.php', 'bi-bar-chart', 10, $toolMenu);
 Nova_Backend_Menu::add_menu('留言管理', 'guestbook', '/admin/guestbook.php', 'bi-chat-left-dots', 20, $toolMenu);
 Nova_Backend_Menu::add_menu('邮件测试', 'email_test', '/admin/email_test.php', 'bi-envelope-check', 30, $toolMenu);
-Nova_Backend_Menu::add_menu('SEO 工具集', 'seo_tools', '/admin/seo_tools.php', 'bi-search', 40, $toolMenu);
 Nova_Backend_Menu::add_menu('系统日志', 'view_logs', '/admin/view_logs.php', 'bi-journal-text', 50, $toolMenu);
 Nova_Backend_Menu::add_menu(
     '系统状态',

@@ -607,9 +607,8 @@ require_once 'includes/header.php';
 
     <?php include 'includes/markdown_editor.php'; ?>
 
-    <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
-
-    <script>
+    <script type="text/javascript">
+    (function() {
         // Robot描述字符计数
         const robotDescTextarea = document.querySelector('textarea[name="robot_description"]');
         const robotDescLength = document.getElementById('robotDescLength');
@@ -697,7 +696,7 @@ require_once 'includes/header.php';
                                         const clearBtn = document.createElement('button');
                                         clearBtn.type = 'button';
                                         clearBtn.className = 'btn btn-outline-danger btn-sm mb-2';
-                                        clearBtn.onclick = inputId === 'faviconInput' ? clearFavicon : clearLogo;
+                                        clearBtn.onclick = inputId === 'faviconInput' ? window.clearFavicon : window.clearLogo;
                                         clearBtn.innerHTML = '<i class="bi bi-trash me-1"></i> ' + (inputId === 'faviconInput' ? '清除图标' : '清除Logo');
                                         buttonsContainer.appendChild(clearBtn);
                                     }
@@ -734,7 +733,7 @@ require_once 'includes/header.php';
         handleUpload('logoInput', '/admin/api/upload_icon.php?type=logo', 'logo', 'logoPreview', 'logoUrl', 'Logo上传成功');
 
         // 清除图标
-        function clearFavicon() {
+        window.clearFavicon = function() {
             if (!confirm('确定要清除网站图标吗？')) return;
 
             // 保存按钮引用
@@ -766,7 +765,7 @@ require_once 'includes/header.php';
         }
 
         // 清除Logo
-        function clearLogo() {
+        window.clearLogo = function() {
             if (!confirm('确定要清除网站Logo吗？')) return;
 
             // 保存按钮引用
@@ -903,7 +902,7 @@ require_once 'includes/header.php';
         }
 
         // 密码显示切换
-        function togglePassword(btn) {
+        window.togglePassword = function(btn) {
             const input = btn.previousElementSibling;
             const icon = btn.querySelector('i');
             if (input.type === 'password') {
@@ -917,5 +916,6 @@ require_once 'includes/header.php';
             }
         }
 
+    })();
     </script>
 <?php require_once 'includes/footer.php'; ?>
