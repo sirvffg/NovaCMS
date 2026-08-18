@@ -14,11 +14,18 @@ recordVisit($_SERVER['REQUEST_URI']);
 $db = getDB();
 $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
 
-// 已登录则跳转到首页
+// 注册页必须独立于前台主题始终可访问；这里只清理失效会话，不在 GET 阶段跳转。
 if (isset($_SESSION['user_id'])) {
-    $redirect_url = safeRedirectUrl($_GET['redirect_url'] ?? '/');
-    header('Location: ' . $redirect_url);
-    exit;
+    $sessionUserStmt = $db->prepare("SELECT id FROM admins WHERE id = ? LIMIT 1");
+    $sessionUserStmt->execute([(int)$_SESSION['user_id']]);
+    if (!$sessionUserStmt->fetchColumn()) {
+        unset(
+            $_SESSION['user_id'],
+            $_SESSION['user_username'],
+            $_SESSION['user_email'],
+            $_SESSION['user_role']
+        );
+    }
 }
 
 $register_error = '';
@@ -620,7 +627,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
             }
         }
     </style>
-    <link href="/assets/css/account.css?v=20260728-1" rel="stylesheet">
+    <?php
+    $useMonochromeAccount = trim((string)($config['active_theme'] ?? 'default')) === 'monochrome';
+    $accountBaseVersion = (int)@filemtime(__DIR__ . '/../assets/css/account.css');
+    $accountThemeVersion = (int)@filemtime(__DIR__ . '/nova-themes/monochrome/assets/css/account.css');
+    ?>
+    <link href="/assets/css/account.css<?= $accountBaseVersion ? '?v=' . $accountBaseVersion : '' ?>" rel="stylesheet">
+    <?php if ($useMonochromeAccount): ?>
+    <link href="/vendor/nova-themes/monochrome/assets/css/account.css<?= $accountThemeVersion ? '?v=' . $accountThemeVersion : '' ?>" rel="stylesheet">
+    <?php endif; ?>
 </head>
 <body class="account-auth-page account-register-page">
     <div class="account-auth-toolbar" aria-label="页面工具">

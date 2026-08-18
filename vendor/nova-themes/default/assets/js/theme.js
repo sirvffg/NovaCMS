@@ -496,6 +496,12 @@
         trigger.appendChild(name);
 
         var menu = createElement('ul', 'dropdown-menu dropdown-menu-end');
+        if (container.classList.contains('mono-account')) {
+            var summary = createElement('li', 'nova-user-summary');
+            summary.appendChild(createElement('strong', '', String(user.username || '用户')));
+            summary.appendChild(createElement('small', '', String(user.role || '').toLowerCase() === 'admin' ? '管理员账户' : '个人账户'));
+            menu.appendChild(summary);
+        }
         if (String(user.role || '').toLowerCase() === 'admin') {
             appendMenuLink(menu, '/admin', 'bi-grid-1x2', '管理后台');
         }
@@ -554,7 +560,9 @@
             renderGuestMenu(container);
             return null;
         }, function () {
-            renderGuestMenu(container);
+            if (container.getAttribute('data-auth-seeded') !== 'true') {
+                renderGuestMenu(container);
+            }
             return null;
         });
     }
