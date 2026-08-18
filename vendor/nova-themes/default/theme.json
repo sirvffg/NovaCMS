@@ -5,5 +5,10 @@
     "author": "NovaCMS",
     "description": "NovaCMS 现代个人博客主题，支持文章流、博客侧栏、深浅色与响应式社区页面",
     "screenshot": "screenshot.png",
-    "min_nova_version": "1.0.0"
+    "min_nova_version": "1.0.0",
+    "page_templates": {
+        "default": "默认页面",
+        "wide": "宽版页面",
+        "landing": "落地页"
+    }
 }

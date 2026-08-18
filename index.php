@@ -16,6 +16,7 @@ if (preg_match('#^/nova-json(/.*)?$#', $requestPath)) {
 require_once 'config/database.php';
 require_once 'config/functions.php';
 require_once 'config/content_module_functions.php';
+require_once 'config/theme_functions.php';
 
 // 记录访问
 recordVisit($requestPath);
@@ -132,10 +133,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $db = getDB();
 $config = $db->query("SELECT * FROM website_config LIMIT 1")->fetch();
 
-// 获取激活主题
-$activeTheme = !empty($config['active_theme']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $config['active_theme']) : 'default';
-$themePath = __DIR__ . '/vendor/nova-themes/' . $activeTheme;
-$themeUrl = '/vendor/nova-themes/' . $activeTheme;
+// 获取激活主题。管理员可通过带签名的地址临时预览其他已安装主题。
+$configuredTheme = (string)($config['active_theme'] ?? 'default');
+$previewTheme = is_string($_GET['nova_theme_preview'] ?? null) ? $_GET['nova_theme_preview'] : '';
+$previewToken = is_string($_GET['nova_theme_token'] ?? null) ? $_GET['nova_theme_token'] : '';
+$isThemePreview = !empty($_SESSION['admin_id'])
+    && novaThemeValidatePreviewToken($previewTheme, $previewToken);
+
+if ($isThemePreview) {
+    $previewCandidate = novaThemeFind($previewTheme);
+    if ($previewCandidate !== null && $previewCandidate['valid']) {
+        $configuredTheme = $previewTheme;
+        header('Cache-Control: no-store, private');
+        header('Referrer-Policy: no-referrer');
+        header('X-Robots-Tag: noindex, nofollow');
+        define('NOVA_THEME_PREVIEW', true);
+    }
+}
+
+$resolvedTheme = novaThemeResolveActive($configuredTheme);
+if (!$resolvedTheme['valid']) {
+    error_log('No valid NovaCMS theme is available: ' . implode('; ', $resolvedTheme['errors']));
+    http_response_code(500);
+    echo '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>主题不可用</title><body><h1>主题不可用</h1><p>请在后台检查主题文件。</p></body></html>';
+    exit;
+}
+if (!empty($resolvedTheme['using_fallback'])) {
+    error_log('NovaCMS theme fallback: ' . ($resolvedTheme['fallback_reason'] ?? 'unknown reason'));
+}
+
+$activeTheme = $resolvedTheme['slug'];
+$themePath = $resolvedTheme['path'];
+$themeUrl = '/vendor/nova-themes/' . rawurlencode($activeTheme);
 
 // 定义主题URL常量，供主题文件使用
 define('NOVA_THEME_URL', $themeUrl);

@@ -1,8 +1,12 @@
 <?php
 require_once __DIR__ . '/includes/admin-bootstrap.php';
 require_once __DIR__ . '/../config/content_module_functions.php';
+require_once __DIR__ . '/../config/theme_functions.php';
 
 ensureContentModuleTables($db);
+
+$activeTheme = novaThemeResolveActive($config['active_theme'] ?? 'default');
+$pageTemplateOptions = $activeTheme['page_templates'] ?? ['default' => '默认页面'];
 
 $resourceConfig = [
     'table' => 'cms_pages',
@@ -60,11 +64,7 @@ $resourceConfig = [
             'type' => 'select',
             'side' => true,
             'default' => 'default',
-            'options' => [
-                'default' => '默认页面',
-                'wide' => '宽版页面',
-                'landing' => '落地页',
-            ],
+            'options' => $pageTemplateOptions,
         ],
         'status' => [
             'label' => '发布状态',

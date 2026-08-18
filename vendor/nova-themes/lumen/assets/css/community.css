@@ -1,0 +1,105 @@
+@import url("/vendor/nova-themes/default/assets/css/community.css");
+
+.community-page { background: transparent; }
+
+.community-hero {
+    border: 0;
+    background:
+        radial-gradient(circle at 16% 10%, rgba(var(--community-primary-rgb), .2), transparent 30rem),
+        radial-gradient(circle at 84% 18%, rgba(50, 202, 190, .15), transparent 25rem),
+        transparent;
+}
+
+.community-hero h1 {
+    font-weight: 760;
+    letter-spacing: -.062em;
+    text-wrap: balance;
+}
+
+.community-hero-mark,
+.friend-card,
+.community-empty,
+.guestbook-compose,
+.guestbook-entry,
+.moment-card,
+.profile-card,
+.gallery-card {
+    border: 1px solid var(--community-border);
+    border-top-color: rgba(255, 255, 255, .7);
+    background: var(--lumen-glass, var(--community-surface));
+    box-shadow: 0 16px 46px rgba(39, 57, 97, .08);
+    backdrop-filter: blur(20px) saturate(145%);
+    -webkit-backdrop-filter: blur(20px) saturate(145%);
+}
+
+[data-bs-theme="dark"] .community-hero-mark,
+[data-bs-theme="dark"] .friend-card,
+[data-bs-theme="dark"] .community-empty,
+[data-bs-theme="dark"] .guestbook-compose,
+[data-bs-theme="dark"] .guestbook-entry,
+[data-bs-theme="dark"] .moment-card,
+[data-bs-theme="dark"] .profile-card,
+[data-bs-theme="dark"] .gallery-card {
+    border-top-color: rgba(255, 255, 255, .13);
+}
+
+.friend-card,
+.guestbook-entry,
+.moment-card,
+.gallery-card {
+    transition: transform 280ms cubic-bezier(.2, .75, .25, 1), border-color 220ms ease, box-shadow 280ms ease;
+}
+
+.friend-card:hover,
+.guestbook-entry:hover,
+.moment-card:hover,
+.gallery-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(var(--community-primary-rgb), .36);
+    box-shadow: var(--community-shadow);
+}
+
+.friend-card:active,
+.guestbook-entry:active,
+.moment-card:active,
+.gallery-card:active {
+    transform: scale(.987);
+    transition-duration: 90ms;
+}
+
+.friend-card,
+.guestbook-compose,
+.guestbook-entry,
+.moment-card,
+.profile-card,
+.community-empty { border-radius: 26px; }
+
+.gallery-card,
+.gallery-lightbox figure img { border-radius: 24px; }
+
+.community-hero-mark {
+    border-radius: 50%;
+    box-shadow: 0 22px 70px rgba(var(--community-primary-rgb), .17), inset 0 1px rgba(255, 255, 255, .5);
+}
+
+.guestbook-doodle span {
+    border-top-color: rgba(255, 255, 255, .72);
+    background: var(--lumen-glass, var(--community-surface));
+    backdrop-filter: blur(18px);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .community-hero-mark,
+    .friend-card,
+    .community-empty,
+    .guestbook-compose,
+    .guestbook-entry,
+    .moment-card,
+    .profile-card,
+    .gallery-card,
+    .guestbook-doodle span {
+        background: var(--community-surface);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}

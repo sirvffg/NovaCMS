@@ -1,0 +1,15 @@
+{
+    "name": "Lumen 流光",
+    "slug": "lumen",
+    "version": "1.0.0",
+    "author": "NovaCMS",
+    "description": "轻盈通透的个人站主题，以柔和流光、玻璃层级和克制动效呈现内容。",
+    "screenshot": "screenshot.png",
+    "min_nova_version": "1.0.0",
+    "parent": "default",
+    "page_templates": {
+        "default": "标准页面",
+        "wide": "宽幅阅读",
+        "landing": "沉浸落地页"
+    }
+}

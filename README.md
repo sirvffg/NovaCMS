@@ -168,6 +168,23 @@ NovaCMS/
 
 主题存放于 `vendor/nova-themes/`，每个主题一个目录，通过 `theme.json` 描述元信息，支持 `partials/`（头部、导航、页脚）与独立的 `assets/` 资源。默认主题 `default` 包含文章、页面、文档、说说、相册、留言板、友链、个人中心等模板。
 
+主题目录至少需要提供 `theme.json`、`index.php` 与 `404.php`。后台会校验主题标识、清单格式、截图路径和必需模板；校验失败的主题不能启用。若数据库中配置的主题被删除或损坏，前台会自动回退到 `default`，管理员也可以在不切换当前主题的情况下安全预览其他有效主题。
+
+`theme.json` 可使用 `page_templates` 声明独立页面布局，页面编辑器会读取当前主题的布局选项：
+
+```json
+{
+  "name": "示例主题",
+  "slug": "example",
+  "version": "1.0.0",
+  "parent": "default",
+  "page_templates": {
+    "default": "默认页面",
+    "wide": "宽版页面"
+  }
+}
+```
+
 开发新主题可参考 `vendor/nova-themes/default/theme.json`。
 
 ### 插件
