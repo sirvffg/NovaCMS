@@ -134,14 +134,15 @@ class Nova_Plugin_Registry {
         $result = null;
         try {
             if (class_exists('Nova_DB')) {
-                $db = new Nova_DB();
+                $pdo = (new Nova_DB())->get_pdo();
             } else {
                 $baseDir = dirname(__DIR__, 4);
                 require_once $baseDir . '/config/database.php';
-                $db = getDB();
+                $pdo = getDB();
             }
-            $stmt = $db->query("SELECT active_plugins FROM website_config LIMIT 1");
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            // 使用 PDO::query()（对 SELECT 返回 PDOStatement），避免误用 Nova_DB::query()（返回受影响行数 int）
+            $stmt = $pdo->query("SELECT active_plugins FROM website_config LIMIT 1");
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
             if (!empty($row['active_plugins'])) {
                 $decoded = json_decode($row['active_plugins'], true);
                 if (is_array($decoded)) {
