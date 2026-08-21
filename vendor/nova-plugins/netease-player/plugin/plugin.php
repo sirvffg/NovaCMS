@@ -159,6 +159,7 @@ class Netease_Player_Plugin extends Nova_Plugin {
         $attrs[] = 'position="' . e($nmpPosition) . '"';
         $attrs[] = 'lyric="'    . e($lyric)    . '"';
         $attrs[] = 'autoplay="' . e($autoplay) . '"';
+        $attrs[] = 'remember="false"';
         if ($apiBaseUrl !== '') {
             $attrs[] = 'api-base-url="' . e($apiBaseUrl) . '"';
         }
@@ -188,7 +189,7 @@ class Netease_Player_Plugin extends Nova_Plugin {
             // 2) 播放器与 #nova-back-to-top 同侧重叠时，把按钮上移避让
             echo '<script>'
                . '(function(){'
-               // 清除播放器拖动后的 inline 定位 + 持久化位置，让 CSS 固定位置重新生效
+               // 清除播放器拖动后的 inline 定位，让 CSS 固定位置重新生效
                . 'function resetPlayerPosition(){'
                . 'var p=document.querySelector(".nmpv3-player.nmpv3-user-positioned");'
                . 'if(!p)return;'
@@ -196,17 +197,6 @@ class Netease_Player_Plugin extends Nova_Plugin {
                . 'p.style.left="";p.style.top="";p.style.right="";p.style.bottom="";p.style.transition="";'
                . 'p.classList.remove("nmpv3-user-positioned");'
                . 'delete p.dataset.side;'
-               // 清除 localStorage 持久化的 position，避免刷新后又恢复拖动位置
-               . 'try{'
-               . 'for(var i=localStorage.length-1;i>=0;i--){'
-               . 'var k=localStorage.key(i);'
-               . 'if(!k||k.indexOf("nmpv3:")!==0||k.indexOf(":state")<0)continue;'
-               . 'var raw=localStorage.getItem(k);'
-               . 'if(!raw)continue;'
-               . 'var obj=JSON.parse(raw);'
-               . 'if(obj&&"position" in obj){delete obj.position;localStorage.setItem(k,JSON.stringify(obj));}'
-               . '}'
-               . '}catch(e){}'
                . '}'
                // 回到顶部按钮避让
                . 'function adjustBtt(){'
