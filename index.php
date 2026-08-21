@@ -113,6 +113,7 @@ if ($pluginPageHandled) {
 // =============================================
 // 前台插件运行时（输出缓冲 + 钩子注入）
 // 不修改主题文件，通过缓冲拦截向 head / body / nav / footer 注入内容
+// 另提供 nova_inject 通用过滤器，支持任意 CSS 选择器位置注入（基于 JS）
 // 独立插件页面（page_routes）和 /nova-json/* API 已在上方 exit，不受此段影响
 // =============================================
 $novaCoreDir = __DIR__ . '/vendor/nova-json/class';
@@ -145,6 +146,7 @@ register_shutdown_function(static function () {
         return (string) ob_get_clean();
     };
 
+    // 固定锚点注入（PHP 正则替换）
     $head   = $collect('nova_head');        // 注入到 </head> 前
     $body   = $collect('nova_body_start');  // 注入到 <body> 之后
     $navbar = $collect('nova_navbar_end');  // 注入到首个 </nav> 之后
@@ -153,7 +155,99 @@ register_shutdown_function(static function () {
     if ($head   !== '') $html = preg_replace('#</head>#i',    $head . "\n</head>",    $html, 1) ?? $html;
     if ($body   !== '') $html = preg_replace('#<body[^>]*>#i', "$0\n" . $body,       $html, 1) ?? $html;
     if ($navbar !== '') $html = preg_replace('#</nav>#',       "</nav>\n" . $navbar, $html, 1) ?? $html;
-    if ($footer !== '') $html = preg_replace('#</body>#i',     $footer . "\n</body>", $html, 1) ?? $html;
+
+    // 任意位置注入（JS 选择器）：插件通过 nova_inject 过滤器返回注入项数组
+    // 每项格式：['selector' => 'article.article-shell', 'position' => 'after', 'html' => '<div>...</div>']
+    // position 可选：before | after | prepend | append
+    $injectItems = [];
+    if (class_exists('Nova_Hooks') && Nova_Hooks::has_filter('nova_inject')) {
+        $injectItems = Nova_Hooks::apply_filters('nova_inject', []);
+        if (!is_array($injectItems)) $injectItems = [];
+    }
+
+    if (!empty($injectItems)) {
+        // 规范化并去重（按 selector+position+html 签名）
+        $normalized = [];
+        $seen = [];
+        foreach ($injectItems as $item) {
+            if (!is_array($item)) continue;
+            $selector = trim((string)($item['selector'] ?? ''));
+            $position = strtolower((string)($item['position'] ?? 'append'));
+            $htmlContent = (string)($item['html'] ?? '');
+            $retry = max(0, min(10, (int)($item['retry'] ?? 3)));
+            $delay = max(0, min(5000, (int)($item['delay'] ?? 200)));
+            if ($selector === '' || $htmlContent === '') continue;
+            if (!in_array($position, ['before', 'after', 'prepend', 'append'], true)) {
+                $position = 'append';
+            }
+            $sig = $selector . '|' . $position . '|' . md5($htmlContent);
+            if (isset($seen[$sig])) continue;
+            $seen[$sig] = true;
+            $normalized[] = [
+                'selector' => $selector,
+                'position' => $position,
+                'html'     => $htmlContent,
+                'retry'    => $retry,
+                'delay'    => $delay,
+            ];
+        }
+
+        if (!empty($normalized)) {
+            $json = json_encode($normalized, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+            $jsonEscaped = htmlspecialchars($json, ENT_QUOTES, 'UTF-8');
+            $script = '<script id="nova-inject-data" type="application/json">' . $jsonEscaped . '</script>' . "\n"
+                . '<script>(function(){'
+                . 'var raw=document.getElementById("nova-inject-data");'
+                . 'if(!raw)return;'
+                . 'var items=[];try{items=JSON.parse(raw.textContent||"[]");}catch(e){return;}'
+                . 'if(!items.length)return;'
+                // 注入单个项到第一个匹配元素（避免多实例冲突）
+                . 'function applyItem(item){'
+                . 'var target;'
+                . 'try{target=document.querySelector(item.selector);}catch(e){return false;}'
+                . 'if(!target)return false;'
+                . 'var tpl=document.createElement("template");'
+                . 'tpl.innerHTML=item.html;'
+                . 'var frag=tpl.content.cloneNode(true);'
+                . 'if(item.position==="before"){target.parentNode.insertBefore(frag,target);}'
+                . 'else if(item.position==="after"){target.parentNode.insertBefore(frag,target.nextSibling);}'
+                . 'else if(item.position==="prepend"){target.insertBefore(frag,target.firstChild);}'
+                . 'else{target.appendChild(frag);}'
+                . 'return true;'
+                . '}'
+                // 处理内联 script（template.innerHTML 不会执行 script）
+                . 'function activateScripts(root){'
+                . 'var scripts=root.querySelectorAll("script");'
+                . 'Array.prototype.forEach.call(scripts,function(old){'
+                . 'var s=document.createElement("script");'
+                . 'for(var i=0;i<old.attributes.length;i++){s.setAttribute(old.attributes[i].name,old.attributes[i].value);}'
+                . 's.text=old.text;'
+                . 'old.parentNode.replaceChild(s,old);'
+                . '});'
+                . '}'
+                // 调度：立即尝试，失败则按 delay/retry 重试（适配异步渲染）
+                . 'function schedule(item,attempt){'
+                . 'attempt=attempt||0;'
+                . 'if(applyItem(item)){'
+                . 'var injected=document.querySelector(item.selector);'
+                . 'if(injected){activateScripts(injected);}'
+                . 'return;'
+                . '}'
+                . 'if(attempt<item.retry){'
+                . 'setTimeout(function(){schedule(item,attempt+1);},item.delay);'
+                . '}'
+                . '}'
+                . 'if(document.readyState==="loading"){'
+                . 'document.addEventListener("DOMContentLoaded",function(){items.forEach(schedule);});'
+                . '}else{items.forEach(schedule);}'
+                . '})();</script>';
+
+            // 注入到 </body> 前（与 nova_footer 一起放尾部，确保 DOM 已就绪）
+            $footer .= "\n" . $script;
+        }
+    }
+
+    if ($footer !== '') $html = preg_replace('#</body>#i', $footer . "\n</body>", $html, 1) ?? $html;
 
     echo $html;
 });

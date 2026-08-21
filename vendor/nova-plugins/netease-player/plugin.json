@@ -1,0 +1,11 @@
+{
+    "id": "netease-player",
+    "name": "网易云音乐播放器",
+    "description": "基于 NeteaseMiniPlayer v3 的前台浮动音乐播放器，支持单曲/歌单、主题、布局等配置",
+    "version": "1.0.0",
+    "author": "NovaCMS",
+    "author_uri": "https://github.com/BHCN-STUDIO/NeteaseMiniPlayer_v3",
+    "uri": "https://github.com/BHCN-STUDIO/NeteaseMiniPlayer_v3",
+    "entry": "plugin/plugin.php",
+    "min_nova_version": "1.2"
+}

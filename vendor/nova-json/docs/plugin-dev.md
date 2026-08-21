@@ -17,6 +17,7 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
   - [插件基类与生命周期](#41-插件基类与生命周期)
   - [钩子系统：Actions & Filters](#42-钩子系统actions--filters)
   - [前台注入钩子](#前台注入钩子nova_head--nova_body_start--nova_navbar_end--nova_footer)
+  - [任意位置注入（nova_inject）](#任意位置注入nova_inject)
   - [注册 REST API 路由](#43-注册-rest-api-路由)
   - [数据库操作](#44-数据库操作)
   - [后台页面与菜单](#45-后台页面与菜单)
@@ -401,6 +402,7 @@ $data = Nova_Hooks::apply_filters('nova_post_data', $originalData);
 | `nova_body_start`               | Action | 前台 `<body>` 之后 | 仅前台       |
 | `nova_navbar_end`               | Action | 前台首个 `</nav>` 之后（主导航末尾） | 仅前台       |
 | `nova_footer`                   | Action | 前台 `</body>` 之前 | 仅前台       |
+| `nova_inject`                   | Filter | 页面输出前收集任意位置注入项 | 仅前台       |
 | `nova_backend_render_{menu_id}` | Action | 后台页面渲染时        | 仅后台       |
 | `nova_backend_menu_capability`  | Filter | 检查菜单权限时        | 仅后台       |
 | `nova_backend_user_capability`  | Filter | 检查用户权限时        | 仅后台       |
@@ -480,6 +482,81 @@ new FloatingButtonPlugin();
 ```
 
 > **注意**：钩子输出会原样插入 HTML，请自行对动态内容做转义（`e()` / `htmlspecialchars`）防止 XSS。若插件被禁用，其入口文件不会加载，钩子回调自然不会注册，前台即不再注入该插件的内容。
+
+#### 任意位置注入（nova_inject）
+
+`nova_head` / `nova_footer` 等 4 个固定锚点只能注入到页面固定位置。如需注入到**任意 DOM 位置**（如某篇文章正文末尾、评论框之前、导航栏某个菜单项之后），使用 `nova_inject` 过滤器。
+
+##### 工作原理
+
+`nova_inject` 是 Filter 钩子，回调返回注入项数组。框架把所有注入项序列化为 JSON 并输出一段通用 JS，由 JS 按 CSS 选择器把 HTML 插入到目标位置。注入项支持**重试**，适配异步渲染的页面。
+
+##### 注入项格式
+
+```php
+$items[] = [
+    'selector' => 'article.article-shell',  // CSS 选择器（必填，支持逗号分隔多个）
+    'position' => 'after',                  // before | after | prepend | append（默认 append）
+    'html'     => '<div>注入内容</div>',     // 要注入的 HTML（必填）
+    'retry'    => 3,                         // 选择器未匹配时的重试次数（默认 3，最大 10）
+    'delay'    => 200,                       // 重试间隔毫秒（默认 200，最大 5000）
+];
+return $items;
+```
+
+| position 值 | 插入位置 |
+|---|---|
+| `before` | 目标元素**之前**（同级） |
+| `after` | 目标元素**之后**（同级） |
+| `prepend` | 目标元素内部**开头** |
+| `append` | 目标元素内部**末尾** |
+
+##### 示例：在文章正文末尾注入组件
+
+```php
+class ArticleWidgetPlugin extends Nova_Plugin {
+    protected $name = 'article-widget';
+
+    public function init() {
+        // 仅文章详情页注入
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        if (($path === '/blog' || $path === '/blog.php') && (int)($_GET['id'] ?? 0) > 0) {
+            Nova_Hooks::add_filter('nova_inject', [$this, 'registerInjection']);
+        }
+    }
+
+    public function registerInjection(array $items): array {
+        $items[] = [
+            'selector' => '[data-post-body], article.article-shell',
+            'position' => 'append',
+            'html'     => '<div class="article-widget">这里放你的组件 HTML</div>',
+            'retry'    => 5,
+            'delay'    => 300,
+        ];
+        return $items;
+    }
+}
+new ArticleWidgetPlugin();
+```
+
+##### 与固定锚点钩子的对比
+
+| | `nova_head`/`nova_footer` 等 | `nova_inject` |
+|---|---|---|
+| 注入位置 | 4 个固定锚点 | 任意 CSS 选择器 |
+| 实现方式 | PHP 正则替换 | JS DOM 操作 |
+| 执行时机 | 页面输出前 | 页面加载后（DOMContentLoaded） |
+| 异步内容 | 不支持 | 支持（`retry` + `delay` 重试） |
+| 内联 script | 直接执行 | 自动重新创建 script 元素执行 |
+| 性能 | 最优 | 略有 JS 开销 |
+
+##### 注意事项
+
+- **XSS 防护**：HTML 由插件提供，请自行转义动态内容（`e()` / `htmlspecialchars`）
+- **内联 script**：框架会自动重新创建 `<script>` 元素确保执行（`template.innerHTML` 默认不执行脚本）
+- **选择器匹配**：`querySelector` 只注入到**第一个匹配元素**。如需注入到多个元素，注册多个注入项
+- **插件禁用**：插件被禁用后入口不加载，过滤器不注册，自然不注入
+- **后台/API 不受影响**：仅作用于前台 HTML 页面
 
 ***
 
@@ -1659,7 +1736,7 @@ new ShortcodePlugin();
 | ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | 1.0+       | 1.0       | 初始版本                                                                                                                                      |
 | 1.1+       | 1.1       | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；`id` 由开发者手动填写（必须为英文），排在 `name` 之前；启用/禁用以 `id` 为准；支持 `page_routes` 自定义页面路由；支持 `config.json` 声明式配置表单 |
-| 1.2+       | 1.2       | 前台插件运行时：`index.php` 加载已启用插件入口并触发 `nova_init`；新增 4 个前台注入钩子 `nova_head` / `nova_body_start` / `nova_navbar_end` / `nova_footer`，通过输出缓冲拦截向 HTML 注入内容，无需修改主题文件 |
+| 1.2+       | 1.2       | 前台插件运行时：`index.php` 加载已启用插件入口并触发 `nova_init`；新增 4 个前台注入钩子 `nova_head` / `nova_body_start` / `nova_navbar_end` / `nova_footer`，通过输出缓冲拦截向 HTML 注入内容，无需修改主题文件；新增 `nova_inject` 过滤器，支持基于 CSS 选择器的任意位置注入（JS DOM 操作 + 重试机制，适配异步渲染） |
 
 ***
 

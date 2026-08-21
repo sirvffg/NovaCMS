@@ -1,0 +1,150 @@
+{
+    "tabs": [
+        {
+            "title": "基本设置",
+            "description": "配置播放器的资源来源和网易云 API 代理地址",
+            "fields": [
+                {
+                    "type": "select",
+                    "name": "source",
+                    "label": "脚本来源",
+                    "value": "cdn",
+                    "options": {
+                        "cdn": "jsDelivr CDN（推荐）",
+                        "custom": "自定义 URL"
+                    },
+                    "help": "选择 nmpv3.min.js 的加载来源"
+                },
+                {
+                    "type": "text",
+                    "name": "custom_script_url",
+                    "label": "自定义脚本 URL",
+                    "value": "",
+                    "placeholder": "https://example.com/nmpv3.min.js",
+                    "help": "当脚本来源选择「自定义 URL」时使用，留空则回退到 CDN"
+                },
+                {
+                    "type": "text",
+                    "name": "api_base_url",
+                    "label": "API 代理地址",
+                    "value": "https://api.hypcvgm.top/NeteaseMiniPlayer/nmp.php",
+                    "placeholder": "https://api.example.com/nmp.php",
+                    "help": "网易云音乐 API 代理地址，可自建 NeteaseCloudMusicApi 部署"
+                }
+            ]
+        },
+        {
+            "title": "播放内容",
+            "description": "配置播放器加载的歌曲或歌单",
+            "fields": [
+                {
+                    "type": "select",
+                    "name": "play_type",
+                    "label": "播放类型",
+                    "value": "playlist",
+                    "options": {
+                        "song": "单曲",
+                        "playlist": "歌单"
+                    }
+                },
+                {
+                    "type": "text",
+                    "name": "song_id",
+                    "label": "单曲 ID",
+                    "value": "",
+                    "placeholder": "如 1901371647",
+                    "help": "当播放类型为「单曲」时使用"
+                },
+                {
+                    "type": "text",
+                    "name": "playlist_id",
+                    "label": "歌单 ID",
+                    "value": "14273792576",
+                    "placeholder": "如 14273792576",
+                    "help": "当播放类型为「歌单」时使用"
+                }
+            ]
+        },
+        {
+            "title": "外观与行为",
+            "description": "配置播放器的主题、布局、位置等显示选项",
+            "fields": [
+                {
+                    "type": "select",
+                    "name": "theme",
+                    "label": "主题",
+                    "value": "auto",
+                    "options": {
+                        "auto": "跟随系统",
+                        "light": "浅色",
+                        "dark": "深色"
+                    }
+                },
+                {
+                    "type": "select",
+                    "name": "layout",
+                    "label": "布局",
+                    "value": "compact",
+                    "options": {
+                        "compact": "紧凑（推荐）",
+                        "mini": "迷你",
+                        "dock": "停靠栏"
+                    }
+                },
+                {
+                    "type": "select",
+                    "name": "position",
+                    "label": "位置",
+                    "value": "fixed-bottom-right",
+                    "options": {
+                        "static": "静态（跟随文档流）",
+                        "fixed-bottom-right": "固定右下角",
+                        "fixed-bottom-left": "固定左下角"
+                    },
+                    "help": "固定位置适合全站浮动播放器；静态位置适合在特定位置展示"
+                },
+                {
+                    "type": "switch",
+                    "name": "lyric",
+                    "label": "显示歌词",
+                    "value": true
+                },
+                {
+                    "type": "switch",
+                    "name": "autoplay",
+                    "label": "自动播放",
+                    "value": false,
+                    "help": "注意：浏览器通常限制自动播放，需用户交互后才能生效"
+                }
+            ]
+        },
+        {
+            "title": "注入范围",
+            "description": "配置播放器在哪些前台页面显示",
+            "fields": [
+                {
+                    "type": "select",
+                    "name": "inject_scope",
+                    "label": "注入范围",
+                    "value": "all",
+                    "options": {
+                        "all": "所有前台页面",
+                        "home": "仅首页",
+                        "blog_detail": "仅文章详情页",
+                        "list": "自定义路径列表"
+                    },
+                    "help": "选择播放器显示的页面范围"
+                },
+                {
+                    "type": "textarea",
+                    "name": "custom_paths",
+                    "label": "自定义路径",
+                    "value": "/",
+                    "rows": 5,
+                    "placeholder": "每行一个路径，例如：\n/\n/blog\n/docs",
+                    "help": "当注入范围选择「自定义路径列表」时使用，每行一个路径，支持精确匹配"
+                }
+            ]
+        }
+    ]
+}
