@@ -183,9 +183,32 @@ class Netease_Player_Plugin extends Nova_Plugin {
         } else {
             // 固定底部：NMPv3 自带 position:fixed;bottom:20px，直接输出
             echo $playerHtml;
-            // 播放器在底部；若与 #nova-back-to-top 同侧重叠，把按钮上移避让
+            // 1) 缩放窗口时重置播放器到固定位置（NMPv3 拖动后用 inline left/top 定位，
+            //    不会在 resize 时自动回到 bottom-right/bottom-left）
+            // 2) 播放器与 #nova-back-to-top 同侧重叠时，把按钮上移避让
             echo '<script>'
                . '(function(){'
+               // 清除播放器拖动后的 inline 定位 + 持久化位置，让 CSS 固定位置重新生效
+               . 'function resetPlayerPosition(){'
+               . 'var p=document.querySelector(".nmpv3-player.nmpv3-user-positioned");'
+               . 'if(!p)return;'
+               . 'if(p.classList.contains("nmpv3-dragging"))return;'  // 拖拽中不干预
+               . 'p.style.left="";p.style.top="";p.style.right="";p.style.bottom="";p.style.transition="";'
+               . 'p.classList.remove("nmpv3-user-positioned");'
+               . 'delete p.dataset.side;'
+               // 清除 localStorage 持久化的 position，避免刷新后又恢复拖动位置
+               . 'try{'
+               . 'for(var i=localStorage.length-1;i>=0;i--){'
+               . 'var k=localStorage.key(i);'
+               . 'if(!k||k.indexOf("nmpv3:")!==0||k.indexOf(":state")<0)continue;'
+               . 'var raw=localStorage.getItem(k);'
+               . 'if(!raw)continue;'
+               . 'var obj=JSON.parse(raw);'
+               . 'if(obj&&"position" in obj){delete obj.position;localStorage.setItem(k,JSON.stringify(obj));}'
+               . '}'
+               . '}catch(e){}'
+               . '}'
+               // 回到顶部按钮避让
                . 'function adjustBtt(){'
                . 'var p=document.querySelector(".nmpv3-player[data-position^=\\"bottom\\"]");'
                . 'if(!p)return;'
@@ -200,11 +223,13 @@ class Netease_Player_Plugin extends Nova_Plugin {
                . 'if(!overlapY)return;'
                . 'var playerTopFromBottom=window.innerHeight-pRect.top;'
                . 'var gap=12;'
-               . 'var newBottom=playerTopFromBottom+gap;'
-               . 'btt.style.bottom=newBottom+"px";'
+               . 'btt.style.bottom=(playerTopFromBottom+gap)+"px";'
                . '}'
+               // resize：debounce，先重置播放器位置再调整按钮避让
+               . 'var rt;'
+               . 'function onResize(){clearTimeout(rt);rt=setTimeout(function(){resetPlayerPosition();adjustBtt();},200);}'
                . 'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",adjustBtt);}else{adjustBtt();}'
-               . 'window.addEventListener("resize",adjustBtt);'
+               . 'window.addEventListener("resize",onResize);'
                . 'window.addEventListener("scroll",adjustBtt,{passive:true});'
                . 'setTimeout(adjustBtt,500);setTimeout(adjustBtt,1500);'
                . '})();'
