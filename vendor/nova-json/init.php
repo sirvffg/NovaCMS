@@ -210,7 +210,7 @@ foreach ($installedPlugins as $pluginInfo) {
 
 $themesDir = dirname($novaDir) . '/nova-themes';
 if (is_dir($themesDir)) {
-    foreach (glob($themesDir . '/*/theme.php') as $theme) {
+    foreach (glob($themesDir . '/*/themes/theme.php') as $theme) {
         require_once $theme;
     }
 }

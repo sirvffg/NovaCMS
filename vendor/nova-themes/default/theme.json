@@ -4,7 +4,9 @@
     "version": "2.1.0",
     "author": "NovaCMS",
     "description": "NovaCMS 现代个人博客主题，支持文章流、博客侧栏、深浅色与响应式社区页面",
+    "logo": "logo.png",
     "screenshot": "screenshot.png",
+    "license": "MIT",
     "min_nova_version": "1.0.0",
     "page_templates": {
         "default": "默认页面",

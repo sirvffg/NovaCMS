@@ -66,7 +66,7 @@
  *   class/theme/class-theme.php     Nova_Theme          主题基类
  *
  * 插件位于: vendor/nova-plugins/{插件名}/plugin.php
- * 主题位于: vendor/nova-themes/{主题名}/theme.php
+ * 主题位于: vendor/nova-themes/{主题名}/themes/theme.php
  *
  * 若此路径返回 404，请改用根目录入口:
  *   /nova-json.php?route=/v1/posts

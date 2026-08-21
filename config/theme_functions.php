@@ -142,7 +142,10 @@ if (!function_exists('novaThemeInspect')) {
             'homepage'          => '',
             'min_nova_version'  => '',
             'parent'            => '',
+            'license'           => '',
             'path'              => $themePath,
+            'logo'              => '',
+            'logo_url'          => '',
             'screenshot'        => '',
             'screenshot_url'    => '',
             'templates'         => [],
@@ -236,8 +239,35 @@ if (!function_exists('novaThemeInspect')) {
             $theme['warnings'][] = '主题截图不存在或路径不安全';
         }
 
+        // 主题小图标 logo（默认 logo.png），仅限图片格式
+        $requestedLogo = isset($manifest['logo']) && is_scalar($manifest['logo'])
+            ? (string)$manifest['logo']
+            : 'logo.png';
+        if (isset($manifest['logo']) && !is_scalar($manifest['logo'])) {
+            $theme['warnings'][] = '主题图标路径必须是字符串';
+        }
+        $logo = novaThemeNormalizeRelativeFile($themePath, $requestedLogo, ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'ico']);
+        if ($logo !== '') {
+            $theme['logo'] = $logo;
+            $encodedSegments = array_map('rawurlencode', explode('/', $logo));
+            $theme['logo_url'] = '/vendor/nova-themes/' . rawurlencode($slug) . '/' . implode('/', $encodedSegments);
+        } elseif (isset($manifest['logo']) && is_scalar($manifest['logo']) && trim((string)$manifest['logo']) !== '') {
+            $theme['warnings'][] = '主题图标不存在或路径不安全';
+        }
+
+        // 许可证标识（SPDX 字符串或自定义文本，如 MIT、GPL-2.0、proprietary）
+        $licenseValue = $manifest['license'] ?? '';
+        $license = is_scalar($licenseValue) ? trim((string)$licenseValue) : '';
+        if ($licenseValue !== '' && !is_scalar($licenseValue)) {
+            $theme['warnings'][] = '许可证标识必须是字符串';
+        }
+        if ($license !== '') {
+            // 限制长度，防止滥用
+            $theme['license'] = mb_substr($license, 0, 64);
+        }
+
         foreach ($knownTemplates as $template => $label) {
-            if (is_file($themePath . '/' . $template . '.php')) {
+            if (is_file($themePath . '/themes/' . $template . '.php')) {
                 $theme['templates'][$template] = $label;
             } else {
                 $theme['missing_templates'][$template] = $label;

@@ -103,6 +103,8 @@ require_once __DIR__ . '/includes/header.php';
 .theme-shot-badges .badge { box-shadow: 0 4px 14px rgba(15, 23, 42, .15); }
 .theme-card-body { padding: 1rem 1.05rem .8rem; }
 .theme-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.theme-title-main { display: flex; align-items: center; gap: .55rem; min-width: 0; }
+.theme-logo { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #eef2ff, #f8fafc); box-shadow: 0 1px 3px rgba(15, 23, 42, .08); }
 .theme-title { margin: 0; font-size: 1.08rem; font-weight: 700; }
 .theme-version { flex: none; color: var(--bs-secondary-color); font-size: .76rem; }
 .theme-description { min-height: 2.7em; margin: .55rem 0 .85rem; color: var(--bs-secondary-color); font-size: .88rem; line-height: 1.5; }
@@ -191,7 +193,12 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                     <div class="theme-card-body">
                         <div class="theme-title-row">
-                            <h2 class="theme-title"><?= e($theme['name']) ?></h2>
+                            <div class="theme-title-main">
+                                <?php if (($theme['logo_url'] ?? '') !== ''): ?>
+                                    <img src="<?= e($theme['logo_url']) ?>" alt="" class="theme-logo" loading="lazy">
+                                <?php endif; ?>
+                                <h2 class="theme-title"><?= e($theme['name']) ?></h2>
+                            </div>
                             <span class="theme-version">v<?= e($theme['version']) ?></span>
                         </div>
                         <p class="theme-description"><?= e($theme['description'] !== '' ? $theme['description'] : '此主题未提供说明。') ?></p>
@@ -204,6 +211,9 @@ require_once __DIR__ . '/includes/header.php';
                             <?php endif; ?>
                             <?php if ($theme['min_nova_version'] !== ''): ?>
                                 <span><i class="bi bi-box-arrow-up"></i>NovaCMS <?= e($theme['min_nova_version']) ?>+</span>
+                            <?php endif; ?>
+                            <?php if (($theme['license'] ?? '') !== ''): ?>
+                                <span><i class="bi bi-award"></i><?= e($theme['license']) ?></span>
                             <?php endif; ?>
                         </div>
 
@@ -258,7 +268,8 @@ require_once __DIR__ . '/includes/header.php';
     <details class="theme-guide">
         <summary><i class="bi bi-code-slash me-2"></i>主题开发约定</summary>
         <div class="small text-secondary mt-3">
-            <p>每个主题使用独立目录，并至少提供 <code>theme.json</code>、<code>index.php</code> 与 <code>404.php</code>。目录名和清单中的 <code>slug</code> 必须一致。</p>
+            <p>每个主题使用独立目录，根目录只放 <code>theme.json</code>、<code>LICENSE</code>、<code>logo.png</code>、<code>screenshot.png</code> 四个文件。所有 PHP/JS/CSS 等主题文件必须放在 <code>themes/</code> 子目录内，至少提供 <code>themes/index.php</code> 与 <code>themes/404.php</code>。目录名和清单中的 <code>slug</code> 必须一致。</p>
+            <p>建议在根目录放置 <code>logo.png</code>（小图标，28×28 显示，支持 png/jpg/webp/svg/ico）、<code>screenshot.png</code>（大截图，16:9）与 <code>LICENSE</code>（许可证文件），并在 <code>theme.json</code> 中通过 <code>logo</code>、<code>screenshot</code>、<code>license</code> 字段声明。</p>
             <p class="mb-0">可在清单中通过 <code>page_templates</code> 对象声明页面布局，例如 <code>{"default":"默认页面","wide":"宽版页面"}</code>；页面编辑器会自动读取当前主题的选项。</p>
         </div>
     </details>

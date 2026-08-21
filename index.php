@@ -305,8 +305,8 @@ if (!empty($resolvedTheme['using_fallback'])) {
 }
 
 $activeTheme = $resolvedTheme['slug'];
-$themePath = $resolvedTheme['path'];
-$themeUrl = '/vendor/nova-themes/' . rawurlencode($activeTheme);
+$themePath = $resolvedTheme['path'] . '/themes';
+$themeUrl = '/vendor/nova-themes/' . rawurlencode($activeTheme) . '/themes';
 
 // 定义主题URL常量，供主题文件使用
 define('NOVA_THEME_URL', $themeUrl);

@@ -4,7 +4,9 @@
     "version": "1.0.0",
     "author": "NovaCMS",
     "description": "轻盈通透的个人站主题，以柔和流光、玻璃层级和克制动效呈现内容。",
+    "logo": "logo.png",
     "screenshot": "screenshot.png",
+    "license": "MIT",
     "min_nova_version": "1.0.0",
     "parent": "default",
     "page_templates": {
