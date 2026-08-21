@@ -110,6 +110,54 @@ if ($pluginPageHandled) {
     exit;
 }
 
+// =============================================
+// 前台插件运行时（输出缓冲 + 钩子注入）
+// 不修改主题文件，通过缓冲拦截向 head / body / nav / footer 注入内容
+// 独立插件页面（page_routes）和 /nova-json/* API 已在上方 exit，不受此段影响
+// =============================================
+$novaCoreDir = __DIR__ . '/vendor/nova-json/class';
+require_once $novaCoreDir . '/system/class-hooks.php';
+require_once $novaCoreDir . '/database/class-db.php';
+require_once $novaCoreDir . '/rest/class-server.php';
+require_once $novaCoreDir . '/plugin/class-plugin.php';
+require_once $novaCoreDir . '/plugin/class-plugin-registry.php';
+
+foreach (Nova_Plugin_Registry::scan_all() as $pi) {
+    if (!empty($pi['duplicate'])) continue;
+    if (!Nova_Plugin_Registry::is_plugin_active($pi['id'])) continue;
+    if (!empty($pi['entry_path']) && is_file($pi['entry_path'])) {
+        require_once $pi['entry_path'];
+    }
+}
+Nova_Hooks::do_action('nova_init');
+
+// 开启输出缓冲，脚本结束时统一向 HTML 注入钩子输出
+ob_start();
+register_shutdown_function(static function () {
+    if (ob_get_level() === 0) return;
+    $html = (string) ob_get_clean();
+    if ($html === '') return;
+
+    $collect = static function ($tag) {
+        if (!class_exists('Nova_Hooks') || !Nova_Hooks::has_action($tag)) return '';
+        ob_start();
+        Nova_Hooks::do_action($tag);
+        return (string) ob_get_clean();
+    };
+
+    $head   = $collect('nova_head');        // 注入到 </head> 前
+    $body   = $collect('nova_body_start');  // 注入到 <body> 之后
+    $navbar = $collect('nova_navbar_end');  // 注入到首个 </nav> 之后
+    $footer = $collect('nova_footer');      // 注入到 </body> 前
+
+    if ($head   !== '') $html = preg_replace('#</head>#i',    $head . "\n</head>",    $html, 1) ?? $html;
+    if ($body   !== '') $html = preg_replace('#<body[^>]*>#i', "$0\n" . $body,       $html, 1) ?? $html;
+    if ($navbar !== '') $html = preg_replace('#</nav>#',       "</nav>\n" . $navbar, $html, 1) ?? $html;
+    if ($footer !== '') $html = preg_replace('#</body>#i',     $footer . "\n</body>", $html, 1) ?? $html;
+
+    echo $html;
+});
+
 // 处理退出登录
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'logout') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
