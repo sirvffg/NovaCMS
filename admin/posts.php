@@ -5,7 +5,6 @@ ob_start();
 session_start();
 require_once '../config/database.php';
 require_once '../config/functions.php';
-require_once '../vendor/generate-rss.php';
 
 requireLogin();
 
@@ -229,10 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                             "<br>New ID: {$newId}");
                     }
                 }
-                // 保存后重新生成 RSS
-                if (!empty($response['success'])) {
-                    generateRssXml();
-                }
+                // 保存成功
                 break;
 
             case 'delete':
@@ -321,8 +317,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     'id' => $id,
                     'deleted_files' => $deleted_files
                 ];
-                // 删除后重新生成 RSS
-                generateRssXml();
                 break;
                 
             case 'get_post':
