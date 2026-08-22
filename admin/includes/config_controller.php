@@ -67,14 +67,6 @@ function handleConfigPage($db) {
         // 登录安全配置
         $max_devices = max(1, min(10, intval($_POST['max_devices'] ?? 2)));
         $remember_duration = max(1, min(365, intval($_POST['remember_duration'] ?? 30)));
-
-        // 评论设置
-        $comment_login_required = isset($_POST['comment_login_required']) ? 1 : 0;
-        $comment_private_enabled = isset($_POST['comment_private_enabled']) ? 1 : 0;
-        $comment_avatar_api = trim($_POST['comment_avatar_api'] ?? '');
-        if ($comment_avatar_api === '') {
-            $comment_avatar_api = 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm';
-        }
         try {
             // Check and add social_whatsapp
             $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'social_whatsapp'");
@@ -149,23 +141,11 @@ function handleConfigPage($db) {
                 $db->exec("ALTER TABLE website_config ADD COLUMN privacy_content LONGTEXT COMMENT '隐私政策内容(支持HTML)' AFTER terms_content");
             }
 
-            // 评论设置字段
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'comment_login_required'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN comment_login_required TINYINT(1) NOT NULL DEFAULT 0 COMMENT '评论是否需要登录' AFTER active_theme");
-            }
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'comment_private_enabled'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN comment_private_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否开启私密评论' AFTER comment_login_required");
-            }
-            $checkStmt = $db->query("SHOW COLUMNS FROM website_config LIKE 'comment_avatar_api'");
-            if (!$checkStmt->fetch()) {
-                $db->exec("ALTER TABLE website_config ADD COLUMN comment_avatar_api VARCHAR(255) NOT NULL DEFAULT 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm' COMMENT '评论头像API' AFTER comment_private_enabled");
-            }
+            // 评论设置字段由 comments 插件管理（vendor/nova-plugins/comments/）
 
             // 保存数据库配置
-            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, icp_record=?, public_security_record=?, terms_content=?, privacy_content=?, comment_login_required=?, comment_private_enabled=?, comment_avatar_api=? WHERE id=1");
-            $stmt->execute([$website_name, $website_author, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $icp_record, $public_security_record, $terms_content, $privacy_content, $comment_login_required, $comment_private_enabled, $comment_avatar_api]);
+            $stmt = $db->prepare("UPDATE website_config SET website_name=?, website_author=?, description=?, robot_description=?, contact_email=?, contact_qq=?, social_wechat=?, social_douyin=?, social_kuaishou=?, social_bilibili=?, social_xiaohongshu=?, social_whatsapp=?, social_x=?, social_discord=?, social_youtube=?, social_github=?, logo=?, email_mode=?, smtp_host=?, smtp_port=?, smtp_username=?, smtp_password=?, smtp_encryption=?, smtp_from_name=?, allowed_email_domains=?, website_start_time=?, footer_extra=?, redirect_whitelist=?, epay_url=?, epay_pid=?, epay_key=?, max_devices=?, remember_duration=?, icp_record=?, public_security_record=?, terms_content=?, privacy_content=? WHERE id=1");
+            $stmt->execute([$website_name, $website_author, $description, $robot_description, $contact_email, $contact_qq, $social_wechat, $social_douyin, $social_kuaishou, $social_bilibili, $social_xiaohongshu, $social_whatsapp, $social_x, $social_discord, $social_youtube, $social_github, $logo, $email_mode, $smtp_host, $smtp_port, $smtp_username, $smtp_password, $smtp_encryption, $smtp_from_name, $allowed_email_domains, $website_start_time, $footer_extra, $redirect_whitelist, $epay_url, $epay_pid, $epay_key, $max_devices, $remember_duration, $icp_record, $public_security_record, $terms_content, $privacy_content]);
 
             $success = '配置已保存';
         } catch (Exception $e) {

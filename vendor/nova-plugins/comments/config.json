@@ -1,0 +1,33 @@
+{
+    "storage": "database",
+    "tabs": [
+        {
+            "title": "评论设置",
+            "description": "评论系统配置 - 登录要求、私密评论、头像 API",
+            "fields": [
+                {
+                    "type": "switch",
+                    "name": "comment_login_required",
+                    "label": "需要登录后才能评论",
+                    "value": false,
+                    "help": "关闭后，访客可填写昵称、邮箱、网址进行匿名评论。"
+                },
+                {
+                    "type": "switch",
+                    "name": "comment_private_enabled",
+                    "label": "开启私密评论",
+                    "value": false,
+                    "help": "开启后，评论者可选择仅作者和管理员可见的私密评论。"
+                },
+                {
+                    "type": "text",
+                    "name": "comment_avatar_api",
+                    "label": "评论头像 API",
+                    "value": "https://cravatar.cn/avatar/{hash}?s={size}&d=mm",
+                    "placeholder": "https://cravatar.cn/avatar/{hash}?s={size}&d=mm",
+                    "help": "用于非 QQ 邮箱的头像（退避规则）。占位符：{hash} = 邮箱 MD5，{size} = 头像尺寸。当邮箱为纯 QQ 号或 数字@qq.com 时自动使用 QQ 头像（经 /qq_avatar 代理，QQ 号经 AES-256-CBC 加密，不在 URL 中暴露明文）；其他邮箱退避到此 API。"
+                }
+            ]
+        }
+    ]
+}

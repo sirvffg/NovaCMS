@@ -66,6 +66,7 @@ include $themePath . '/partials/navbar.php';
                 ? '需要登录后才能评论。'
                 : ($_commentLoggedIn ? '已登录，即可参与讨论。' : '填写昵称与邮箱即可参与讨论。');
         ?>
+        <?php if (isCommentsEnabled()): ?>
         <section class="comments-panel" aria-labelledby="comments-title"
                  data-comment-login-required="<?= $_commentLoginRequired ? '1' : '0' ?>"
                  data-comment-private-enabled="<?= $_commentPrivateEnabled ? '1' : '0' ?>"
@@ -102,6 +103,7 @@ include $themePath . '/partials/navbar.php';
                 <div class="site-skeleton skeleton-comment"></div>
             </div>
         </section>
+        <?php endif; ?>
     </div>
 
     <dialog class="site-dialog privacy-dialog" data-privacy-dialog aria-labelledby="privacy-dialog-title">

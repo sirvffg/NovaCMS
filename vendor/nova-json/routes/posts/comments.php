@@ -229,6 +229,15 @@ function nova_add_comment($request) {
         return new Nova_REST_Response(['code' => 'rest_ok', 'message' => 'OK', 'data' => ['status' => 204]], 204);
     }
 
+    // 评论插件已禁用 → 拒绝新增评论
+    if (!isCommentsEnabled()) {
+        return new Nova_REST_Response([
+            'code'    => 'rest_forbidden',
+            'message' => '评论功能已关闭',
+            'data'    => ['status' => 403],
+        ], 403);
+    }
+
     ensureCommentSchema();
     $loginRequired = (bool)getSiteConfigValue('comment_login_required', 0);
     $userId = v1_get_current_user_id();
@@ -304,6 +313,15 @@ function nova_delete_comment($request) {
     // OPTIONS 预检请求
     if ($request->get_method() === 'OPTIONS') {
         return new Nova_REST_Response(['code' => 'rest_ok', 'message' => 'OK', 'data' => ['status' => 204]], 204);
+    }
+
+    // 评论插件已禁用 → 拒绝删除评论
+    if (!isCommentsEnabled()) {
+        return new Nova_REST_Response([
+            'code'    => 'rest_forbidden',
+            'message' => '评论功能已关闭',
+            'data'    => ['status' => 403],
+        ], 403);
     }
 
     $userId = v1_get_current_user_id();

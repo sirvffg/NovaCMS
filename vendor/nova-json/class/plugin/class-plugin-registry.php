@@ -97,6 +97,7 @@ class Nova_Plugin_Registry {
                 'min_nova_version' => $info['min_nova_version'] ?? '',
                 'duplicate'        => $isDuplicate,
                 'page_routes'      => $info['page_routes'] ?? [],
+                'sidebar'          => array_key_exists('sidebar', $info) ? (bool)$info['sidebar'] : true,
             ];
         }
 

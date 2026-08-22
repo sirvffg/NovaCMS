@@ -191,6 +191,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '')
     }
 
     $savedValues = json_decode($_POST['values'] ?? '{}', true);
+
+    // 数据库存储模式：写入 website_config 表
+    if (!empty($cfgData['storage']) && $cfgData['storage'] === 'database') {
+        $setClauses = [];
+        $params = [];
+        foreach ($cfgData['tabs'] as $tab) {
+            if (empty($tab['fields'])) continue;
+            foreach ($tab['fields'] as $field) {
+                $fName = $field['name'] ?? '';
+                if ($fName === '') continue;
+                if (isset($savedValues[$fName])) {
+                    $val = $savedValues[$fName];
+                    if (($field['type'] ?? '') === 'switch') {
+                        $val = ($val === '1' || $val === true || $val === 'on') ? 1 : 0;
+                    } elseif (($field['type'] ?? '') === 'number') {
+                        $val = is_numeric($val) ? $val + 0 : $val;
+                    }
+                    $setClauses[] = "`$fName` = ?";
+                    $params[] = $val;
+                } elseif (($field['type'] ?? '') === 'switch') {
+                    $setClauses[] = "`$fName` = ?";
+                    $params[] = 0;
+                }
+            }
+        }
+        if (!empty($setClauses)) {
+            try {
+                $db = getDB();
+                $sql = "UPDATE website_config SET " . implode(', ', $setClauses) . " WHERE id = 1";
+                $stmt = $db->prepare($sql);
+                $stmt->execute($params);
+                echo json_encode(['ok' => true, 'msg' => '配置已保存']);
+            } catch (Exception $e) {
+                error_log('Plugin database config save error: ' . $e->getMessage());
+                echo json_encode(['ok' => false, 'msg' => '保存失败：' . $e->getMessage()]);
+            }
+        } else {
+            echo json_encode(['ok' => true, 'msg' => '配置未变更']);
+        }
+        exit;
+    }
+
+    // 文件存储模式（默认）：写入 config.json
     if (is_array($savedValues) && !empty($cfgData['tabs'])) {
         foreach ($cfgData['tabs'] as &$tab) {
             if (empty($tab['fields'])) continue;
@@ -326,6 +369,30 @@ if ($detailPluginKey !== '') {
                 $detailConfigSchema = $decoded;
             }
         }
+        // 数据库存储模式：从 website_config 表读取当前值覆盖 schema 中的默认 value
+        if (!empty($detailConfigSchema['storage']) && $detailConfigSchema['storage'] === 'database') {
+            try {
+                $detailDbConfig = getDB()->query("SELECT * FROM website_config LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+                if ($detailDbConfig) {
+                    foreach ($detailConfigSchema['tabs'] as &$dTab) {
+                        if (empty($dTab['fields'])) continue;
+                        foreach ($dTab['fields'] as &$dField) {
+                            $dFName = $dField['name'] ?? '';
+                            if ($dFName !== '' && array_key_exists($dFName, $detailDbConfig)) {
+                                if (($dField['type'] ?? '') === 'switch') {
+                                    $dField['value'] = !empty($detailDbConfig[$dFName]);
+                                } else {
+                                    $dField['value'] = $detailDbConfig[$dFName];
+                                }
+                            }
+                        }
+                    }
+                    unset($dTab, $dField);
+                }
+            } catch (Exception $e) {
+                // 字段不存在时保持 schema 默认值，ensureCommentSchema 会负责创建
+            }
+        }
         $detailCsrfToken = generateCSRFToken();
 
         $page_title = $detailPlugin['name'] . ' - 插件详情';
@@ -444,7 +511,12 @@ if ($detailPluginKey !== '') {
                                 </td>
                             </tr>
                             <?php endif; ?>
-                            <?php if (is_file($detailConfigFile)): ?>
+                            <?php if (!empty($detailConfigSchema['storage']) && $detailConfigSchema['storage'] === 'database'): ?>
+                            <tr>
+                                <th scope="row">配置存储</th>
+                                <td><span class="badge bg-info">数据库</span> <code class="small">website_config</code></td>
+                            </tr>
+                            <?php elseif (is_file($detailConfigFile)): ?>
                             <tr>
                                 <th scope="row">配置文件</th>
                                 <td><code>config.json</code> <span class="text-muted small">（<?= filesize($detailConfigFile) ?> 字节）</span></td>

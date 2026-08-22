@@ -17,6 +17,7 @@ require_once 'config/database.php';
 require_once 'config/functions.php';
 require_once 'config/content_module_functions.php';
 require_once 'config/theme_functions.php';
+require_once 'config/comment_functions.php';
 
 // 记录访问
 recordVisit($requestPath);

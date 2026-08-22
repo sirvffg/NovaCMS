@@ -1,0 +1,15 @@
+{
+    "id": "comments",
+    "name": "评论设置",
+    "uri": "https://lygalaxy.cn",
+    "description": "评论系统配置 - 登录要求、私密评论、头像 API、QQ 头像代理加密",
+    "version": "1.0.0",
+    "author": "LyGalaxy",
+    "author_uri": "https://lygalaxy.cn",
+    "entry": "plugin/plugin.php",
+    "min_nova_version": "1.0",
+    "sidebar": false,
+    "page_routes": {
+        "/qq_avatar": "plugin/qq_avatar.php"
+    }
+}

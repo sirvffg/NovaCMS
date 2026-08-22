@@ -94,9 +94,12 @@ foreach (Nova_Plugin_Registry::scan_all() as $_novaPlugin) {
     if ($_novaActivePluginIds !== null && !in_array($_novaPlugin['id'], $_novaActivePluginIds, true)) {
         continue;
     }
-    // 仅当插件提供后台管理页面时才注册菜单
+    // 仅当插件提供后台管理页面且未声明 sidebar:false 时才注册侧边栏菜单
     $_novaPluginAdminFile = $_novaPlugin['plugin_dir'] . '/plugin/admin/index.php';
     if (!is_file($_novaPluginAdminFile)) {
+        continue;
+    }
+    if (empty($_novaPlugin['sidebar'])) {
         continue;
     }
     Nova_Backend_Menu::add_menu(

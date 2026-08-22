@@ -7,6 +7,36 @@
 require_once __DIR__ . '/email_config.php';
 
 /**
+ * 检查评论功能是否启用（comments 插件是否激活）
+ *
+ * 当 comments 插件被禁用时，评论功能关闭：
+ * - API 层拒绝新增/删除评论
+ * - 前台模板不渲染评论区
+ * - 后台管理页显示关闭提示
+ *
+ * @return bool
+ */
+function isCommentsEnabled() {
+    static $enabled = null;
+    if ($enabled !== null) {
+        return $enabled;
+    }
+    if (!class_exists('Nova_Plugin_Registry')) {
+        $registryFile = dirname(__DIR__) . '/vendor/nova-json/class/plugin/class-plugin-registry.php';
+        if (is_file($registryFile)) {
+            require_once $registryFile;
+        }
+    }
+    if (!class_exists('Nova_Plugin_Registry')) {
+        // 注册表不可用时视为启用（不阻断核心功能）
+        $enabled = true;
+        return $enabled;
+    }
+    $enabled = Nova_Plugin_Registry::is_plugin_active('comments');
+    return $enabled;
+}
+
+/**
  * 发送评论通知邮件
  */
 function sendCommentNotificationEmail($toEmail, $toName, $type, $data) {
@@ -219,11 +249,35 @@ function ensureCommentSchema() {
 }
 
 /**
+ * QQ 头像代理加密密钥（服务端专用，不暴露给客户端）
+ * 用于 AES-256-CBC 加密 QQ 号，使 URL 中不出现明文也无法反推
+ */
+if (!defined('NOVA_AVATAR_KEY')) {
+    define('NOVA_AVATAR_KEY', 'NovaCMS-AvatarProxy-v3-7f9a2c');
+}
+
+/**
+ * AES-256-CBC 加密 QQ 号
+ * 每次 IV 随机，同一 QQ 号每次生成不同密文，无法关联
+ */
+function encryptQQ($qq) {
+    $key = hash('sha256', NOVA_AVATAR_KEY, true);
+    $iv = openssl_random_pseudo_bytes(16);
+    $encrypted = openssl_encrypt($qq, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+    if ($encrypted === false) return false;
+    return rtrim(strtr(base64_encode($iv . $encrypted), '+/', '-_'), '=');
+}
+
+/**
  * 计算评论头像 URL
- * 规则：
- *  - 邮箱为纯 QQ 号(5-11位) 或 xxx@qq.com(本地部分为 QQ 号) → 使用 QQ 头像
- *    （等价于 vendor/api/qq_avatar.php 的解析：https://q1.qlogo.cn/g?b=qq&nk={qq}&s={size}）
- *  - 其他 → 使用 website_config.comment_avatar_api 配置的头像 API（{hash}=md5(email), {size}=尺寸）
+ *
+ * 退避规则（前台后台共用）：
+ *  1. 邮箱为纯 QQ 号(5-11位) 或 数字@qq.com → 通过本地代理获取 QQ 头像
+ *     QQ 号经 AES-256-CBC 加密，URL 中不含明文，无法反推
+ *  2. QQ 号格式不正确 / 邮箱是英文等其他邮箱 → 退避到 comment_avatar_api 配置的头像 API
+ *     （默认 cravatar，{hash}=md5(email), {size}=尺寸）
+ *
+ * 注意：QQ 头像接口仅支持 s=100，$size 参数仅作用于退避的头像 API。
  */
 function getCommentAvatarUrl($email, $size = 100) {
     $email = trim((string)$email);
@@ -235,8 +289,13 @@ function getCommentAvatarUrl($email, $size = 100) {
         $qq = $m[1];
     }
     if ($qq) {
-        return "https://q1.qlogo.cn/g?b=qq&nk=" . rawurlencode($qq) . "&s=" . $size;
+        // AES-256-CBC 加密，浏览器端无法解密、无法关联同一 QQ 号
+        $token = encryptQQ($qq);
+        if ($token !== false) {
+            return '/qq_avatar?t=' . $token;
+        }
     }
+    // 退避：非 QQ 邮箱/纯数字 → 使用配置的头像 API（cravatar 等）
     $api = getSiteConfigValue('comment_avatar_api', 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm');
     if (strpos($api, '{hash}') !== false) {
         $api = str_replace(['{hash}', '{size}'], [md5(strtolower($email)), $size], $api);
