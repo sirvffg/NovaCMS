@@ -86,9 +86,89 @@ $stmt->execute([$dirsJson]);
 
 $activePluginIds = get_active_plugins($db);
 
-// AJAX 端点：处理启用/禁用请求，返回 JSON
+// AJAX 请求检测（提前定义，供下方各端点使用）
 $isAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
         || ($_SERVER['HTTP_X_PJAX'] ?? '') === 'true';
+
+// AJAX 请求时抑制非致命错误输出，防止 HTML notice 混入 JSON 响应
+if ($isAjax) {
+    error_reporting(0);
+    ini_set('display_errors', '0');
+}
+
+// AJAX 端点：卸载插件（删除目录）
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '') === 'uninstall_plugin') {
+    header('Content-Type: application/json; charset=utf-8');
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'msg' => '安全验证失败，请刷新页面后重试']);
+        exit;
+    }
+
+    $uninstallId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['plugin_id'] ?? '');
+    if ($uninstallId === '') {
+        echo json_encode(['ok' => false, 'msg' => '插件标识无效']);
+        exit;
+    }
+
+    $uninstallTarget = null;
+    foreach ($plugins as $p) {
+        if ($p['id'] === $uninstallId) {
+            $uninstallTarget = $p;
+            break;
+        }
+    }
+    if ($uninstallTarget === null) {
+        echo json_encode(['ok' => false, 'msg' => '插件不存在']);
+        exit;
+    }
+
+    // 先从启用列表移除
+    if ($activePluginIds === null) {
+        $activePluginIds = [];
+        foreach ($plugins as $p) {
+            $activePluginIds[] = $p['id'];
+        }
+    }
+    $activePluginIds = array_values(array_diff($activePluginIds, [$uninstallId]));
+    save_active_plugins($db, $activePluginIds);
+
+    // 递归删除插件目录
+    $pluginDir = $uninstallTarget['plugin_dir'];
+    $deleted = false;
+    if (is_dir($pluginDir)) {
+        $items = array_diff(scandir($pluginDir), ['.', '..']);
+        foreach ($items as $item) {
+            $path = $pluginDir . '/' . $item;
+            if (is_dir($path)) {
+                // 递归删除子目录
+                $subItems = array_diff(scandir($path), ['.', '..']);
+                foreach ($subItems as $sub) {
+                    @unlink($path . '/' . $sub);
+                }
+                @rmdir($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        $deleted = @rmdir($pluginDir);
+    }
+
+    if ($deleted) {
+        Nova_Plugin_Registry::clear_cache();
+        echo json_encode([
+            'ok' => true,
+            'msg' => '插件「' . $uninstallTarget['name'] . '」已卸载',
+            'enabled_count' => count($activePluginIds),
+            'disabled_count' => max(0, count($plugins) - 1 - count($activePluginIds)),
+        ]);
+    } else {
+        echo json_encode(['ok' => false, 'msg' => '删除目录失败，请检查目录权限']);
+    }
+    exit;
+}
+
+// AJAX 端点：处理启用/禁用请求，返回 JSON
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '') !== 'save_plugin_config') {
     header('Content-Type: application/json; charset=utf-8');
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
@@ -869,7 +949,7 @@ require_once 'includes/header.php';
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 6px;
+    gap: 8px;
     white-space: nowrap;
 }
 
@@ -877,21 +957,60 @@ require_once 'includes/header.php';
     margin: 0;
 }
 
-.plugin-action-btn {
+/* 滑动开关 */
+.plugin-switch {
+    width: 2.5em;
+    height: 1.4em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.plugin-switch:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.plugin-switch:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.plugin-switch-wrap {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 下拉菜单按钮 */
+.plugin-dropdown-btn {
+    border: 1px solid var(--bs-border-color);
     border-radius: 8px;
-}
-
-.plugin-enable-btn {
-    min-width: 84px;
-}
-
-.plugin-disable-btn {
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
     color: var(--bs-secondary-color);
 }
 
-.plugin-disable-btn:hover {
-    color: var(--bs-danger);
-    border-color: var(--bs-danger);
+.plugin-dropdown-btn:hover {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}
+
+.plugin-dropdown-menu {
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid var(--bs-border-color);
+    min-width: 160px;
+}
+
+.plugin-dropdown-menu .dropdown-item {
+    border-radius: 6px;
+    margin: 2px 4px;
+    font-size: 0.875rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.plugin-dropdown-menu .dropdown-item:hover {
+    background-color: var(--bs-tertiary-bg);
 }
 
 
@@ -1270,64 +1389,48 @@ require_once 'includes/header.php';
 
                                     <div class="plugin-actions">
 
-                                        <?php if ($plugin['active'] && $hasAdminPage): ?>
-
-                                            <a
-                                                href="/admin/plugin-page.php?plugin=<?= rawurlencode($plugin['id']) ?>"
-                                                class="btn btn-primary btn-sm plugin-action-btn"
-                                            >
-                                                <i class="bi bi-sliders me-1"></i>
-                                                管理
-                                            </a>
-
-                                        <?php endif; ?>
-
-
-                                        <form
-                                            method="POST"
-                                            class="plugin-toggle-form"
-                                        >
-
-                                            <input
-                                                type="hidden"
-                                                name="csrf_token"
-                                                value="<?= e(generateCSRFToken()) ?>"
-                                            >
-
-                                            <input
-                                                type="hidden"
-                                                name="plugin_id"
-                                                value="<?= e($plugin['id']) ?>"
-                                            >
-
-
-                                            <?php if ($plugin['active']): ?>
-
-                                                <button
-                                                    type="submit"
-                                                    name="plugin_action"
-                                                    value="deactivate"
-                                                    class="btn btn-sm btn-outline-secondary plugin-action-btn plugin-toggle-btn plugin-disable-btn"
-                                                >
-                                                    <i class="bi bi-power me-1"></i>
-                                                    停用
-                                                </button>
-
-                                            <?php else: ?>
-
-                                                <button
-                                                    type="submit"
-                                                    name="plugin_action"
-                                                    value="activate"
-                                                    class="btn btn-sm btn-primary plugin-action-btn plugin-toggle-btn plugin-enable-btn"
-                                                >
-                                                    <i class="bi bi-play-fill me-1"></i>
-                                                    启用
-                                                </button>
-
-                                            <?php endif; ?>
-
+                                        <!-- 滑动开关 -->
+                                        <form method="POST" class="plugin-toggle-form d-inline-block">
+                                            <input type="hidden" name="csrf_token" value="<?= e(generateCSRFToken()) ?>">
+                                            <input type="hidden" name="plugin_id" value="<?= e($plugin['id']) ?>">
+                                            <div class="form-check form-switch plugin-switch-wrap" data-plugin-active="<?= $plugin['active'] ? '1' : '0' ?>">
+                                                <input class="form-check-input plugin-switch" type="checkbox" role="switch"
+                                                    <?= $plugin['active'] ? 'checked' : '' ?>
+                                                    data-plugin-id="<?= e($plugin['id']) ?>"
+                                                    data-plugin-name="<?= e($plugin['name']) ?>"
+                                                    data-csrf="<?= e(generateCSRFToken()) ?>">
+                                            </div>
                                         </form>
+
+                                        <!-- 下拉菜单 -->
+                                        <div class="dropdown plugin-dropdown d-inline-block">
+                                            <button class="btn btn-sm btn-light plugin-dropdown-btn" type="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">
+                                                <i class="bi bi-three-dots"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end plugin-dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" href="plugins.php?plugin=<?= rawurlencode($plugin['id']) ?>" data-pjax>
+                                                        <i class="bi bi-info-circle me-2"></i>详情
+                                                    </a>
+                                                </li>
+                                                <?php if ($plugin['active'] && $hasAdminPage): ?>
+                                                <li>
+                                                    <a class="dropdown-item" href="/admin/plugin-page.php?plugin=<?= rawurlencode($plugin['id']) ?>" data-pjax>
+                                                        <i class="bi bi-sliders me-2"></i>管理
+                                                    </a>
+                                                </li>
+                                                <?php endif; ?>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button class="dropdown-item text-danger plugin-uninstall-btn" type="button"
+                                                        data-plugin-id="<?= e($plugin['id']) ?>"
+                                                        data-plugin-name="<?= e($plugin['name']) ?>"
+                                                        data-csrf="<?= e(generateCSRFToken()) ?>">
+                                                        <i class="bi bi-trash3 me-2"></i>卸载
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
 
                                     </div>
 
@@ -1412,7 +1515,6 @@ require_once 'includes/header.php';
         card.dataset.pluginActive =
             active ? '1' : '0';
 
-
         var status =
             card.querySelector('.plugin-status');
 
@@ -1427,63 +1529,28 @@ require_once 'includes/header.php';
 
         }
 
+        // 更新滑动开关
+        var sw =
+            card.querySelector('.plugin-switch');
 
-        var btn =
-            card.querySelector('.plugin-toggle-btn');
+        if (sw) {
 
-        if (btn) {
-
-            btn.value =
-                active
-                    ? 'deactivate'
-                    : 'activate';
-
-            if (active) {
-
-                btn.className =
-                    'btn btn-sm btn-outline-secondary '
-                    + 'plugin-action-btn plugin-toggle-btn '
-                    + 'plugin-disable-btn';
-
-                btn.innerHTML =
-                    '<i class="bi bi-power me-1"></i>'
-                    + '停用';
-
-            } else {
-
-                btn.className =
-                    'btn btn-sm btn-primary '
-                    + 'plugin-action-btn plugin-toggle-btn '
-                    + 'plugin-enable-btn';
-
-                btn.innerHTML =
-                    '<i class="bi bi-play-fill me-1"></i>'
-                    + '启用';
-
-            }
-
-            btn.disabled = false;
+            sw.checked = active;
 
         }
 
-
-        /*
-         * 管理按钮：
-         * 停用后隐藏
-         * 启用后显示
-         */
-        var manageBtn =
+        // 更新管理菜单项可见性
+        var manageLink =
             card.querySelector(
                 'a[href*="plugin-page.php"]'
             );
 
-        if (manageBtn) {
+        if (manageLink) {
 
-            manageBtn.style.display =
+            manageLink.style.display =
                 active ? '' : 'none';
 
         }
-
 
         filterPlugins();
 
@@ -1787,55 +1854,43 @@ require_once 'includes/header.php';
 
 
     /*
-     * 启用 / 停用
+     * 启用 / 停用（滑动开关）
      */
     document
         .querySelectorAll(
-            '.plugin-toggle-form'
+            '.plugin-switch'
         )
-        .forEach(function (form) {
+        .forEach(function (sw) {
 
-            form.addEventListener(
-                'submit',
-                function (event) {
+            sw.addEventListener(
+                'change',
+                function () {
 
-                    event.preventDefault();
-
-
+                    // 注意：必须匹配 .plugin-row（tr），不能用 [data-plugin-id]，
+                    // 因为开关 input 自身也带 data-plugin-id，closest 会命中自身
                     var card =
-                        form.closest(
-                            '[data-plugin-id]'
+                        sw.closest(
+                            '.plugin-row'
                         );
 
-                    var btn =
-                        form.querySelector(
-                            '.plugin-toggle-btn'
-                        );
-
-                    if (!card || !btn) {
+                    if (!card) {
                         return;
                     }
 
-
-                    var action =
-                        btn.value;
-
                     var pluginId =
-                        form.querySelector(
-                            '[name="plugin_id"]'
-                        ).value;
+                        card.dataset.pluginId;
 
                     var pluginName =
                         card.dataset.pluginName;
 
+                    var action =
+                        sw.checked
+                            ? 'activate'
+                            : 'deactivate';
 
-                    /*
-                     * 启用不询问。
-                     * 停用才确认。
-                     */
+                    // 停用才确认
                     if (
-                        action
-                        === 'deactivate'
+                        action === 'deactivate'
                         && !confirm(
                             '确定停用「'
                             + pluginName
@@ -1844,34 +1899,12 @@ require_once 'includes/header.php';
                         )
                     ) {
 
+                        sw.checked = true;
                         return;
 
                     }
 
-
-                    btn.disabled = true;
-
-
-                    if (
-                        action === 'activate'
-                    ) {
-
-                        btn.innerHTML =
-                            '<span class="spinner-border '
-                            + 'spinner-border-sm me-1">'
-                            + '</span>'
-                            + '正在启用…';
-
-                    } else {
-
-                        btn.innerHTML =
-                            '<span class="spinner-border '
-                            + 'spinner-border-sm me-1">'
-                            + '</span>'
-                            + '正在停用…';
-
-                    }
-
+                    sw.disabled = true;
 
                     var formData =
                         new FormData();
@@ -1891,7 +1924,6 @@ require_once 'includes/header.php';
                         action
                     );
 
-
                     fetch(
                         window.location.pathname,
                         {
@@ -1908,11 +1940,30 @@ require_once 'includes/header.php';
 
                     .then(function (response) {
 
-                        return response.json();
+                        return response.text().then(function (text) {
+
+                            var data;
+
+                            try {
+                                data = JSON.parse(text);
+                            } catch (e) {
+                                throw new Error(
+                                    '响应异常（HTTP '
+                                    + response.status
+                                    + '）：'
+                                    + text.slice(0, 150)
+                                );
+                            }
+
+                            return data;
+
+                        });
 
                     })
 
                     .then(function (data) {
+
+                        sw.disabled = false;
 
                         if (!data.ok) {
 
@@ -1922,7 +1973,6 @@ require_once 'includes/header.php';
                             );
 
                         }
-
 
                         applyCardState(
                             card,
@@ -1945,18 +1995,171 @@ require_once 'includes/header.php';
 
                     .catch(function (error) {
 
-                        btn.disabled = false;
+                        console.error('[plugins] 启用/停用失败:', error);
 
-                        applyCardState(
-                            card,
-                            action
-                                === 'deactivate'
-                        );
+                        sw.disabled = false;
+
+                        sw.checked =
+                            action === 'activate';
 
                         showAlert(
                             'danger',
                             error.message
                             || '操作失败，请重试'
+                        );
+
+                    });
+
+                }
+            );
+
+        });
+
+
+    /*
+     * 卸载插件
+     */
+    document
+        .querySelectorAll(
+            '.plugin-uninstall-btn'
+        )
+        .forEach(function (btn) {
+
+            btn.addEventListener(
+                'click',
+                function () {
+
+                    var pluginId =
+                        btn.getAttribute(
+                            'data-plugin-id'
+                        );
+
+                    var pluginName =
+                        btn.getAttribute(
+                            'data-plugin-name'
+                        );
+
+                    if (
+                        !confirm(
+                            '确定卸载「'
+                            + pluginName
+                            + '」吗？\n\n'
+                            + '卸载将永久删除插件目录及所有文件，此操作不可撤销。'
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+                    // 匹配 .plugin-row（tr），不能用 [data-plugin-id]（按钮自身也带该属性）
+                    var card =
+                        btn.closest(
+                            '.plugin-row'
+                        );
+
+                    btn.disabled = true;
+                    var orig = btn.innerHTML;
+                    btn.innerHTML =
+                        '<span class="spinner-border '
+                        + 'spinner-border-sm me-2">'
+                        + '</span>卸载中…';
+
+                    var formData =
+                        new FormData();
+
+                    formData.append(
+                        'action',
+                        'uninstall_plugin'
+                    );
+
+                    formData.append(
+                        'csrf_token',
+                        csrfToken
+                    );
+
+                    formData.append(
+                        'plugin_id',
+                        pluginId
+                    );
+
+                    fetch(
+                        window.location.pathname,
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'X-Requested-With':
+                                    'XMLHttpRequest'
+                            },
+
+                            body: formData
+                        }
+                    )
+
+                    .then(function (response) {
+
+                        return response.text().then(function (text) {
+
+                            var data;
+
+                            try {
+                                data = JSON.parse(text);
+                            } catch (e) {
+                                throw new Error(
+                                    '响应异常（HTTP '
+                                    + response.status
+                                    + '）：'
+                                    + text.slice(0, 150)
+                                );
+                            }
+
+                            return data;
+
+                        });
+
+                    })
+
+                    .then(function (data) {
+
+                        if (!data.ok) {
+
+                            throw new Error(
+                                data.msg
+                                || '卸载失败'
+                            );
+
+                        }
+
+                        if (card) {
+                            card.remove();
+                        }
+
+                        updateStats(
+                            data.enabled_count,
+                            data.disabled_count
+                        );
+
+                        showAlert(
+                            'success',
+                            data.msg
+                        );
+
+                        refreshSidebar();
+
+                    })
+
+                    .catch(function (error) {
+
+                        console.error('[plugins] 卸载失败:', error);
+
+                        btn.disabled = false;
+                        btn.innerHTML = orig;
+
+                        showAlert(
+                            'danger',
+                            error.message
+                            || '卸载失败，请重试'
                         );
 
                     });
