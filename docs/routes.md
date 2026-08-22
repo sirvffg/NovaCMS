@@ -17,6 +17,7 @@
 7. [Auth - 认证模块](#7-auth---认证模块)
 8. [Users - 用户管理模块](#8-users---用户管理模块)
 9. [Statuses - 动态模块](#9-statuses---动态模块)
+10. [Stats - 统计模块](#10-stats---统计模块)
 
 ---
 
@@ -457,6 +458,101 @@ GET /v1/posts/1/download?code=123456&password=mypassword
 **响应**
 
 该接口会 302 重定向到 `/vendor/download_article_zip.php` 处理实际下载。
+
+---
+
+### 1.8 获取热门文章
+
+`GET /v1/posts/hot`
+
+按浏览量（`views` 字段）倒序返回热门文章列表。
+
+**参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `limit` | int | 否 | 返回条数，默认 10，范围 1-50 |
+| `days` | int | 否 | 限定时间范围（天），0=不限，按 `published_at`/`created_at` 过滤 |
+
+**请求示例**
+
+```
+GET /v1/posts/hot?limit=10&days=30
+```
+
+**响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "获取成功",
+    "data": {
+        "status": 200,
+        "total": 10,
+        "items": [
+            {
+                "id": 1,
+                "title": "文章标题",
+                "author": "作者",
+                "views": 999,
+                "comment_count": 5
+            }
+        ]
+    }
+}
+```
+
+---
+
+### 1.9 获取文章列表（含评论数）
+
+`GET /v1/posts/with-stats`
+
+返回文章列表并附带每篇文章的评论数（LEFT JOIN `blog_comments` 统计 `status='approved'` 的评论）。
+
+**参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `page` | int | 否 | 页码，默认 1 |
+| `per_page` | int | 否 | 每页条数，默认 10，范围 1-50 |
+| `category` | string | 否 | 按分类筛选 |
+| `tag` | string | 否 | 按标签筛选 |
+| `search` | string | 否 | 搜索标题和摘要 |
+| `orderby` | string | 否 | 排序方式：`created`（默认）/`views`/`comments` |
+
+**请求示例**
+
+```
+GET /v1/posts/with-stats?page=1&per_page=10&orderby=views
+```
+
+**响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "获取成功",
+    "data": {
+        "status": 200,
+        "total": 100,
+        "page": 1,
+        "per_page": 10,
+        "total_pages": 10,
+        "items": [
+            {
+                "id": 1,
+                "title": "文章标题",
+                "author": "作者",
+                "views": 999,
+                "comment_count": 15
+            }
+        ]
+    }
+}
+```
+
+> 返回结构同 `/v1/posts`，但每个 item 多一个 `comment_count` 字段。
 
 ---
 
@@ -2685,5 +2781,134 @@ GET /v1/statuses/terms?type=terms
 
 ---
 
-> 文档版本: v1.0  
-> 生成日期: 2026-07-28
+## 10. Stats - 统计模块
+
+基于 `visit_stats` 表的访问统计聚合接口，用于前端图表展示。
+
+### 10.1 访问量按天聚合
+
+`GET /v1/stats/visits/summary`
+
+按天聚合访问量，适合折线图展示。自动补全缺失日期（count=0）保证数据连续。
+
+**参数**
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `days` | int | 否 | 7 | 统计天数，范围 1-90 |
+
+**请求示例**
+
+```
+GET /v1/stats/visits/summary?days=7
+```
+
+**响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "获取成功",
+    "data": {
+        "status": 200,
+        "days": 7,
+        "items": [
+            { "date": "2026-08-16", "count": 120 },
+            { "date": "2026-08-17", "count": 95 },
+            { "date": "2026-08-18", "count": 0 }
+        ]
+    }
+}
+```
+
+---
+
+### 10.2 热门页面排行
+
+`GET /v1/stats/visits/top-pages`
+
+按页面 URL 聚合访问量，适合柱状图展示。
+
+**参数**
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `days` | int | 否 | 7 | 统计天数，范围 1-90 |
+| `limit` | int | 否 | 10 | 返回条数，范围 1-50 |
+
+**请求示例**
+
+```
+GET /v1/stats/visits/top-pages?days=30&limit=20
+```
+
+**响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "获取成功",
+    "data": {
+        "status": 200,
+        "days": 30,
+        "total": 20,
+        "items": [
+            { "page_url": "/blog?id=1", "count": 500 },
+            { "page_url": "/", "count": 320 }
+        ]
+    }
+}
+```
+
+---
+
+### 10.3 访问总览
+
+`GET /v1/stats/visits/overview`
+
+返回指定时间范围内的总览数据，适合仪表盘卡片展示。
+
+**参数**
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `days` | int | 否 | 7 | 统计天数，范围 1-90 |
+
+**请求示例**
+
+```
+GET /v1/stats/visits/overview?days=7
+```
+
+**响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "获取成功",
+    "data": {
+        "status": 200,
+        "days": 7,
+        "total_visits": 1500,
+        "unique_ips": 320,
+        "today_visits": 80,
+        "yesterday_visits": 120,
+        "growth_rate": -33.3
+    }
+}
+```
+
+**字段说明**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `total_visits` | int | 指定天数内总访问量 |
+| `unique_ips` | int | 指定天数内独立 IP 数 |
+| `today_visits` | int | 今日访问量 |
+| `yesterday_visits` | int | 昨日访问量 |
+| `growth_rate` | float | 今日相对昨日的环比变化率（%） |
+
+---
+
+> 文档版本: v1.1  
+> 生成日期: 2026-08-22
