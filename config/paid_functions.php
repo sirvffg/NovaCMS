@@ -56,7 +56,7 @@ function processPaidContent($db, $userId, $postId, $content) {
                 $price = number_format($post['post_price'], 2);
                 if ($userId > 0) {
                     $processedContent .= '<div class="paid-notice" style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                        <h5 style="color: #856404; margin-top: 0;">💰 付费内容</h5>
+                        <h5 style="color: #856404; margin-top: 0;">付费内容</h5>
                         <p>此内容需要支付 <strong>￥' . $price . '</strong> 后才能查看。</p>
                         <a href="/vendor/public/epay/pay.php?post_id=' . $postId . '" class="btn btn-warning" target="_blank">
                             <i class="bi bi-cart"></i> 立即支付
@@ -64,7 +64,7 @@ function processPaidContent($db, $userId, $postId, $content) {
                     </div>';
                 } else {
                     $processedContent .= '<div class="paid-notice" style="background-color: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                        <h5 style="color: #28a745; margin-top: 0;">🔒 登录并支付后可见</h5>
+                        <h5 style="color: #28a745; margin-top: 0;">登录并支付后可见</h5>
                         <p>此内容需要支付 <strong>￥' . $price . '</strong>，请先登录。</p>
                         <a href="/vendor/login.php?redirect_url=' . urlencode('/blog?id=' . $postId) . '" class="btn btn-success">
                             <i class="bi bi-box-arrow-in-right"></i> 立即登录

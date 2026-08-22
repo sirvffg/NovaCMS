@@ -15,9 +15,9 @@ if (function_exists('mb_substr')) {
     $currentCategory = substr($currentCategory, 0, 100);
 }
 $contentCssVersion = (string)(@filemtime($themePath . '/assets/css/content.css') ?: 1);
-$contentJsVersion = (string)(@filemtime($themePath . '/assets/js/content.js') ?: 1);
+$contentJsVersion = (string)(@filemtime(__DIR__ . '/assets/js/content.js') ?: 1);
 $extraHead = '<link href="' . NOVA_THEME_URL . '/assets/css/content.css?v=' . e($contentCssVersion) . '" rel="stylesheet">';
-$extraFooter = '<script src="/assets/js/marked.min.js"></script><script src="' . NOVA_THEME_URL . '/assets/js/content.js?v=' . e($contentJsVersion) . '"></script>';
+$extraFooter = '<script src="/assets/js/marked.min.js"></script><script src="/vendor/nova-themes/default/themes/assets/js/content.js?v=' . e($contentJsVersion) . '"></script>';
 include $themePath . '/partials/header.php';
 include $themePath . '/partials/navbar.php';
 ?>
@@ -57,17 +57,42 @@ include $themePath . '/partials/navbar.php';
             </div>
         </article>
 
-        <section class="comments-panel" aria-labelledby="comments-title">
+        <?php
+            // $config 为 index.php 预取的 website_config 整行；字段不存在时视为关闭，避免首屏报错
+            $_commentLoginRequired = !empty($config['comment_login_required']);
+            $_commentPrivateEnabled = !empty($config['comment_private_enabled']);
+            $_commentLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['admin_id']);
+            $_commentFeedback = $_commentLoginRequired && !$_commentLoggedIn
+                ? '需要登录后才能评论。'
+                : ($_commentLoggedIn ? '已登录，即可参与讨论。' : '填写昵称与邮箱即可参与讨论。');
+        ?>
+        <section class="comments-panel" aria-labelledby="comments-title"
+                 data-comment-login-required="<?= $_commentLoginRequired ? '1' : '0' ?>"
+                 data-comment-private-enabled="<?= $_commentPrivateEnabled ? '1' : '0' ?>"
+                 data-comment-logged-in="<?= $_commentLoggedIn ? '1' : '0' ?>">
             <header class="section-heading compact">
                 <div><span class="site-eyebrow"><i class="bi bi-chat-square-text"></i> Discussion</span><h2 id="comments-title">评论与交流</h2></div>
                 <span class="comment-count" data-comment-count>0 条</span>
             </header>
             <form class="comment-form" data-comment-form>
                 <label data-comment-label for="comment-content">写下你的想法</label>
+                <div class="comment-identity-fields" data-comment-identity hidden>
+                    <div class="comment-identity-row">
+                        <!-- required 交由 JS 校验：登录后字段隐藏，原生 required 会静默拦截提交 -->
+                        <input type="text" name="username" maxlength="50" placeholder="昵称 *" autocomplete="nickname">
+                        <input type="text" name="email" maxlength="100" placeholder="邮箱（或 QQ 号）*" autocomplete="email">
+                        <input type="url" name="website" maxlength="255" placeholder="网址（选填）" autocomplete="url">
+                    </div>
+                    <small class="comment-identity-hint">填写 QQ 号或 <code>数字@qq.com</code> 将自动获取 QQ 头像；邮箱用于接收回复通知。</small>
+                </div>
                 <textarea id="comment-content" name="content" rows="4" maxlength="2000" placeholder="保持友善，也欢迎补充不同视角。" required></textarea>
                 <div class="comment-form-footer">
-                    <p data-comment-feedback aria-live="polite">登录后即可参与讨论。</p>
+                    <p data-comment-feedback aria-live="polite"><?= e($_commentFeedback) ?></p>
                     <div class="comment-form-actions">
+                        <label class="comment-private-toggle" data-comment-private-wrap hidden>
+                            <input type="checkbox" name="is_private" value="1">
+                            <span><i class="bi bi-lock"></i> 私密评论</span>
+                        </label>
                         <button class="comment-cancel-reply" type="button" data-comment-cancel-reply hidden><i class="bi bi-x-lg" aria-hidden="true"></i><span>取消回复</span></button>
                         <button class="site-button site-button-primary" type="submit">发表评论</button>
                     </div>

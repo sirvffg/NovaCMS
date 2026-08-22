@@ -1,2 +1,2 @@
 <?php
-require dirname(__DIR__) . '/default/page.php';
+require dirname(__DIR__, 2) . '/default/themes/page.php';

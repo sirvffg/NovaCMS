@@ -174,6 +174,11 @@ require_once 'includes/header.php';
                                         <i class="bi bi-wallet2 me-2"></i> 支付设置
                                     </button>
                                 </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tab-comment" data-bs-toggle="tab" data-bs-target="#content-comment" type="button" role="tab">
+                                        <i class="bi bi-chat-dots me-2"></i> 评论设置
+                                    </button>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -597,6 +602,36 @@ require_once 'includes/header.php';
                                     <div class="mb-3">
                                         <label class="form-label">商户密钥 (Key)</label>
                                         <input type="password" name="epay_key" class="form-control" value="<?= e($config['epay_key'] ?? '') ?>" placeholder="您的商户密钥">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 评论设置 -->
+                        <div class="tab-pane fade" id="content-comment" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>评论设置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="comment_login_required" id="comment_login_required" value="1" <?= !empty($config['comment_login_required']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="comment_login_required">需要登录后才能评论</label>
+                                        </div>
+                                        <div class="form-text">关闭后，访客可填写昵称、邮箱、网址进行匿名评论。</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="comment_private_enabled" id="comment_private_enabled" value="1" <?= !empty($config['comment_private_enabled']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="comment_private_enabled">开启私密评论</label>
+                                        </div>
+                                        <div class="form-text">开启后，评论者可选择仅作者和管理员可见的私密评论。</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">评论头像 API</label>
+                                        <input type="text" name="comment_avatar_api" class="form-control" value="<?= e($config['comment_avatar_api'] ?? 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm') ?>" placeholder="https://cravatar.cn/avatar/{hash}?s={size}&d=mm">
+                                        <div class="form-text">用于非 QQ 邮箱的头像。占位符：<code>{hash}</code> = 邮箱 MD5，<code>{size}</code> = 头像尺寸。当邮箱为纯 QQ 号或 <code>数字@qq.com</code> 时将自动使用 QQ 头像（等价于 <code>vendor/api/qq_avatar.php</code>）。</div>
                                     </div>
                                 </div>
                             </div>

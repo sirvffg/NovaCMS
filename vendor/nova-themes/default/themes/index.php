@@ -24,9 +24,9 @@ $pageTitle = '首页';
 $pageKey = 'home';
 $pageDescription = $homeDescription;
 $contentCssVersion = (string)(@filemtime($themePath . '/assets/css/content.css') ?: 1);
-$contentJsVersion = (string)(@filemtime($themePath . '/assets/js/content.js') ?: 1);
+$contentJsVersion = (string)(@filemtime(__DIR__ . '/assets/js/content.js') ?: 1);
 $extraHead = '<link href="' . NOVA_THEME_URL . '/assets/css/content.css?v=' . e($contentCssVersion) . '" rel="stylesheet">';
-$extraFooter = '<script src="' . NOVA_THEME_URL . '/assets/js/content.js?v=' . e($contentJsVersion) . '"></script>';
+$extraFooter = '<script src="/vendor/nova-themes/default/themes/assets/js/content.js?v=' . e($contentJsVersion) . '"></script>';
 include $themePath . '/partials/header.php';
 include $themePath . '/partials/navbar.php';
 ?>

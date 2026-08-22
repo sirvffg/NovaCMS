@@ -181,6 +181,70 @@ function getReplyNotificationEmailTemplate($siteName, $data) {
 }
 
 /**
+ * 确保评论相关数据表字段存在（幂等迁移）
+ * - blog_comments: website / is_private / device_info
+ * - website_config: comment_login_required / comment_private_enabled / comment_avatar_api
+ */
+function ensureCommentSchema() {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    $db = getDB();
+    try {
+        $commentCols = [
+            'website'      => "ADD COLUMN website VARCHAR(255) DEFAULT NULL COMMENT '评论者网址（匿名）' AFTER email",
+            'is_private'   => "ADD COLUMN is_private TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否私密评论' AFTER parent_id",
+            'device_info'  => "ADD COLUMN device_info VARCHAR(255) DEFAULT NULL COMMENT '设备信息(浏览器·系统)' AFTER user_agent",
+        ];
+        foreach ($commentCols as $col => $ddl) {
+            $check = $db->query("SHOW COLUMNS FROM blog_comments LIKE " . $db->quote($col));
+            if (!$check->fetch()) {
+                $db->exec("ALTER TABLE blog_comments " . $ddl);
+            }
+        }
+        $configCols = [
+            'comment_login_required' => "ADD COLUMN comment_login_required TINYINT(1) NOT NULL DEFAULT 0 COMMENT '评论是否需要登录' AFTER active_theme",
+            'comment_private_enabled' => "ADD COLUMN comment_private_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否开启私密评论' AFTER comment_login_required",
+            'comment_avatar_api'     => "ADD COLUMN comment_avatar_api VARCHAR(255) NOT NULL DEFAULT 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm' COMMENT '评论头像API(QQ邮箱以外的头像)' AFTER comment_private_enabled",
+        ];
+        foreach ($configCols as $col => $ddl) {
+            $check = $db->query("SHOW COLUMNS FROM website_config LIKE " . $db->quote($col));
+            if (!$check->fetch()) {
+                $db->exec("ALTER TABLE website_config " . $ddl);
+            }
+        }
+    } catch (Exception $e) {
+        error_log('ensureCommentSchema error: ' . $e->getMessage());
+    }
+}
+
+/**
+ * 计算评论头像 URL
+ * 规则：
+ *  - 邮箱为纯 QQ 号(5-11位) 或 xxx@qq.com(本地部分为 QQ 号) → 使用 QQ 头像
+ *    （等价于 vendor/api/qq_avatar.php 的解析：https://q1.qlogo.cn/g?b=qq&nk={qq}&s={size}）
+ *  - 其他 → 使用 website_config.comment_avatar_api 配置的头像 API（{hash}=md5(email), {size}=尺寸）
+ */
+function getCommentAvatarUrl($email, $size = 100) {
+    $email = trim((string)$email);
+    $size = max(1, min(640, (int)$size));
+    $qq = null;
+    if (preg_match('/^\d{5,11}$/', $email)) {
+        $qq = $email;
+    } elseif (preg_match('/^(\d{5,11})@qq\.com$/i', $email, $m)) {
+        $qq = $m[1];
+    }
+    if ($qq) {
+        return "https://q1.qlogo.cn/g?b=qq&nk=" . rawurlencode($qq) . "&s=" . $size;
+    }
+    $api = getSiteConfigValue('comment_avatar_api', 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm');
+    if (strpos($api, '{hash}') !== false) {
+        $api = str_replace(['{hash}', '{size}'], [md5(strtolower($email)), $size], $api);
+    }
+    return $api;
+}
+
+/**
  * 获取文章评论列表
  */
 function getPostComments($post_id, $status = 'approved') {
@@ -230,18 +294,89 @@ function getCommentReplies($parent_id) {
 }
 
 /**
- * 添加评论
+ * 添加评论 / 回复
+ *
+ * @param int    $post_id      文章 ID
+ * @param string $content      评论内容
+ * @param int|null $parent_id 父评论 ID
+ * @param string|null $anon_name    匿名昵称（未登录时必填）
+ * @param string|null $anon_email   匿名邮箱（未登录时必填，可为 QQ 号）
+ * @param string|null $anon_website 匿名网址（选填）
+ * @param bool   $is_private  是否私密评论（仅当后台开启私密评论时生效）
  */
-function addComment($post_id, $content, $parent_id = null) {
+function addComment($post_id, $content, $parent_id = null, $anon_name = null, $anon_email = null, $anon_website = null, $is_private = false) {
     $db = getDB();
-    if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])) {
-        return ['success' => false, 'message' => '请先登录后再评论', 'status' => 401];
+    ensureCommentSchema();
+
+    $loginRequired  = (bool)getSiteConfigValue('comment_login_required', 0);
+    $privateEnabled = (bool)getSiteConfigValue('comment_private_enabled', 0);
+
+    // 当前登录用户（兼容 REST 与普通加载两种上下文）
+    $currentUserId = 0;
+    if (function_exists('v1_get_current_user_id')) {
+        $currentUserId = (int)v1_get_current_user_id();
+    } elseif (isset($_SESSION['user_id'])) {
+        $currentUserId = (int)$_SESSION['user_id'];
+    } elseif (isset($_SESSION['admin_id'])) {
+        $currentUserId = (int)$_SESSION['admin_id'];
     }
-    
-    $user_id = $_SESSION['admin_id'] ?? $_SESSION['user_id'] ?? null;
+
+    $user_id  = null;
+    $username = null;
+    $email    = null;
+    $website  = null;
+
+    if ($currentUserId > 0) {
+        // 已登录：使用账号信息
+        $stmt = $db->prepare("SELECT username, email FROM admins WHERE id = ? AND is_banned = 0 LIMIT 1");
+        $stmt->execute([$currentUserId]);
+        $user_info = $stmt->fetch();
+        if (!$user_info) {
+            return ['success' => false, 'message' => '用户信息获取失败，请重新登录', 'status' => 401];
+        }
+        $user_id  = $currentUserId;
+        $username = $user_info['username'];
+        $email    = $user_info['email'];
+    } else {
+        // 未登录（匿名评论）
+        if ($loginRequired) {
+            return ['success' => false, 'message' => '请先登录后再评论', 'status' => 401];
+        }
+        $username = trim((string)$anon_name);
+        $email    = trim((string)$anon_email);
+        $website  = trim((string)$anon_website);
+        if ($username === '') {
+            return ['success' => false, 'message' => '请填写昵称', 'status' => 400];
+        }
+        if (function_exists('mb_strlen') && mb_strlen($username, 'UTF-8') > 50) {
+            return ['success' => false, 'message' => '昵称不能超过 50 个字符', 'status' => 400];
+        }
+        // 邮箱可为常规邮箱或纯 QQ 号
+        if ($email === '' || (!preg_match('/^\S+@\S+\.\S+$/', $email) && !preg_match('/^\d{5,11}$/', $email))) {
+            return ['success' => false, 'message' => '请填写有效的邮箱地址', 'status' => 400];
+        }
+        if (function_exists('mb_strlen') && mb_strlen($email, 'UTF-8') > 100) {
+            return ['success' => false, 'message' => '邮箱长度超出限制', 'status' => 400];
+        }
+        if ($website !== '') {
+            if (!preg_match('#^https?://#i', $website)) {
+                $website = 'https://' . $website;
+            }
+            if (function_exists('mb_strlen') && mb_strlen($website, 'UTF-8') > 255) {
+                return ['success' => false, 'message' => '网址长度超出限制', 'status' => 400];
+            }
+        } else {
+            $website = null;
+        }
+    }
+
     $ip_address = substr((string)($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45);
     $rawUserAgent = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
     $user_agent = function_exists('mb_substr') ? mb_substr($rawUserAgent, 0, 255, 'UTF-8') : substr($rawUserAgent, 0, 255);
+    $device_info = function_exists('parseDeviceName') ? parseDeviceName($rawUserAgent) : null;
+    if ($device_info !== null && function_exists('mb_substr')) {
+        $device_info = mb_substr($device_info, 0, 255, 'UTF-8');
+    }
 
     $post_id = (int)$post_id;
     $postStmt = $db->prepare("SELECT id FROM blog_posts WHERE id = ? AND is_published = 1 LIMIT 1");
@@ -249,19 +384,7 @@ function addComment($post_id, $content, $parent_id = null) {
     if (!$postStmt->fetch()) {
         return ['success' => false, 'message' => '文章不存在或尚未公开', 'status' => 404];
     }
-    
-    if ($user_id) {
-        $stmt = $db->prepare("SELECT username, email FROM admins WHERE id = ?");
-        $stmt->execute([$user_id]);
-        $user_info = $stmt->fetch();
-        if ($user_info) {
-            $username = $user_info['username'];
-            $email = $user_info['email'];
-        } else {
-            return ['success' => false, 'message' => '用户信息获取失败', 'status' => 401];
-        }
-    }
-    
+
     $content = trim($content);
     if ($content === '') return ['success' => false, 'message' => '评论内容不能为空', 'status' => 400];
     if (function_exists('mb_strlen')) {
@@ -285,14 +408,17 @@ function addComment($post_id, $content, $parent_id = null) {
     if (!$rateLimit['allowed']) {
         return ['success' => false, 'message' => $rateLimit['message'], 'status' => 429];
     }
-    
+
+    // 私密评论开关关闭时强制公开
+    $is_private = ($privateEnabled && $is_private) ? 1 : 0;
+
     try {
         $stmt = $db->prepare("
-            INSERT INTO blog_comments (post_id, user_id, username, email, content, parent_id, status, ip_address, user_agent)
-            VALUES (?, ?, ?, ?, ?, ?, 'approved', ?, ?)
+            INSERT INTO blog_comments (post_id, user_id, username, email, website, content, parent_id, is_private, device_info, status, ip_address, user_agent)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?)
         ");
-        $result = $stmt->execute([$post_id, $user_id, $username, $email, $content, $parent_id, $ip_address, $user_agent]);
-        
+        $result = $stmt->execute([$post_id, $user_id, $username, $email, $website, $content, $parent_id, $is_private, $device_info, $ip_address, $user_agent]);
+
         if ($result) {
             $comment_id = $db->lastInsertId();
             $stmt = $db->prepare("
@@ -308,6 +434,7 @@ function addComment($post_id, $content, $parent_id = null) {
             if ($comment) {
                 $comment['username'] = htmlspecialchars($comment['username'], ENT_QUOTES, 'UTF-8');
                 $comment['content'] = htmlspecialchars($comment['content'], ENT_QUOTES, 'UTF-8');
+                $comment['avatar_url'] = getCommentAvatarUrl($comment['email'] ?? '', 100);
             }
 
             createCommentNotification($post_id, $comment_id, $content, $parent_id);

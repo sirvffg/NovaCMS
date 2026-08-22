@@ -102,7 +102,7 @@ if ($pluginPageHandled) {
         echo '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>插件已禁用</title>'
            . '<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8f9fa;">'
            . '<div style="text-align:center;padding:2rem;">'
-           . '<div style="font-size:3rem;margin-bottom:1rem;">🔒</div>'
+           . '<div style="font-size:3rem;margin-bottom:1rem;">⛔</div>'
            . '<h1 style="font-size:1.5rem;color:#dc3545;margin:0 0 .5rem;">此插件已禁用</h1>'
            . '<p style="color:#6c757d;margin:0;">插件' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '已被禁用，无法访问此页面。</p>'
            . '</div></body></html>';

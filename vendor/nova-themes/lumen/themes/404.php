@@ -1,2 +1,2 @@
 <?php
-require dirname(__DIR__) . '/default/404.php';
+require dirname(__DIR__, 2) . '/default/themes/404.php';

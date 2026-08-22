@@ -630,11 +630,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
     <?php
     $useMonochromeAccount = trim((string)($config['active_theme'] ?? 'default')) === 'monochrome';
     $accountBaseVersion = (int)@filemtime(__DIR__ . '/../assets/css/account.css');
-    $accountThemeVersion = (int)@filemtime(__DIR__ . '/nova-themes/monochrome/assets/css/account.css');
+    $accountThemeVersion = (int)@filemtime(__DIR__ . '/nova-themes/monochrome/themes/assets/css/account.css');
     ?>
     <link href="/assets/css/account.css<?= $accountBaseVersion ? '?v=' . $accountBaseVersion : '' ?>" rel="stylesheet">
     <?php if ($useMonochromeAccount): ?>
-    <link href="/vendor/nova-themes/monochrome/assets/css/account.css<?= $accountThemeVersion ? '?v=' . $accountThemeVersion : '' ?>" rel="stylesheet">
+    <link href="/vendor/nova-themes/monochrome/themes/assets/css/account.css<?= $accountThemeVersion ? '?v=' . $accountThemeVersion : '' ?>" rel="stylesheet">
     <?php endif; ?>
 </head>
 <body class="account-auth-page account-register-page">

@@ -101,10 +101,10 @@ function rss_clean_content($content, $baseUrl, $fullText) {
 
 function rss_replace_privacy($content, $link) {
     $content = preg_replace('/\[Privacy\].*?\[\/Privacy\]/s',
-        '<div style="background:#f0f0f0;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #667eea;"><strong>🔒 此内容需要访问网站查看</strong><br><br><a href="' . $link . '" style="color:#667eea;text-decoration:none;font-weight:500;">点击前往查看 →</a></div>',
+        '<div style="background:#f0f0f0;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #667eea;"><strong>此内容需要访问网站查看</strong><br><br><a href="' . $link . '" style="color:#667eea;text-decoration:none;font-weight:500;">点击前往查看 →</a></div>',
         $content);
     $content = preg_replace('/\[Paid\].*?\[\/Paid\]/s',
-        '<div style="background:#fff3cd;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #ffc107;"><strong>💰 此内容需要访问网站付费查看</strong><br><br><a href="' . $link . '" style="color:#856404;text-decoration:none;font-weight:500;">点击前往查看 →</a></div>',
+        '<div style="background:#fff3cd;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #ffc107;"><strong>此内容需要访问网站付费查看</strong><br><br><a href="' . $link . '" style="color:#856404;text-decoration:none;font-weight:500;">点击前往查看 →</a></div>',
         $content);
     return $content;
 }

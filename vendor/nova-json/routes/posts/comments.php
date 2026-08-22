@@ -36,6 +36,7 @@ register_rest_route('v1', '/comments/{id}', [
 
 function nova_get_comment_list($request) {
     $db = getDB();
+    ensureCommentSchema();
     $currentUserId = v1_get_current_user_id();
     $isAdmin = v1_is_admin($currentUserId);
 
@@ -94,7 +95,27 @@ function nova_get_comment_list($request) {
     $stmt->execute($params);
     $comments = $stmt->fetchAll();
 
-    $items = array_map(function($c) use ($isAdmin) {
+    $items = array_map(function($c) use ($isAdmin, $currentUserId) {
+        $isPrivate = !empty($c['is_private']);
+        // 私密评论可见性：管理员 或 评论作者本人（已登录）
+        $canSeePrivate = $isAdmin || ($currentUserId > 0 && (int)$c['user_id'] === $currentUserId);
+        if ($isPrivate && !$canSeePrivate) {
+            // 非授权用户：仅显示占位，隐藏作者/邮箱/网址/设备信息
+            return [
+                'id'         => (int)$c['id'],
+                'post_id'    => (int)$c['post_id'],
+                'post_title' => $c['post_title'],
+                'username'   => '私密评论',
+                'content'    => '此评论为私密内容，仅作者和管理员可见',
+                'parent_id'  => $c['parent_id'] ? (int)$c['parent_id'] : null,
+                'created_at' => $c['created_at'],
+                'is_private' => true,
+                'masked'     => true,
+                'avatar_url' => '',
+                'device_info'=> '',
+                'website'    => '',
+            ];
+        }
         $item = [
             'id'         => (int)$c['id'],
             'post_id'    => (int)$c['post_id'],
@@ -103,6 +124,10 @@ function nova_get_comment_list($request) {
             'content'    => $c['content'],
             'parent_id'  => $c['parent_id'] ? (int)$c['parent_id'] : null,
             'created_at' => $c['created_at'],
+            'is_private' => $isPrivate,
+            'device_info'=> $c['device_info'] ?? '',
+            'website'    => $c['website'] ?? '',
+            'avatar_url' => function_exists('getCommentAvatarUrl') ? getCommentAvatarUrl($c['email'] ?? '', 100) : '',
         ];
         // 仅管理员可查看评论者邮箱
         if ($isAdmin) {
@@ -127,6 +152,7 @@ function nova_get_comment_list($request) {
 
 function nova_get_single_comment($request) {
     $db = getDB();
+    ensureCommentSchema();
     $id = (int)$request->get_param('id');
     $currentUserId = v1_get_current_user_id();
     $isAdmin = v1_is_admin($currentUserId);
@@ -144,19 +170,44 @@ function nova_get_single_comment($request) {
         ], 404);
     }
 
-    $item = [
-        'id'         => (int)$comment['id'],
-        'post_id'    => (int)$comment['post_id'],
-        'post_title' => $comment['post_title'],
-        'username'   => $comment['username'],
-        'content'    => $comment['content'],
-        'parent_id'  => $comment['parent_id'] ? (int)$comment['parent_id'] : null,
-        'status'     => $comment['status'],
-        'created_at' => $comment['created_at'],
-    ];
-    // 仅管理员可查看评论者邮箱
-    if ($isAdmin) {
-        $item['email'] = $comment['email'];
+    $isPrivate = !empty($comment['is_private']);
+    $canSeePrivate = $isAdmin || ($currentUserId > 0 && (int)$comment['user_id'] === $currentUserId);
+    if ($isPrivate && !$canSeePrivate) {
+        // 非授权用户：仅显示占位，隐藏作者/邮箱/网址/设备信息
+        $item = [
+            'id'         => (int)$comment['id'],
+            'post_id'    => (int)$comment['post_id'],
+            'post_title' => $comment['post_title'],
+            'username'   => '私密评论',
+            'content'    => '此评论为私密内容，仅作者和管理员可见',
+            'parent_id'  => $comment['parent_id'] ? (int)$comment['parent_id'] : null,
+            'status'     => $comment['status'],
+            'created_at' => $comment['created_at'],
+            'is_private' => true,
+            'masked'     => true,
+            'avatar_url' => '',
+            'device_info'=> '',
+            'website'    => '',
+        ];
+    } else {
+        $item = [
+            'id'         => (int)$comment['id'],
+            'post_id'    => (int)$comment['post_id'],
+            'post_title' => $comment['post_title'],
+            'username'   => $comment['username'],
+            'content'    => $comment['content'],
+            'parent_id'  => $comment['parent_id'] ? (int)$comment['parent_id'] : null,
+            'status'     => $comment['status'],
+            'created_at' => $comment['created_at'],
+            'is_private' => $isPrivate,
+            'device_info'=> $comment['device_info'] ?? '',
+            'website'    => $comment['website'] ?? '',
+            'avatar_url' => function_exists('getCommentAvatarUrl') ? getCommentAvatarUrl($comment['email'] ?? '', 100) : '',
+        ];
+        // 仅管理员可查看评论者邮箱
+        if ($isAdmin) {
+            $item['email'] = $comment['email'];
+        }
     }
 
     return [
@@ -178,8 +229,12 @@ function nova_add_comment($request) {
         return new Nova_REST_Response(['code' => 'rest_ok', 'message' => 'OK', 'data' => ['status' => 204]], 204);
     }
 
+    ensureCommentSchema();
+    $loginRequired = (bool)getSiteConfigValue('comment_login_required', 0);
     $userId = v1_get_current_user_id();
-    if ($userId <= 0) {
+
+    // 需要登录但未登录 → 401；允许匿名评论时未登录也可继续
+    if ($userId <= 0 && $loginRequired) {
         return new Nova_REST_Response([
             'code'    => 'rest_not_logged_in',
             'message' => '请先登录',
@@ -207,7 +262,18 @@ function nova_add_comment($request) {
         ], 400);
     }
 
-    $result = addComment($post_id, $content, $parent_id);
+    // 匿名评论者信息（仅未登录时使用）
+    $anon_name    = null;
+    $anon_email   = null;
+    $anon_website = null;
+    if ($userId <= 0) {
+        $anon_name    = trim((string)$request->get_param('username'));
+        $anon_email   = trim((string)$request->get_param('email'));
+        $anon_website = trim((string)$request->get_param('website'));
+    }
+    $is_private = (bool)$request->get_param('is_private');
+
+    $result = addComment($post_id, $content, $parent_id, $anon_name, $anon_email, $anon_website, $is_private);
 
     if ($result['success']) {
         return [

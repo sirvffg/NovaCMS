@@ -308,7 +308,7 @@ function getEmailTemplate($code, $siteName) {
             </div>
             
             <div style="text-align: center; color: #ff9800; margin: 15px 0;">
-                <strong>⏰ 有效期：10分钟</strong>
+                <strong>有效期：10分钟</strong>
             </div>
             
             <div class="info-box">
@@ -321,7 +321,7 @@ function getEmailTemplate($code, $siteName) {
             </div>
             
             <div class="warning-box">
-                <strong>🔒 安全提醒：</strong>
+                <strong>安全提醒：</strong>
                 <ul style="margin: 10px 0; padding-left: 20px;">
                     <li>请勿将验证码转发或告知任何人</li>
                     <li>网站工作人员不会向您索要验证码</li>

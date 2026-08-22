@@ -655,6 +655,72 @@
         return button;
     }
 
+    function commentAvatar(comment) {
+        var avatarUrl = text(comment.avatar_url);
+        var name = text(comment.username, '访客');
+        var node = element('span', 'comment-avatar');
+        if (avatarUrl) {
+            var img = element('img');
+            img.src = avatarUrl;
+            img.alt = name;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            node.appendChild(img);
+        } else {
+            node.textContent = name.slice(0, 1).toUpperCase() || '?';
+        }
+        return node;
+    }
+
+    function commentAuthor(comment) {
+        var name = text(comment.username, '访客');
+        var website = safeUrl(comment.website);
+        if (website) {
+            var link = element('a', '', name);
+            link.href = website;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            return link;
+        }
+        return element('strong', '', name);
+    }
+
+    function commentMeta(comment) {
+        var meta = element('div', 'comment-meta');
+        var dev = text(comment.device_info);
+        if (dev) {
+            var span = element('span');
+            append(span, icon('bi-pc-display'), document.createTextNode(dev));
+            meta.appendChild(span);
+        }
+        if (comment.is_private) {
+            meta.appendChild(badge('私密', 'is-locked', 'bi-lock'));
+        }
+        return meta.childNodes.length ? meta : null;
+    }
+
+    function buildCommentBody(comment, isReply) {
+        var body = element('div', 'comment-body');
+        var header = element('header', isReply ? 'comment-reply-header' : '');
+        var masked = comment.masked === true;
+        append(header, commentAuthor(comment), element('time', '', formatDate(comment.created_at)));
+        if (!masked) append(header, commentReplyAction(comment));
+        append(body, header, element('p', '', text(comment.content)));
+        if (!masked) {
+            var meta = commentMeta(comment);
+            if (meta) body.appendChild(meta);
+        }
+        return body;
+    }
+
+    function buildCommentArticle(comment, containerClass, extraChild) {
+        var article = element('article', containerClass);
+        var body = buildCommentBody(comment, containerClass === 'comment-reply');
+        if (extraChild) body.appendChild(extraChild);
+        append(article, commentAvatar(comment), body);
+        return article;
+    }
+
     function renderCommentReplies(parentId, grouped, ancestorIds) {
         var replies = sortCommentsByDate(grouped[String(parentId)] || []);
         if (!replies.length) return null;
@@ -664,12 +730,8 @@
             if (!replyId || ancestorIds[replyId]) return;
             var nextAncestors = Object.assign({}, ancestorIds);
             nextAncestors[replyId] = true;
-            var child = element('article', 'comment-reply');
-            var header = element('header', 'comment-reply-header');
-            append(header, element('strong', '', text(reply.username, '访客')), element('time', '', formatDate(reply.created_at)), commentReplyAction(reply));
-            append(child, header, element('p', '', text(reply.content)));
             var nested = renderCommentReplies(reply.id, grouped, nextAncestors);
-            if (nested) child.appendChild(nested);
+            var child = buildCommentArticle(reply, 'comment-reply', nested);
             container.appendChild(child);
         });
         return container;
@@ -696,15 +758,9 @@
                 grouped[parent].push(comment);
             });
             sortCommentsByDate(grouped.root || []).forEach(function (comment) {
-                var article = element('article', 'comment-card');
-                var avatar = element('span', 'comment-avatar', text(comment.username, '访客').slice(0, 1).toUpperCase());
-                var body = element('div', 'comment-body');
-                var header = element('header');
-                append(header, element('strong', '', text(comment.username, '访客')), element('time', '', formatDate(comment.created_at)), commentReplyAction(comment));
-                append(body, header, element('p', '', text(comment.content)));
-                var replies = renderCommentReplies(comment.id, grouped, (function () { var ancestors = {}; ancestors[String(comment.id)] = true; return ancestors; }()));
-                if (replies) body.appendChild(replies);
-                append(article, avatar, body);
+                var ancestors = (function () { var a = {}; a[String(comment.id)] = true; return a; }());
+                var replies = renderCommentReplies(comment.id, grouped, ancestors);
+                var article = buildCommentArticle(comment, 'comment-card', replies);
                 container.appendChild(article);
             });
         } catch (error) {
@@ -719,8 +775,21 @@
         var form = qs('[data-comment-form]', root);
         if (!form || form.getAttribute('data-comment-form-bound') === 'true') return;
         form.setAttribute('data-comment-form-bound', 'true');
+        var panel = form.closest('.comments-panel') || root;
+        var loginRequired = panel.getAttribute('data-comment-login-required') === '1';
+        var privateEnabled = panel.getAttribute('data-comment-private-enabled') === '1';
+        var loggedIn = panel.getAttribute('data-comment-logged-in') === '1';
         var feedback = qs('[data-comment-feedback]', form);
         var cancelReply = qs('[data-comment-cancel-reply]', form);
+        var identityWrap = qs('[data-comment-identity]', form);
+        var privateWrap = qs('[data-comment-private-wrap]', form);
+
+        function applyIdentityVisibility() {
+            if (identityWrap) identityWrap.hidden = (!loginRequired && !loggedIn) ? false : true;
+            if (privateWrap) privateWrap.hidden = privateEnabled ? false : true;
+        }
+        applyIdentityVisibility();
+
         if (cancelReply) {
             cancelReply.addEventListener('click', function () {
                 clearCommentReply(form, '已取消回复，现在可以发表新评论。');
@@ -736,15 +805,39 @@
                 if (textarea) textarea.focus();
                 return;
             }
+            var payload = { post_id: postId, content: content };
+            var parentId = Math.max(0, Number(form.dataset.replyParentId) || 0);
+            if (parentId) payload.parent_id = parentId;
+            // 匿名评论者信息（未登录且未强制登录时必填）
+            if (!loginRequired && !loggedIn) {
+                var name = form.elements.username ? text(form.elements.username.value) : '';
+                var email = form.elements.email ? text(form.elements.email.value) : '';
+                if (!name) {
+                    feedback.textContent = '请填写昵称。';
+                    if (form.elements.username) form.elements.username.focus();
+                    return;
+                }
+                if (!email) {
+                    feedback.textContent = '请填写邮箱（或 QQ 号）。';
+                    if (form.elements.email) form.elements.email.focus();
+                    return;
+                }
+                payload.username = name;
+                payload.email = email;
+                var website = form.elements.website ? text(form.elements.website.value) : '';
+                if (website) payload.website = website;
+            }
+            if (privateEnabled) {
+                var privateBox = form.elements.is_private;
+                payload.is_private = !!(privateBox && privateBox.checked);
+            }
             button.disabled = true;
             feedback.textContent = '正在发布…';
             try {
-                var payload = { post_id: postId, content: content };
-                var parentId = Math.max(0, Number(form.dataset.replyParentId) || 0);
-                if (parentId) payload.parent_id = parentId;
                 await requestJson('/nova-json/v1/comments', jsonOptions('POST', payload));
                 form.reset();
                 clearCommentReply(form, parentId ? '回复已发布。' : '评论已发布。');
+                applyIdentityVisibility();
                 loadComments(postId);
             } catch (error) {
                 feedback.textContent = error.status === 401 ? '请先登录，再参与讨论。' : error.message;

@@ -211,7 +211,7 @@ function processBlogContent($db, $userId, $postId, $content) {
                 if ($isPendingApproval) {
                     // 已提交但等待审核
                     $processedContent .= '<div class="privacy-notice" style="background-color: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                        <h5 style="color: #0d6efd; margin-top: 0;">🔒 隐私内容</h5>
+                        <h5 style="color: #0d6efd; margin-top: 0;">隐私内容</h5>
                         <p>您的申请已提交，正在等待管理员审核。审核通过后您即可查看此内容。</p>' .
                         ($customText ? '<div style="margin-top: 10px; padding: 10px; background: rgba(13,110,253,0.08); border-radius: 4px; font-size: 14px;">' . $customText . '</div>' : '') .
                         '<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#privacyAccessModal">
@@ -221,7 +221,7 @@ function processBlogContent($db, $userId, $postId, $content) {
                 } elseif ($post['privacy_type'] === 'login_only') {
                     // 仅需登录即可查看
                     $processedContent .= '<div class="privacy-notice" style="background-color: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                        <h5 style="color: #28a745; margin-top: 0;">🔒 登录可见内容</h5>
+                        <h5 style="color: #28a745; margin-top: 0;">登录可见内容</h5>
                         <p>此内容需要登录后才能查看。</p>' .
                         ($customText ? '<div style="margin-top: 10px; padding: 10px; background: rgba(40,167,69,0.08); border-radius: 4px; font-size: 14px;">' . $customText . '</div>' : '') .
                         '<a href="/vendor/login.php?redirect_url=' . urlencode('/blog?id=' . $postId) . '" class="btn btn-success">
@@ -231,7 +231,7 @@ function processBlogContent($db, $userId, $postId, $content) {
                 } else {
                     // 需要回答问题的隐私内容
                     $processedContent .= '<div class="privacy-notice" style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                        <h5 style="color: #007bff; margin-top: 0;">🔒 隐私内容</h5>
+                        <h5 style="color: #007bff; margin-top: 0;">隐私内容</h5>
                         <p>此内容需要登录并回答问题才能查看。</p>' .
                         ($customText ? '<div style="margin-top: 10px; padding: 10px; background: rgba(0,123,255,0.08); border-radius: 4px; font-size: 14px;">' . $customText . '</div>' : '') .
                         '<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#privacyAccessModal">
