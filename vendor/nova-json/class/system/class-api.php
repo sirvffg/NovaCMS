@@ -57,7 +57,7 @@ class Nova_API {
 
     /**
      * DELETE 请求
-     * @param string $route 路由路径（如 /v1/statuses/shuoshuo/5）
+     * @param string $route 路由路径（如 /v1/statuses/instant/5）
      * @return array|Nova_REST_Response
      */
     public static function delete($route) {

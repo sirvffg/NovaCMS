@@ -168,6 +168,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '')
     exit;
 }
 
+// 手动执行定时任务（cron-manager 插件详情页"定时任务"标签内 AJAX 调用）
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '') === 'run_cron_task') {
+    header('Content-Type: application/json; charset=utf-8');
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'msg' => '安全验证失败，请刷新页面后重试']);
+        exit;
+    }
+
+    $cronTaskId = preg_replace('/[^a-zA-Z0-9_\-]/', '', $_POST['task_id'] ?? '');
+    if ($cronTaskId === '') {
+        echo json_encode(['ok' => false, 'msg' => '任务 ID 无效']);
+        exit;
+    }
+
+    // 加载定时任务依赖类（admin 上下文默认未加载）
+    $novaClassDir = dirname(__DIR__) . '/vendor/nova-json/class';
+    require_once $novaClassDir . '/system/class-hooks.php';
+    require_once $novaClassDir . '/system/class-cron.php';
+    require_once $novaClassDir . '/database/class-db.php';
+    require_once $novaClassDir . '/rest/class-server.php';
+    require_once $novaClassDir . '/plugin/class-plugin.php';
+
+    // 加载所有已启用插件入口并触发 nova_init，让插件注册 cron 任务
+    try {
+        foreach ($plugins as $pi) {
+            if (!empty($pi['duplicate'])) continue;
+            if ($activePluginIds !== null && !in_array($pi['id'], $activePluginIds, true)) continue;
+            if (!empty($pi['entry_path']) && is_file($pi['entry_path'])) {
+                require_once $pi['entry_path'];
+            }
+        }
+        Nova_Hooks::do_action('nova_init');
+    } catch (Throwable $e) {
+        error_log('[Cron run] plugin bootstrap failed: ' . $e->getMessage());
+    }
+
+    $res = Nova_Cron::run_one($cronTaskId, true);
+    $status = $res['status'] ?? 'unknown';
+    if ($status === 'success') {
+        echo json_encode(['ok' => true, 'msg' => "任务 {$cronTaskId} 执行成功"]);
+    } elseif ($status === 'failed') {
+        echo json_encode(['ok' => false, 'msg' => "任务 {$cronTaskId} 执行失败：" . ($res['error'] ?? '未知错误')]);
+    } else {
+        echo json_encode(['ok' => false, 'msg' => "任务 {$cronTaskId} 跳过（" . ($res['reason'] ?? '未知') . "）"]);
+    }
+    exit;
+}
+
 // AJAX 端点：处理启用/禁用请求，返回 JSON
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '') !== 'save_plugin_config') {
     header('Content-Type: application/json; charset=utf-8');
@@ -263,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '')
         exit;
     }
 
-    $cfgFile = $cfgTarget['plugin_dir'] . '/config.json';
+    $cfgFile = Nova_Plugin_Registry::resolve_config_file($cfgTarget);
     $cfgRaw = is_file($cfgFile) ? file_get_contents($cfgFile) : '{"tabs":[]}';
     $cfgData = json_decode($cfgRaw, true);
     if (!is_array($cfgData)) {
@@ -441,7 +490,7 @@ if ($detailPluginKey !== '') {
     if ($detailPlugin !== null) {
         $detailPluginId = $detailPlugin['id'];
         $detailIsActive = $detailPlugin['active'];
-        $detailConfigFile = $detailPlugin['plugin_dir'] . '/config.json';
+        $detailConfigFile = Nova_Plugin_Registry::resolve_config_file($detailPlugin);
         $detailConfigSchema = [];
         if (is_file($detailConfigFile)) {
             $decoded = json_decode(file_get_contents($detailConfigFile), true);
@@ -474,6 +523,12 @@ if ($detailPluginKey !== '') {
             }
         }
         $detailCsrfToken = generateCSRFToken();
+
+        // 自定义详情页标签：插件可提供 plugin/admin/detail.php 将管理功能嵌入详情页标签
+        // （替代独立 plugin-page.php 管理页）。plugin.json 的 detail_tab 字段指定标签标题。
+        $customDetailFile = $detailPlugin['plugin_dir'] . '/plugin/admin/detail.php';
+        $hasCustomDetail  = $detailIsActive && is_file($customDetailFile);
+        $customDetailTab  = $detailPlugin['detail_tab'] ?: '管理';
 
         $page_title = $detailPlugin['name'] . ' - 插件详情';
         require_once 'includes/header.php';
@@ -510,7 +565,7 @@ if ($detailPluginKey !== '') {
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <?php if ($detailIsActive && is_file($detailPlugin['plugin_dir'] . '/plugin/admin/index.php')): ?>
+                    <?php if ($detailIsActive && is_file($detailPlugin['plugin_dir'] . '/plugin/admin/index.php') && !$hasCustomDetail): ?>
                         <a href="/admin/plugin-page.php?plugin=<?= rawurlencode($detailPluginId) ?>" class="btn btn-outline-primary btn-sm" data-pjax>
                             <i class="bi bi-sliders me-1"></i>管理
                         </a>
@@ -523,6 +578,9 @@ if ($detailPluginKey !== '') {
 
             <div class="plugin-detail-tabs">
                 <button class="plugin-detail-tab active" data-tab="info" type="button">详情</button>
+                <?php if ($hasCustomDetail): ?>
+                    <button class="plugin-detail-tab" data-tab="custom-detail" type="button"><?= e($customDetailTab) ?></button>
+                <?php endif; ?>
                 <?php if (!empty($detailConfigSchema['tabs'])): ?>
                     <?php foreach ($detailConfigSchema['tabs'] as $dIdx => $dTab): ?>
                         <button class="plugin-detail-tab" data-tab="config-<?= $dIdx ?>" type="button"><?= e($dTab['title'] ?? '配置') ?></button>
@@ -599,7 +657,7 @@ if ($detailPluginKey !== '') {
                             <?php elseif (is_file($detailConfigFile)): ?>
                             <tr>
                                 <th scope="row">配置文件</th>
-                                <td><code>config.json</code> <span class="text-muted small">（<?= filesize($detailConfigFile) ?> 字节）</span></td>
+                                <td><code><?= e(str_replace(str_replace('\\','/',dirname(__DIR__)).'/','',str_replace('\\','/',$detailConfigFile))) ?: 'config.json' ?></code> <span class="text-muted small">（<?= filesize($detailConfigFile) ?> 字节）</span></td>
                             </tr>
                             <?php endif; ?>
                         </tbody>
@@ -658,6 +716,13 @@ if ($detailPluginKey !== '') {
                             </form>
                         </div>
                     <?php endforeach; ?>
+                <?php endif; ?>
+
+                <!-- 自定义详情页 Tab（由 plugin/admin/detail.php 提供） -->
+                <?php if ($hasCustomDetail): ?>
+                    <div class="tab-pane-content d-none" id="tab-custom-detail">
+                        <?php require $customDetailFile; ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

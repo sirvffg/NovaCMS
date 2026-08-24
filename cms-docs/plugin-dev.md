@@ -22,6 +22,7 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
   - [数据库操作](#44-数据库操作)
   - [后台页面与菜单](#45-后台页面与菜单)
   - [文件上传与图片处理](#46-文件上传与图片处理)
+  - [定时任务（Nova_Cron）](#47-定时任务nova_cron)
 - [🗃 API 参考](#5-api-参考)
   - [Nova\_Plugin](#51-nova_plugin)
   - [Nova\_Hooks](#52-nova_hooks)
@@ -33,6 +34,7 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
   - [Nova\_Backend\_Notice](#58-nova_backend_notice)
   - [Nova\_API](#59-nova_api)
   - [Nova\_Proxy](#510-nova_proxy)
+  - [Nova\_Cron](#511-nova_cron)
 - [🗃 案例和最佳实践](#6-案例和最佳实践)
   - [示例一：文章统计插件](#61-示例一文章统计插件)
   - [示例二：内容审核插件](#62-示例二内容审核插件)
@@ -1188,6 +1190,92 @@ try {
 
 ***
 
+### 4.7 定时任务（Nova_Cron）
+
+NovaCMS 提供统一的定时任务机制（`Nova_Cron`），让插件可以注册周期性任务（清理过期数据、生成缓存、发送订阅邮件、数据同步等），无需自行实现调度。
+
+#### 工作模式
+
+| 模式 | 调用方式 | 适用环境 |
+|------|----------|----------|
+| 面板定时任务 | 宝塔/1Panel 后台创建定时任务，调用 `vendor/public/cron/cron.php` | 有 cron 的服务器（推荐） |
+| 虚拟主机访问触发 | 由 `index.php` 自动调用 `Nova_Cron::maybe_run_on_visit()`，异步触发 `cron.php` 在独立进程执行 | 无 cron 的虚拟主机 |
+
+两种模式可共存：面板 cron 保证准点执行，访问触发作为兜底。任务并发由 DB 原子锁兜底，不会重复执行。
+
+#### 注册定时任务
+
+在插件 `init()` 中调用 `Nova_Cron::register()`，与 `Nova_Hooks::add_action()` 一致的调用风格：
+
+```php
+class MyPlugin extends Nova_Plugin {
+    public function init() {
+        // 参数：任务ID / 间隔秒数（最小 60） / 回调 / 描述
+        Nova_Cron::register('myplugin_cleanup', 3600, [$this, 'cleanup'], '每小时清理过期数据');
+    }
+
+    public function cleanup() {
+        $db = $this->db();
+        $db->delete('my_plugin_logs', ['created_at <' => date('Y-m-d H:i:s', strtotime('-7 days'))]);
+        // 失败抛异常即可，会被捕获并记录到 cms_cron_tasks.last_error
+    }
+}
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `$id` | string | 任务唯一 ID（字母开头，仅含字母/数字/下划线/连字符） |
+| `$interval` | int | 执行间隔（秒），最小 60 |
+| `$callback` | callable | 回调（无参数），失败抛异常即可 |
+| `$description` | string | 任务描述（可选） |
+
+> 任务 ID 建议以插件 slug 为前缀（如 `myplugin_cleanup`），避免与其他插件冲突。
+
+#### 配置面板定时任务（宝塔/1Panel）
+
+在宝塔或 1Panel 后台创建定时任务，二选一：
+
+```
+Shell 脚本：  php /www/wwwroot/站点目录/vendor/public/cron/cron.php
+访问 URL：    https://你的域名/vendor/public/cron/cron.php
+执行频率：    每 1~5 分钟
+```
+
+> 到期任务的实际执行周期由各任务注册时的 `interval` 决定，面板调用频率过高只会快速跳过未到期任务，无副作用。
+
+#### 虚拟主机自动触发
+
+前台 `index.php` 已内置访问触发：每次访客请求时调用 `Nova_Cron::maybe_run_on_visit()`，内部异步触发 `cron.php` 在独立进程执行（非阻塞），限频 60s 避免频繁触发。无需任何配置，部署到虚拟主机即自动生效。
+
+#### 任务状态与并发安全
+
+任务状态存储于 `cms_cron_tasks` 表（首次调用自动建表）：
+
+| 字段 | 说明 |
+|------|------|
+| `task_id` | 任务 ID（主键） |
+| `last_run_at` | 上次执行时间 |
+| `last_status` | `success` / `failed` |
+| `last_error` | 失败时的异常信息 |
+| `locked_until` | 锁定截止时间，防止并发执行 |
+
+并发安全通过 DB 原子 `UPDATE ... WHERE locked_until IS NULL OR locked_until < NOW()` 获取锁实现，CLI cron 与访问触发并发也不会重复执行同一任务。
+
+#### 查询任务状态
+
+```php
+// 获取上次执行信息
+$info = Nova_Cron::get_last_run('myplugin_cleanup');
+// ['last_run_at'=>'2026-08-23 10:00:00', 'last_status'=>'success', 'last_error'=>null]
+
+// 检查任务是否到期
+if (Nova_Cron::is_due('myplugin_cleanup')) {
+    // 即将执行
+}
+```
+
+***
+
 ## 5. API 参考
 
 ### 5.1 Nova\_Plugin
@@ -1410,7 +1498,7 @@ $result = Nova_API::put('/v1/statuses/guestbook/1/reply', [
 ]);
 
 // DELETE 请求
-$result = Nova_API::delete('/v1/statuses/shuoshuo/5');
+$result = Nova_API::delete('/v1/statuses/instant/5');
 ```
 
 ***
@@ -1468,6 +1556,45 @@ $result = Nova_Proxy::internal('/v1/statuses/guestbook', 'POST', [
 ```
 
 > **注意**: 在 `nova-plugins/` 或 `nova-themes/` 目录外的代码（如 `routes/` 路由文件、根目录脚本）调用 `Nova_Proxy` 会抛出 `RuntimeException`。
+
+***
+
+### 5.11 Nova\_Cron
+
+定时任务管理类，提供插件注册与调度执行定时任务的统一机制。
+
+**文件**: `vendor/nova-json/class/system/class-cron.php`
+
+**执行入口**: `vendor/public/cron/cron.php`（CLI / HTTP，供宝塔/1Panel 定时调用）
+
+**静态方法**
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `register()` | `(id, interval, callback, description=''): bool` | 注册定时任务（间隔最小 60s） |
+| `unregister()` | `(id): void` | 注销任务 |
+| `get_tasks()` | `(): array` | 获取所有已注册任务元数据 |
+| `run_due()` | `(force=false): array` | 执行所有到期任务，返回每个任务结果 |
+| `run_one()` | `(id, force=false): array` | 执行单个任务（status: success/failed/skipped） |
+| `maybe_run_on_visit()` | `(): void` | 访问触发（异步非阻塞，由 index.php 调用） |
+| `get_last_run()` | `(id): array/null` | 获取任务上次执行信息 |
+| `is_due()` | `(id): bool` | 检查任务是否到期 |
+
+**示例**
+
+```php
+class MyPlugin extends Nova_Plugin {
+    public function init() {
+        Nova_Cron::register('myplugin_sync', 1800, [$this, 'sync'], '每 30 分钟同步数据');
+    }
+
+    public function sync() {
+        // 任务逻辑
+    }
+}
+```
+
+详见 [4.7 定时任务（Nova_Cron）](#47-定时任务nova_cron)。
 
 ***
 
@@ -1736,9 +1863,9 @@ new ShortcodePlugin();
 | ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | 1.0+       | 1.0       | 初始版本                                                                                                                                      |
 | 1.1+       | 1.1       | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；`id` 由开发者手动填写（必须为英文），排在 `name` 之前；启用/禁用以 `id` 为准；支持 `page_routes` 自定义页面路由；支持 `config.json` 声明式配置表单 |
-| 1.2+       | 1.2       | 前台插件运行时：`index.php` 加载已启用插件入口并触发 `nova_init`；新增 4 个前台注入钩子 `nova_head` / `nova_body_start` / `nova_navbar_end` / `nova_footer`，通过输出缓冲拦截向 HTML 注入内容，无需修改主题文件；新增 `nova_inject` 过滤器，支持基于 CSS 选择器的任意位置注入（JS DOM 操作 + 重试机制，适配异步渲染） |
+| 1.2+       | 1.2       | 前台插件运行时：`index.php` 加载已启用插件入口并触发 `nova_init`；新增 4 个前台注入钩子 `nova_head` / `nova_body_start` / `nova_navbar_end` / `nova_footer`，通过输出缓冲拦截向 HTML 注入内容，无需修改主题文件；新增 `nova_inject` 过滤器，支持基于 CSS 选择器的任意位置注入（JS DOM 操作 + 重试机制，适配异步渲染）；新增 `Nova_Cron` 定时任务管理类（`system/class-cron.php`），插件可通过 `Nova_Cron::register()` 注册周期性任务，支持宝塔/1Panel 面板定时调用 `vendor/public/cron/cron.php` 与虚拟主机访问触发两种执行模式 |
 
 ***
 
-> 最后更新：2026-08-20
+> 最后更新：2026-08-23
 

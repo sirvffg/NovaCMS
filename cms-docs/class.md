@@ -90,6 +90,66 @@ $filtered = Nova_Hooks::apply_filters('nova_post_data', $originalData);
 
 ---
 
+### Nova_Cron
+
+**文件**: `system/class-cron.php`
+
+定时任务管理类，提供插件注册与调度执行定时任务的统一机制。支持宝塔/1Panel 后台定时调用 `cron.php`（CLI/HTTP），以及虚拟主机下由访客请求异步触发（不阻塞）。
+
+**执行模式**
+
+| 模式 | 调用方式 | 说明 |
+|------|----------|------|
+| 面板定时任务 | `php vendor/public/cron/cron.php` 或访问 `https://域名/vendor/public/cron/cron.php` | 宝塔/1Panel 后台创建定时任务，建议每 1~5 分钟 |
+| 虚拟主机访问触发 | `Nova_Cron::maybe_run_on_visit()` | 由 index.php 自动调用，异步触发 cron.php 在独立进程执行，限频 60s |
+
+**任务状态表**：`cms_cron_tasks`（首次调用自动建表），字段：`task_id`、`last_run_at`、`last_status`(success/failed)、`last_error`、`locked_until`(并发锁)。
+
+**方法说明**
+
+| 方法 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `register($id, $interval, $callback, $description='')` | id, interval, callback, description | bool | 注册定时任务（间隔最小 60s） |
+| `unregister($id)` | id | void | 注销任务 |
+| `get_tasks()` | - | array | 获取所有已注册任务元数据 |
+| `run_due($force=false)` | force | array | 执行所有到期任务，返回每个任务结果 |
+| `run_one($id, $force=false)` | id, force | array | 执行单个任务（status: success/failed/skipped） |
+| `maybe_run_on_visit()` | - | void | 访问触发（异步非阻塞，由 index.php 调用） |
+| `get_last_run($id)` | id | array/null | 获取任务上次执行信息 |
+| `is_due($id)` | id | bool | 检查任务是否到期 |
+
+**并发安全**：`run_one()` 通过 DB 原子 `UPDATE ... WHERE locked_until IS NULL OR locked_until < NOW()` 获取锁，CLI cron 与访问触发并发也不会重复执行同一任务。
+
+**示例**
+
+```php
+// 在插件 init() 中注册（与 Nova_Hooks 一致的调用风格）
+class MyPlugin extends Nova_Plugin {
+    public function init() {
+        // 每 1 小时清理一次过期备份
+        Nova_Cron::register('backup_cleanup', 3600, [$this, 'cleanup'], '清理过期备份');
+    }
+
+    public function cleanup() {
+        $db = $this->db();
+        $db->delete('backups', ['expires_at <' => date('Y-m-d H:i:s')]);
+        // 失败抛异常即可，会被捕获并记录到 cms_cron_tasks.last_error
+    }
+}
+```
+
+**面板定时任务配置**（宝塔/1Panel）
+
+```
+Shell 脚本：  php /www/wwwroot/站点目录/vendor/public/cron/cron.php
+访问 URL：    https://你的域名/vendor/public/cron/cron.php
+执行频率：    每 1~5 分钟
+```
+
+> 到期任务的实际执行周期由各任务注册时的 `interval` 决定，面板调用频率过高只会快速跳过未到期任务。
+
+---
+
 ## 2. REST - API 路由引擎
 
 ### Nova_REST_Server
@@ -286,7 +346,7 @@ $post  = $db->get_row("SELECT * FROM posts WHERE id = ?", [1]);
 $posts = $db->get_results("SELECT * FROM posts ORDER BY id DESC");
 
 // 写入
-$id = $db->insert('shuoshuo', [
+$id = $db->insert('instant', [
     'content' => '你好',
     'created_at' => date('Y-m-d H:i:s'),
 ]);
@@ -506,11 +566,11 @@ $path = $mig->generate('add_email_to_users');
 $seeder = new Nova_DB_Seeder();
 
 // 插入指定数据
-$seeder->table('shuoshuo')
+$seeder->table('instant')
     ->columns(['content', 'created_at'])
     ->seed([
-        ['第一条说说', '2025-01-01 12:00:00'],
-        ['第二条说说', '2025-01-02 12:00:00'],
+        ['第一条片刻', '2025-01-01 12:00:00'],
+        ['第二条片刻', '2025-01-02 12:00:00'],
     ]);
 
 // 从 JSON 导入

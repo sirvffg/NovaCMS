@@ -83,6 +83,7 @@ require_once $novaDir . '/class/database/class-db-migration.php';
 require_once $novaDir . '/class/database/class-db-seeder.php';
 require_once $novaDir . '/class/system/class-hooks.php';
 require_once $novaDir . '/class/system/class-api.php';
+require_once $novaDir . '/class/system/class-cron.php';
 require_once $novaDir . '/class/plugin/class-plugin.php';
 require_once $novaDir . '/class/plugin/class-plugin-registry.php';
 require_once $novaDir . '/class/theme/class-theme.php';
@@ -308,12 +309,12 @@ $route_files = [
 
     // 站点路由
     'statuses/settings.php',  // 站点设置信息
-    'statuses/shuoshuo.php',  // 说说
+    'statuses/instant.php',  // 片刻
     'statuses/guestbook.php', // 留言板
     'statuses/terms.php',     // 协议与政策
 
     // 内容功能路由
-    'content/content.php',    // 页面、文档、订阅与智能问答
+    'content/content.php',    // 页面、订阅
 
 ];
 

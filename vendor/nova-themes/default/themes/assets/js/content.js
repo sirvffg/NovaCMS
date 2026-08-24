@@ -277,7 +277,7 @@
             clear(container);
             var posts = Array.isArray(data.items) ? data.items : [];
             if (!posts.length) {
-                container.appendChild(emptyState('还没有公开文章', '第一篇内容发布后，会在这里出现。', '前往文档中心', '/docs'));
+                container.appendChild(emptyState('还没有公开文章', '第一篇内容发布后，会在这里出现。', '前往博客', '/blog'));
             } else {
                 posts.forEach(function (post, index) {
                     container.appendChild(renderHomePost(post, index));

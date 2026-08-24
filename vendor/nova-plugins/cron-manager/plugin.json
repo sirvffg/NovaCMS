@@ -1,0 +1,13 @@
+{
+    "id": "cron-manager",
+    "name": "定时任务管理",
+    "uri": "https://lygalaxy.cn",
+    "description": "管理 NovaCMS 定时任务：切换执行模式（服务器/虚拟面板）、查看已注册任务及执行状态",
+    "version": "1.0.0",
+    "author": "LyGalaxy",
+    "author_uri": "https://lygalaxy.cn",
+    "entry": "plugin/plugin.php",
+    "config_path": "../../public/cron/config.json",
+    "detail_tab": "定时任务",
+    "min_nova_version": "1.2"
+}

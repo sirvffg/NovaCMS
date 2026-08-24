@@ -4,11 +4,7 @@
  *
  * GET  /v1/content/pages
  * GET  /v1/content/pages/{slug}
- * GET  /v1/content/documents
- * GET  /v1/content/documents/{slug}
  * POST /v1/content/subscribe
- * GET  /v1/content/ai
- * POST /v1/content/ai/ask
  */
 
 register_rest_route('v1', '/content/pages', [
@@ -21,29 +17,9 @@ register_rest_route('v1', '/content/pages/{slug}', [
     'callback' => 'nova_content_api_page',
 ]);
 
-register_rest_route('v1', '/content/documents', [
-    'methods'  => 'GET',
-    'callback' => 'nova_content_api_documents',
-]);
-
-register_rest_route('v1', '/content/documents/{slug}', [
-    'methods'  => 'GET',
-    'callback' => 'nova_content_api_document',
-]);
-
 register_rest_route('v1', '/content/subscribe', [
     'methods'  => 'POST',
     'callback' => 'nova_content_api_subscribe',
-]);
-
-register_rest_route('v1', '/content/ai', [
-    'methods'  => 'GET',
-    'callback' => 'nova_content_api_ai_settings',
-]);
-
-register_rest_route('v1', '/content/ai/ask', [
-    'methods'  => 'POST',
-    'callback' => 'nova_content_api_ai_ask',
 ]);
 
 function nova_content_api_response($data, $status = 200, array $headers = []) {
@@ -118,39 +94,6 @@ function nova_content_api_page($request) {
     }
 }
 
-function nova_content_api_documents($request) {
-    try {
-        $featuredParam = $request->get_param('featured');
-        $options = [
-            'page'     => $request->get_param('page') ?? 1,
-            'per_page' => $request->get_param('per_page') ?? 12,
-            'category' => $request->get_param('category') ?? '',
-            'search'   => $request->get_param('search') ?? $request->get_param('q') ?? '',
-        ];
-        if ($featuredParam !== null && $featuredParam !== '') {
-            $options['featured'] = nova_content_api_boolean($featuredParam);
-        }
-
-        $result = contentModuleListPublishedDocuments($options);
-        $result['categories'] = contentModuleGetDocumentCategories();
-        return nova_content_api_success($result);
-    } catch (Throwable $e) {
-        return nova_content_api_internal_error($e, 'document list');
-    }
-}
-
-function nova_content_api_document($request) {
-    try {
-        $item = contentModuleGetPublishedDocumentBySlug($request->get_param('slug'));
-        if (!$item) {
-            return nova_content_api_error('rest_not_found', '文档不存在', 404);
-        }
-        return nova_content_api_success(['item' => $item]);
-    } catch (Throwable $e) {
-        return nova_content_api_internal_error($e, 'document detail');
-    }
-}
-
 function nova_content_api_subscribe($request) {
     $emailParam = $request->get_param('email');
     $nameParam = $request->get_param('name');
@@ -205,53 +148,5 @@ function nova_content_api_subscribe($request) {
         return nova_content_api_error('rest_invalid_request', '提交内容格式有误', 400);
     } catch (Throwable $e) {
         return nova_content_api_internal_error($e, 'subscription');
-    }
-}
-
-function nova_content_api_ai_settings($request) {
-    try {
-        $settings = contentModuleGetAiSettings();
-        return nova_content_api_success([
-            'enabled'         => $settings['enabled'],
-            'welcome_message' => $settings['welcome_message'],
-            'max_results'     => $settings['max_results'],
-        ]);
-    } catch (Throwable $e) {
-        return nova_content_api_internal_error($e, 'AI settings');
-    }
-}
-
-function nova_content_api_ai_ask($request) {
-    $questionParam = $request->get_param('question');
-    if (!is_scalar($questionParam)) {
-        return nova_content_api_error('rest_invalid_question', '问题格式有误', 400);
-    }
-    $question = trim((string)$questionParam);
-    $length = contentModuleTextLength(strip_tags($question));
-    if ($length < 2 || $length > 500) {
-        return nova_content_api_error(
-            'rest_invalid_question',
-            '问题长度应为 2 至 500 个字符',
-            400
-        );
-    }
-
-    $rateLimit = checkRateLimit('content_ai_ask', 30, 300);
-    if (!$rateLimit['allowed']) {
-        return nova_content_api_error(
-            'rest_rate_limited',
-            '提问过于频繁，请稍后再试',
-            429,
-            ['Retry-After' => (string)max(1, (int)$rateLimit['retryAfter'])]
-        );
-    }
-
-    try {
-        $result = contentModuleAsk($question);
-        return nova_content_api_success($result, $result['matched'] ? '匹配成功' : '已完成查询');
-    } catch (InvalidArgumentException $e) {
-        return nova_content_api_error('rest_invalid_question', '问题格式有误', 400);
-    } catch (Throwable $e) {
-        return nova_content_api_internal_error($e, 'AI query');
     }
 }

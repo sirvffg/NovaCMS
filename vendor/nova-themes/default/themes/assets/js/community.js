@@ -307,7 +307,7 @@
         var requestedPage = appendItems ? Math.min(momentTotalPages, momentPage + 1) : 1;
         busy(container, true); if (more) more.disabled = true;
         try {
-            var data = await requestJson('/nova-json/v1/statuses/shuoshuo?page=' + requestedPage + '&per_page=12');
+            var data = await requestJson('/nova-json/v1/statuses/instant?page=' + requestedPage + '&per_page=12');
             var items = Array.isArray(data.items) ? data.items : [];
             momentTotalPages = Math.max(1, Math.ceil((Number(data.total) || 0) / Math.max(1, Number(data.per_page) || 12)));
             if (!appendItems) clear(container);

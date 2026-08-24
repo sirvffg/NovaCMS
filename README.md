@@ -7,7 +7,7 @@
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge\&logo=bootstrap\&logoColor=white)
 ![License](https://img.shields.io/badge/License-Open%20Source-success?style=for-the-badge)
 
-NovaCMS 是一套基于原生 PHP + MySQL + Bootstrap 5 构建的单租户 CMS，无需复杂框架，部署简单，自带后台、主题、插件、API 与行为验证码，适合用于搭建个人博客、文档站、作品集与小型社区站点。
+NovaCMS 是一套基于原生 PHP + MySQL + Bootstrap 5 构建的单租户 CMS，无需复杂框架，部署简单，自带后台、主题、插件、API 与行为验证码，适合用于搭建个人博客、作品集与小型社区站点。
 
 ***
 
@@ -29,8 +29,8 @@ NovaCMS 是一套基于原生 PHP + MySQL + Bootstrap 5 构建的单租户 CMS�
 
 **内容管理**
 
-- 文章（Markdown / 双栏编辑器 EasyMDE）、独立页面、文档中心
-- 说说（短动态）、相册（图集 / 单图）、留言板、友情链接
+- 文章（Markdown / 双栏编辑器 EasyMDE）、独立页面
+- 片刻（短动态）、相册（图集 / 单图）、留言板、友情链接
 - 分类与标签、封面与附件管理、文章加密与付费下载
 - RSS、Sitemap、SEO 工具（meta / 关键词 / 友好链接）
 
@@ -166,7 +166,7 @@ NovaCMS/
 
 ### 主题
 
-主题存放于 `vendor/nova-themes/`，每个主题一个目录，通过 `theme.json` 描述元信息，支持 `partials/`（头部、导航、页脚）与独立的 `assets/` 资源。默认主题 `default` 包含文章、页面、文档、说说、相册、留言板、友链、个人中心等模板。
+主题存放于 `vendor/nova-themes/`，每个主题一个目录，通过 `theme.json` 描述元信息，支持 `partials/`（头部、导航、页脚）与独立的 `assets/` 资源。默认主题 `default` 包含文章、页面、片刻、相册、留言板、友链、个人中心等模板。
 
 主题目录至少需要提供 `theme.json`、`index.php` 与 `404.php`。后台会校验主题标识、清单格式、截图路径和必需模板；校验失败的主题不能启用。若数据库中配置的主题被删除或损坏，前台会自动回退到 `default`，管理员也可以在不切换当前主题的情况下安全预览其他有效主题。
 
@@ -200,7 +200,7 @@ NovaCMS 通过 `vendor/nova-json/` 提供一套 RESTful API 框架，内置路�
 - `content` 内容
 - `posts` 文章 / 分类 / 标签 / 评论 / 搜索 / 下载 / 付费 / 隐私
 - `links` 友链 / 申请
-- `statuses` 说说 / 相册 / 留言板 / 设置 / 条款
+- `statuses` 片刻 / 相册 / 留言板 / 设置 / 条款
 - `users` 认证 / 用户
 
 API 开发文档见 `vendor/nova-json/docs/`（`routes.md`、`plugin-dev.md`、`class.md`）。

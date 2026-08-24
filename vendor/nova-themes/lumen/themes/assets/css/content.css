@@ -9,8 +9,6 @@
 .home-blog-page,
 .blog-page,
 .article-page,
-.docs-page,
-.document-page,
 .content-page,
 .lumen-announcement-page {
     background: transparent;
@@ -57,9 +55,6 @@
 .article-shell,
 .comments-panel,
 .content-page-card,
-.docs-sidebar,
-.docs-help-card,
-.document-main,
 .article-aside-card,
 .empty-state,
 .lumen-announcement-card {
@@ -78,9 +73,6 @@
 [data-bs-theme="dark"] .article-shell,
 [data-bs-theme="dark"] .comments-panel,
 [data-bs-theme="dark"] .content-page-card,
-[data-bs-theme="dark"] .docs-sidebar,
-[data-bs-theme="dark"] .docs-help-card,
-[data-bs-theme="dark"] .document-main,
 [data-bs-theme="dark"] .article-aside-card,
 [data-bs-theme="dark"] .empty-state,
 [data-bs-theme="dark"] .lumen-announcement-card {
@@ -144,8 +136,7 @@
 }
 
 .article-shell,
-.content-page-card,
-.document-main {
+.content-page-card {
     border-radius: 34px;
 }
 
@@ -208,9 +199,6 @@
     .article-shell,
     .comments-panel,
     .content-page-card,
-    .docs-sidebar,
-    .docs-help-card,
-    .document-main,
     .article-aside-card,
     .empty-state,
     .lumen-announcement-card {
@@ -222,6 +210,6 @@
 
 @media (max-width: 767.98px) {
     .home-blog-masthead { min-height: auto; padding-top: 9.5rem; }
-    .article-shell, .content-page-card, .document-main { border-radius: 25px; }
+    .article-shell, .content-page-card { border-radius: 25px; }
     .lumen-announcement-card { border-radius: 22px; }
 }

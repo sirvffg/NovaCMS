@@ -98,6 +98,8 @@ class Nova_Plugin_Registry {
                 'duplicate'        => $isDuplicate,
                 'page_routes'      => $info['page_routes'] ?? [],
                 'sidebar'          => array_key_exists('sidebar', $info) ? (bool)$info['sidebar'] : true,
+                'config_path'      => $info['config_path'] ?? '',
+                'detail_tab'       => $info['detail_tab'] ?? '',
             ];
         }
 
@@ -119,6 +121,44 @@ class Nova_Plugin_Registry {
             }
         }
         return null;
+    }
+
+    /**
+     * 解析插件配置文件路径
+     *
+     * 默认为 plugin_dir/config.json。若 plugin.json 声明了 config_path
+     * （相对 plugin_dir 的路径），则解析到该路径——用于将配置存放于插件目录之外
+     * （如 vendor/public/cron/），防止误删插件时丢失配置。
+     * 解析结果必须位于项目根目录内，否则回退默认路径。
+     *
+     * @param array $plugin scan_all() 返回的插件信息
+     * @return string 配置文件绝对路径
+     */
+    public static function resolve_config_file(array $plugin) {
+        $default = $plugin['plugin_dir'] . '/config.json';
+        if (empty($plugin['config_path'])) {
+            return $default;
+        }
+        // 拼接相对路径并对父目录取 realpath（文件可能尚未创建）
+        $target    = $plugin['plugin_dir'] . '/' . $plugin['config_path'];
+        $realParent = realpath(dirname($target));
+        if ($realParent === false) {
+            return $default;
+        }
+        $resolved = $realParent . DIRECTORY_SEPARATOR . basename($target);
+
+        // 安全校验：必须位于项目根目录内（带尾斜杠避免前缀绕过）
+        $projectRoot = dirname(__DIR__, 4); // → 项目根
+        $realRoot    = realpath($projectRoot);
+        if ($realRoot === false) {
+            return $default;
+        }
+        $resolvedNorm = str_replace('\\', '/', $resolved);
+        $rootNorm     = str_replace('\\', '/', $realRoot);
+        if (strpos($resolvedNorm . '/', $rootNorm . '/') !== 0) {
+            return $default; // 路径逃逸项目根，回退默认
+        }
+        return $resolved;
     }
 
     /**

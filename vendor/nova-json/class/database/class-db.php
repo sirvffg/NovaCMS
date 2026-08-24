@@ -20,7 +20,7 @@ class Nova_DB {
 
     /**
      * 获取单行单列的值
-     * $db->get_var("SELECT COUNT(*) FROM shuoshuo");
+     * $db->get_var("SELECT COUNT(*) FROM instant");
      * $db->get_var("SELECT name FROM users WHERE id = ?", [1]);
      */
     public function get_var($sql, $params = []) {
@@ -41,7 +41,7 @@ class Nova_DB {
 
     /**
      * 获取多行数据
-     * $db->get_results("SELECT * FROM shuoshuo ORDER BY id DESC");
+     * $db->get_results("SELECT * FROM instant ORDER BY id DESC");
      */
     public function get_results($sql, $params = []) {
         $stmt = $this->pdo->prepare($sql);
@@ -53,7 +53,7 @@ class Nova_DB {
 
     /**
      * 插入一行数据
-     * $db->insert('shuoshuo', ['content' => '你好', 'created_at' => date('Y-m-d H:i:s')]);
+     * $db->insert('instant', ['content' => '你好', 'created_at' => date('Y-m-d H:i:s')]);
      * 返回新插入的 ID（无自增时返回 0）
      */
     public function insert($table, $data) {
@@ -67,7 +67,7 @@ class Nova_DB {
 
     /**
      * 批量插入多行
-     * $db->insert_batch('shuoshuo', [
+     * $db->insert_batch('instant', [
      *     ['content' => 'a', 'created_at' => '...'],
      *     ['content' => 'b', 'created_at' => '...'],
      * ]);
@@ -94,8 +94,8 @@ class Nova_DB {
 
     /**
      * 更新数据
-     * $db->update('shuoshuo', ['content' => '新内容'], ['id' => 1]);
-     * $db->update('shuoshuo', ['content' => '新内容'], ['id' => 1, 'status' => 1]);
+     * $db->update('instant', ['content' => '新内容'], ['id' => 1]);
+     * $db->update('instant', ['content' => '新内容'], ['id' => 1, 'status' => 1]);
      * 返回受影响行数
      */
     public function update($table, $data, $where) {
@@ -113,8 +113,8 @@ class Nova_DB {
 
     /**
      * 删除数据
-     * $db->delete('shuoshuo', ['id' => 1]);
-     * $db->delete('shuoshuo', ['id' => 1, 'author_id' => 5]);
+     * $db->delete('instant', ['id' => 1]);
+     * $db->delete('instant', ['id' => 1, 'author_id' => 5]);
      * 返回受影响行数
      */
     public function delete($table, $where) {

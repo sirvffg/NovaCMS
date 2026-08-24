@@ -1,0 +1,8 @@
+# NovaCMS 定时任务目录
+# cron.php 允许 HTTP 访问（宝塔/1Panel "访问 URL" 定时任务入口）
+# 核心类 Nova_Cron 位于 vendor/nova-json/class/system/class-cron.php，
+# 由 vendor/nova-json/.htaccess 统一禁止直接访问。
+# 禁止 HTTP 访问配置文件（config.json 储存定时任务模式等配置）
+<FilesMatch "\.json$">
+    Require all denied
+</FilesMatch>

@@ -1,42 +1,42 @@
 <?php
 /**
- * Statuses Shuoshuo 路由
+ * Statuses Instant 路由
  * 命名空间: v1
  *
- * GET  /v1/statuses/shuoshuo              - 获取说说列表
- * POST /v1/statuses/shuoshuo              - 发布说说（管理员）
- * DELETE /v1/statuses/shuoshuo/{id}       - 删除说说并重排 ID（管理员）
+ * GET  /v1/statuses/instant              - 获取片刻列表
+ * POST /v1/statuses/instant              - 发布片刻（管理员）
+ * DELETE /v1/statuses/instant/{id}       - 删除片刻并重排 ID（管理员）
  *
  * 参数（GET）:
  *   page     - 页码（默认 1）
  *   per_page - 每页条数（默认 20）
  *
  * 参数（POST）:
- *   content   - 说说内容（必填）
+ *   content   - 片刻内容（必填）
  *   image     - 图片文件（可选，multipart/form-data，支持 jpg/png/gif/webp，最大 5MB）
  */
 
-register_rest_route('v1', '/statuses/shuoshuo', [
+register_rest_route('v1', '/statuses/instant', [
     'methods'  => 'GET',
-    'callback' => 'nova_get_shuoshuo',
+    'callback' => 'nova_get_instant',
 ]);
 
-register_rest_route('v1', '/statuses/shuoshuo', [
+register_rest_route('v1', '/statuses/instant', [
     'methods'  => 'POST',
-    'callback' => 'nova_add_shuoshuo',
+    'callback' => 'nova_add_instant',
 ]);
 
-register_rest_route('v1', '/statuses/shuoshuo/{id}', [
+register_rest_route('v1', '/statuses/instant/{id}', [
     'methods'  => 'DELETE',
-    'callback' => 'nova_delete_shuoshuo',
+    'callback' => 'nova_delete_instant',
 ]);
 
 /**
- * 获取说说列表
+ * 获取片刻列表
  */
-function nova_get_shuoshuo($request) {
+function nova_get_instant($request) {
     $db       = getDB();
-    $total    = (int)$db->query("SELECT COUNT(*) FROM shuoshuo")->fetchColumn();
+    $total    = (int)$db->query("SELECT COUNT(*) FROM instant")->fetchColumn();
 
     // 分页：不传 per_page 则返回全部
     $raw_per_page = $request->get_param('per_page');
@@ -47,15 +47,15 @@ function nova_get_shuoshuo($request) {
         $per_page = min(50, max(1, (int)$raw_per_page));
         $offset  = ($page - 1) * $per_page;
 
-        $stmt = $db->prepare("SELECT * FROM shuoshuo ORDER BY created_at DESC LIMIT ?, ?");
+        $stmt = $db->prepare("SELECT * FROM instant ORDER BY created_at DESC LIMIT ?, ?");
         $stmt->bindValue(1, $offset, PDO::PARAM_INT);
         $stmt->bindValue(2, $per_page, PDO::PARAM_INT);
         $stmt->execute();
-        $shuoshuos = $stmt->fetchAll();
+        $instants = $stmt->fetchAll();
     } else {
         $page     = 1;
         $per_page = $total;
-        $shuoshuos = $db->query("SELECT * FROM shuoshuo ORDER BY created_at DESC")->fetchAll();
+        $instants = $db->query("SELECT * FROM instant ORDER BY created_at DESC")->fetchAll();
     }
 
     $items = array_map(function($item) {
@@ -65,7 +65,7 @@ function nova_get_shuoshuo($request) {
             'image_path' => $item['image_path'] ?? '',
             'created_at' => $item['created_at'],
         ];
-    }, $shuoshuos);
+    }, $instants);
 
     return [
         'code'    => 'rest_ok',
@@ -81,14 +81,14 @@ function nova_get_shuoshuo($request) {
 }
 
 /**
- * 发布说说（管理员）
+ * 发布片刻（管理员）
  */
-function nova_add_shuoshuo($request) {
+function nova_add_instant($request) {
     // ── 权限检查 ──
     if (!v1_is_admin(v1_get_current_user_id())) {
         return [
             'code'    => 'rest_forbidden',
-            'message' => '无权操作，仅管理员可发布说说',
+            'message' => '无权操作，仅管理员可发布片刻',
             'data'    => ['status' => 403],
         ];
     }
@@ -107,7 +107,7 @@ function nova_add_shuoshuo($request) {
     // ── 处理图片上传 ──
     $imagePath = '';
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = dirname(__DIR__, 4) . '/uploads/shuoshuo/';
+        $uploadDir = dirname(__DIR__, 4) . '/uploads/instant/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
@@ -178,12 +178,12 @@ function nova_add_shuoshuo($request) {
         $targetFile  = $uploadDir . $newFileName;
 
         if (move_uploaded_file($tmpPath, $targetFile)) {
-            $imagePath = '/uploads/shuoshuo/' . $newFileName;
+            $imagePath = '/uploads/instant/' . $newFileName;
         }
     }
 
     // ── 插入数据库 ──
-    $stmt = $db->prepare("INSERT INTO shuoshuo (content, image_path) VALUES (?, ?)");
+    $stmt = $db->prepare("INSERT INTO instant (content, image_path) VALUES (?, ?)");
     $stmt->execute([$content, $imagePath]);
     $newId = (int)$db->lastInsertId();
 
@@ -200,14 +200,14 @@ function nova_add_shuoshuo($request) {
 }
 
 /**
- * 删除说说并重排 ID
+ * 删除片刻并重排 ID
  */
-function nova_delete_shuoshuo($request) {
+function nova_delete_instant($request) {
     // ── 权限检查 ──
     if (!v1_is_admin(v1_get_current_user_id())) {
         return [
             'code'    => 'rest_forbidden',
-            'message' => '无权操作，仅管理员可删除说说',
+            'message' => '无权操作，仅管理员可删除片刻',
             'data'    => ['status' => 403],
         ];
     }
@@ -218,28 +218,28 @@ function nova_delete_shuoshuo($request) {
     if (!$id) {
         return [
             'code'    => 'rest_missing_fields',
-            'message' => '未指定说说 ID',
+            'message' => '未指定片刻 ID',
             'data'    => ['status' => 400],
         ];
     }
 
     // 检查记录是否存在
-    $checkStmt = $db->prepare("SELECT id FROM shuoshuo WHERE id = ?");
+    $checkStmt = $db->prepare("SELECT id FROM instant WHERE id = ?");
     $checkStmt->execute([$id]);
     if (!$checkStmt->fetch()) {
         return [
             'code'    => 'rest_error',
-            'message' => '说说不存在',
+            'message' => '片刻不存在',
             'data'    => ['status' => 404],
         ];
     }
 
     // 删除记录
-    $deleteStmt = $db->prepare("DELETE FROM shuoshuo WHERE id = ?");
+    $deleteStmt = $db->prepare("DELETE FROM instant WHERE id = ?");
     $deleteStmt->execute([$id]);
 
     // 获取剩余条数
-    $count = (int)$db->query("SELECT COUNT(*) FROM shuoshuo")->fetchColumn();
+    $count = (int)$db->query("SELECT COUNT(*) FROM instant")->fetchColumn();
 
     return [
         'code'    => 'rest_ok',

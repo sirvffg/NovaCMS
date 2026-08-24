@@ -13,8 +13,7 @@ $isCurrentPath = static function (array $paths) use ($currentPath): bool {
 };
 $homeActive = $isCurrentPath(['/']);
 $blogActive = $isCurrentPath(['/blog', '/blog.php']);
-$docsActive = $isCurrentPath(['/docs']);
-$spaceActive = $isCurrentPath(['/friend-links', '/shuoshuo', '/gallery']);
+$spaceActive = $isCurrentPath(['/friend-links', '/instant', '/gallery']);
 $guestbookActive = $isCurrentPath(['/guestbook']);
 $customPages = [];
 if (function_exists('contentModuleListPublishedPages')) {
@@ -58,9 +57,6 @@ $customPagesActive = str_starts_with($currentPath, '/page/');
                 <li class="nav-item">
                     <a class="nav-link<?= $blogActive ? ' active' : '' ?>" href="/blog"<?= $blogActive ? ' aria-current="page"' : '' ?>>博客</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link<?= $docsActive ? ' active' : '' ?>" href="/docs"<?= $docsActive ? ' aria-current="page"' : '' ?>>文档</a>
-                </li>
                 <?php if ($customPages): ?>
                 <li class="nav-item dropdown">
                     <button class="nav-link dropdown-toggle<?= $customPagesActive ? ' active' : '' ?>" type="button" data-bs-toggle="dropdown" aria-expanded="false">页面</button>
@@ -79,7 +75,7 @@ $customPagesActive = str_starts_with($currentPath, '/page/');
                         空间
                     </button>
                     <ul class="dropdown-menu nova-dropdown-menu">
-                        <li><a class="dropdown-item<?= $isCurrentPath(['/shuoshuo']) ? ' active' : '' ?>" href="/shuoshuo"><i class="bi bi-chat-quote" aria-hidden="true"></i><span>片刻</span></a></li>
+                        <li><a class="dropdown-item<?= $isCurrentPath(['/instant']) ? ' active' : '' ?>" href="/instant"><i class="bi bi-chat-quote" aria-hidden="true"></i><span>片刻</span></a></li>
                         <li><a class="dropdown-item<?= $isCurrentPath(['/gallery']) ? ' active' : '' ?>" href="/gallery"><i class="bi bi-images" aria-hidden="true"></i><span>相册</span></a></li>
                         <li><a class="dropdown-item<?= $isCurrentPath(['/friend-links']) ? ' active' : '' ?>" href="/friend-links"><i class="bi bi-link-45deg" aria-hidden="true"></i><span>友链</span></a></li>
                     </ul>

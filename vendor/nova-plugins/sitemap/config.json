@@ -58,8 +58,8 @@
                 },
                 {
                     "type": "switch",
-                    "name": "include_shuoshuo",
-                    "label": "包含说说",
+                    "name": "include_instant",
+                    "label": "包含片刻",
                     "value": true
                 },
                 {

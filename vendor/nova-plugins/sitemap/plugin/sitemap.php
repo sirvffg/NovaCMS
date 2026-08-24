@@ -20,7 +20,7 @@ function sitemap_get_config() {
         'include_blog' => true,
         'include_gallery' => true,
         'include_guestbook' => true,
-        'include_shuoshuo' => true,
+        'include_instant' => true,
         'include_friend_links' => true,
         'include_images' => true,
         'custom_urls' => '',
@@ -106,10 +106,10 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
     </url>
     <?php endif; ?>
 
-    <?php if ($cfg['include_shuoshuo']): ?>
-    <!-- 说说 -->
+    <?php if ($cfg['include_instant']): ?>
+    <!-- 片刻 -->
     <url>
-        <loc><?= $baseUrl ?>/shuoshuo</loc>
+        <loc><?= $baseUrl ?>/instant</loc>
         <lastmod><?= $today ?></lastmod>
         <changefreq>daily</changefreq>
         <priority>0.7</priority>

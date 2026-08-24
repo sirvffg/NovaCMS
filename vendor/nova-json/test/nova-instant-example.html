@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Shuoshuo 示例</title>
+    <title>Nova Instant 示例</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
@@ -36,14 +36,14 @@
         .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .shuoshuo-item { border: 1px solid #eee; border-radius: 10px; padding: 16px; margin-bottom: 12px; transition: box-shadow .2s; }
-        .shuoshuo-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        .shuoshuo-item .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .shuoshuo-item .id-badge { background: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
-        .shuoshuo-item .time { color: #999; font-size: 12px; }
-        .shuoshuo-item .content { font-size: 14px; color: #333; line-height: 1.6; white-space: pre-wrap; margin-bottom: 8px; }
-        .shuoshuo-item .actions { display: flex; gap: 8px; align-items: center; }
-        .shuoshuo-item .image-preview { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 6px; cursor: pointer; border: 1px solid #eee; }
+        .instant-item { border: 1px solid #eee; border-radius: 10px; padding: 16px; margin-bottom: 12px; transition: box-shadow .2s; }
+        .instant-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .instant-item .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .instant-item .id-badge { background: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+        .instant-item .time { color: #999; font-size: 12px; }
+        .instant-item .content { font-size: 14px; color: #333; line-height: 1.6; white-space: pre-wrap; margin-bottom: 8px; }
+        .instant-item .actions { display: flex; gap: 8px; align-items: center; }
+        .instant-item .image-preview { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 6px; cursor: pointer; border: 1px solid #eee; }
 
         .pagination { display: flex; gap: 6px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
         .page-btn { padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; cursor: pointer; background: #fff; color: #666; transition: all .2s; }
@@ -84,7 +84,7 @@
         <div class="card" style="padding:16px 24px;">
             <div class="top-bar">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <strong style="font-size:16px;">💬 说说</strong>
+                    <strong style="font-size:16px;">💬 片刻</strong>
                     <span id="totalCount" style="font-size:13px;color:#999;"></span>
                 </div>
                 <div class="user-badge">
@@ -95,7 +95,7 @@
 
         <!-- Publish Form (admin only) -->
         <div id="publishCard" class="card" style="display:none;">
-            <div class="section-title">✏️ 发布说说</div>
+            <div class="section-title">✏️ 发布片刻</div>
             <div id="msgPub" class="message"></div>
             <div class="form-group">
                 <textarea id="content" placeholder="写点什么..." rows="3"></textarea>
@@ -105,15 +105,15 @@
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn btn-primary" id="btnPublish" onclick="handlePublish()">发布</button>
-                <button class="btn btn-outline" onclick="fetchShuoshuo()">刷新列表</button>
+                <button class="btn btn-outline" onclick="fetchInstant()">刷新列表</button>
             </div>
             <div id="publishResponse" class="response-box"></div>
         </div>
 
-        <!-- Shuoshuo List -->
+        <!-- Instant List -->
         <div class="card">
             <div id="msgList" class="message"></div>
-            <div id="shuoshuoList"><div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div></div>
+            <div id="instantList"><div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div></div>
             <div id="pagination" class="pagination"></div>
             <div id="listResponse" class="response-box"></div>
         </div>
@@ -157,7 +157,7 @@
         let userName = '';
         let loginUsername = '';
         let currentPage = 1;
-        const API_SS = '/nova-json/v1/statuses/shuoshuo';
+        const API_INST = '/nova-json/v1/statuses/instant';
         const API_AUTH = '/nova-json/v1/auth';
 
         // ---------- UI ----------
@@ -284,20 +284,20 @@
 
         // ---------- Fetch & Render ----------
         function renderList(items, total) {
-            const listEl = document.getElementById('shuoshuoList');
+            const listEl = document.getElementById('instantList');
             if (!items||items.length===0) {
-                listEl.innerHTML = '<div class="empty-state"><span class="icon">💬</span><p>暂无说说</p></div>';
+                listEl.innerHTML = '<div class="empty-state"><span class="icon">💬</span><p>暂无片刻</p></div>';
                 return;
             }
 
             let html = '';
             items.forEach(function(item) {
-                const imgHtml = item.image_path ? '<div><img class="image-preview" src="'+escapeHtml(item.image_path)+'" onclick="window.open(this.src)" alt="说说图片"></div>' : '';
+                const imgHtml = item.image_path ? '<div><img class="image-preview" src="'+escapeHtml(item.image_path)+'" onclick="window.open(this.src)" alt="片刻图片"></div>' : '';
                 const deleteBtn = (userRole === 'admin')
                     ? '<button class="btn btn-danger-sm" onclick="handleDelete('+item.id+')">🗑️ 删除</button>'
                     : '';
                 html +=
-                    '<div class="shuoshuo-item" id="ss-'+item.id+'">' +
+                    '<div class="instant-item" id="inst-'+item.id+'">' +
                         '<div class="meta"><span class="id-badge">#'+item.id+'</span><span class="time">'+escapeHtml(item.created_at||'')+'</span></div>' +
                         '<div class="content">'+escapeHtml(item.content)+'</div>' +
                         imgHtml +
@@ -307,16 +307,16 @@
             listEl.innerHTML = html;
         }
 
-        async function fetchShuoshuo(page) {
+        async function fetchInstant(page) {
             if (page !== undefined) currentPage = page;
-            const listEl = document.getElementById('shuoshuoList');
+            const listEl = document.getElementById('instantList');
             const paginationEl = document.getElementById('pagination');
             listEl.innerHTML = '<div class="empty-state"><span class="icon">⏳</span><p>加载中...</p></div>';
             hideMsg('msgList');
             hideResponse('listResponse');
 
             try {
-                const res = await fetch(API_SS, { headers: sessionToken?{'Authorization':'Bearer '+sessionToken}:{} });
+                const res = await fetch(API_INST, { headers: sessionToken?{'Authorization':'Bearer '+sessionToken}:{} });
                 const data = await res.json();
                 showResponse('listResponse', data);
 
@@ -337,9 +337,9 @@
                 const totalPages = Math.ceil(total / (data.data.per_page||20));
                 if (totalPages <= 1) { paginationEl.innerHTML = ''; return; }
                 let pHtml = '';
-                pHtml += '<button class="page-btn" onclick="fetchShuoshuo('+(currentPage-1)+')"'+(currentPage<=1?' disabled':'')+'>‹</button>';
-                for (let i=1;i<=totalPages;i++) pHtml += '<button class="page-btn'+(i===currentPage?' active':'')+'" onclick="fetchShuoshuo('+i+')">'+i+'</button>';
-                pHtml += '<button class="page-btn" onclick="fetchShuoshuo('+(currentPage+1)+')"'+(currentPage>=totalPages?' disabled':'')+'>›</button>';
+                pHtml += '<button class="page-btn" onclick="fetchInstant('+(currentPage-1)+')"'+(currentPage<=1?' disabled':'')+'>‹</button>';
+                for (let i=1;i<=totalPages;i++) pHtml += '<button class="page-btn'+(i===currentPage?' active':'')+'" onclick="fetchInstant('+i+')">'+i+'</button>';
+                pHtml += '<button class="page-btn" onclick="fetchInstant('+(currentPage+1)+')"'+(currentPage>=totalPages?' disabled':'')+'>›</button>';
                 paginationEl.innerHTML = pHtml;
             } catch(err) {
                 listEl.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><p>网络错误: '+escapeHtml(err.message)+'</p></div>';
@@ -351,13 +351,13 @@
             if (!confirm('确定删除 #ID: '+id+' 吗？')) return;
             hideMsg('msgList');
             try {
-                const res = await fetch(API_SS+'/'+id, { method:'DELETE', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{} });
+                const res = await fetch(API_INST+'/'+id, { method:'DELETE', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{} });
                 const data = await res.json();
                 showResponse('listResponse', data);
                 if (data.code === 'rest_ok') {
                     showMsg('msgList','✅ 已删除 #'+id+'，剩余 '+data.data.remaining+' 条，ID 已重排','success');
                     currentPage = 1;
-                    fetchShuoshuo(1);
+                    fetchInstant(1);
                 } else { showMsg('msgList','❌ '+(data.message||'删除失败'),'error'); }
             } catch(err) { showMsg('msgList','网络错误: '+err.message,'error'); }
         }
@@ -373,13 +373,13 @@
                 const fd = new FormData(); fd.append('content', content);
                 const fi = document.getElementById('imageFile');
                 if (fi.files.length>0) fd.append('image', fi.files[0]);
-                const res = await fetch(API_SS, { method:'POST', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}, body:fd });
+                const res = await fetch(API_INST, { method:'POST', headers:sessionToken?{'Authorization':'Bearer '+sessionToken}:{}, body:fd });
                 const data = await res.json();
                 showResponse('publishResponse', data);
                 if (data.code === 'rest_ok') {
                     showMsg('msgPub','✅ 发布成功！ID: '+data.data.id,'success');
                     document.getElementById('content').value=''; document.getElementById('imageFile').value='';
-                    currentPage=1; fetchShuoshuo(1);
+                    currentPage=1; fetchInstant(1);
                 } else { showMsg('msgPub','❌ '+(data.message||'发布失败'),'error'); }
             } catch(err) { showMsg('msgPub','网络错误: '+err.message,'error'); }
             setLoading('btnPublish',false);
@@ -404,10 +404,10 @@
                             updateUI();
                         }
                     } catch(_) {}
-                    fetchShuoshuo();
+                    fetchInstant();
                 })();
             } else {
-                fetchShuoshuo();
+                fetchInstant();
             }
         })();
     </script>

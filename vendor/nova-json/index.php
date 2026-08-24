@@ -35,9 +35,9 @@
  *   GET    /v1/auth/me                     获取当前用户
  *   POST   /v1/auth/logout                 退出登录
  *   GET    /v1/statuses/settings           站点配置
- *   GET    /v1/statuses/shuoshuo           说说列表
- *   POST   /v1/statuses/shuoshuo           发布说说
- *   DELETE /v1/statuses/shuoshuo/{id}      删除说说
+ *   GET    /v1/statuses/instant            片刻列表
+ *   POST   /v1/statuses/instant            发布片刻
+ *   DELETE /v1/statuses/instant/{id}       删除片刻
  *   GET    /v1/statuses/gallery/albums          相册列表
  *   GET    /v1/statuses/gallery/albums/{id}     相册详情（含照片）
  *   POST   /v1/statuses/gallery/albums          创建相册

@@ -18,6 +18,7 @@
 8. [Users - 用户管理模块](#8-users---用户管理模块)
 9. [Statuses - 动态模块](#9-statuses---动态模块)
 10. [Stats - 统计模块](#10-stats---统计模块)
+11. [Content - 内容模块](#11-content---内容模块)
 
 ---
 
@@ -1940,11 +1941,11 @@ PUT /v1/users/me
 
 ## 9. Statuses - 动态模块
 
-### 9.1 说说列表
+### 9.1 片刻列表
 
-`GET /v1/statuses/shuoshuo`
+`GET /v1/statuses/instant`
 
-获取说说列表，支持分页。
+获取片刻列表，支持分页。
 
 **请求参数**
 
@@ -1957,8 +1958,8 @@ PUT /v1/users/me
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| data.items[].id | int | 说说ID |
-| data.items[].content | string | 说说内容 |
+| data.items[].id | int | 片刻ID |
+| data.items[].content | string | 片刻内容 |
 | data.items[].image_path | string | 图片路径 |
 | data.items[].created_at | string | 发布时间 |
 
@@ -1977,7 +1978,7 @@ PUT /v1/users/me
             {
                 "id": 1,
                 "content": "今天天气真好！",
-                "image_path": "/uploads/shuoshuo/abc123.jpg",
+                "image_path": "/uploads/instant/abc123.jpg",
                 "created_at": "2026-07-28 08:00:00"
             }
         ]
@@ -1987,17 +1988,17 @@ PUT /v1/users/me
 
 ---
 
-### 9.2 发布说说
+### 9.2 发布片刻
 
-`POST /v1/statuses/shuoshuo`
+`POST /v1/statuses/instant`
 
-发布新说说（需管理员权限）。
+发布新片刻（需管理员权限）。
 
 **请求参数** (multipart/form-data)
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| content | string | 是 | 说说内容 |
+| content | string | 是 | 片刻内容 |
 | image | file | 否 | 图片文件(jpg/png/gif/webp，最大5MB) |
 
 **模拟响应**
@@ -2010,31 +2011,31 @@ PUT /v1/users/me
         "status": 200,
         "id": 2,
         "content": "今天天气真好！",
-        "image_path": "/uploads/shuoshuo/def456.jpg"
+        "image_path": "/uploads/instant/def456.jpg"
     }
 }
 ```
 
 ---
 
-### 9.3 删除说说
+### 9.3 删除片刻
 
-`DELETE /v1/statuses/shuoshuo/{id}`
+`DELETE /v1/statuses/instant/{id}`
 
-删除指定说说（需管理员权限）。
+删除指定片刻（需管理员权限）。
 
 **路径参数**
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| id | int | 说说ID |
+| id | int | 片刻ID |
 
 **响应字段说明**
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| data.deleted_id | int | 已删除的说说ID |
-| data.remaining | int | 剩余说说数量 |
+| data.deleted_id | int | 已删除的片刻ID |
+| data.remaining | int | 剩余片刻数量 |
 
 **模拟响应**
 
@@ -2910,5 +2911,178 @@ GET /v1/stats/visits/overview?days=7
 
 ---
 
-> 文档版本: v1.1  
-> 生成日期: 2026-08-22
+## 11. Content - 内容模块
+
+页面和邮件订阅的公共接口。所有查询只返回已发布/已启用的数据。
+
+### 11.1 获取页面列表
+
+`GET /v1/content/pages`
+
+获取已发布的页面列表。
+
+**请求参数**
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| nav | bool | 否 | false | 仅返回导航栏可见的页面 |
+| limit | int | 否 | 100 | 返回条数，范围 1-100 |
+
+**示例请求**
+
+```
+GET /v1/content/pages?nav=1&limit=20
+```
+
+**响应字段说明**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| data.total | int | 符合条件的页面总数 |
+| data.returned_count | int | 本次返回的条数 |
+| data.items[].id | int | 页面ID |
+| data.items[].title | string | 页面标题 |
+| data.items[].slug | string | 页面别名 |
+| data.items[].summary | string | 页面摘要 |
+| data.items[].template | string | 模板名称 |
+| data.items[].show_in_nav | bool | 是否在导航栏显示 |
+| data.items[].sort_order | int | 排序值 |
+| data.items[].created_at | string | 创建时间 |
+| data.items[].updated_at | string | 更新时间 |
+
+**模拟响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "获取成功",
+    "data": {
+        "status": 200,
+        "items": [
+            {
+                "id": 1,
+                "title": "关于我们",
+                "slug": "about",
+                "summary": "了解我们的故事",
+                "template": "default",
+                "show_in_nav": true,
+                "sort_order": 1,
+                "created_at": "2026-01-01 00:00:00",
+                "updated_at": "2026-07-15 10:00:00"
+            }
+        ],
+        "total": 1,
+        "returned_count": 1
+    }
+}
+```
+
+---
+
+### 11.2 获取页面详情
+
+`GET /v1/content/pages/{slug}`
+
+根据 slug 获取单个页面详情（含全文内容）。
+
+**路径参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| slug | string | 页面别名（支持中文、字母、数字、下划线、连字符） |
+
+**示例请求**
+
+```
+GET /v1/content/pages/about
+```
+
+**响应字段说明**
+
+同 11.1 中 items[] 内各字段，额外包含：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| data.item.content | string | 页面全文内容 |
+
+**模拟响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "获取成功",
+    "data": {
+        "status": 200,
+        "item": {
+            "id": 1,
+            "title": "关于我们",
+            "slug": "about",
+            "summary": "了解我们的故事",
+            "content": "这是页面的完整内容...",
+            "template": "default",
+            "show_in_nav": true,
+            "sort_order": 1,
+            "created_at": "2026-01-01 00:00:00",
+            "updated_at": "2026-07-15 10:00:00"
+        }
+    }
+}
+```
+
+---
+
+### 11.3 邮件订阅
+
+`POST /v1/content/subscribe`
+
+提交邮箱订阅。已有邮箱保持原状态不变，统一返回成功。无需登录，但有频率限制（每 IP 每小时 5 次，每邮箱每天 3 次）。
+
+**请求参数**
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| email | string | 是 | - | 邮箱地址（有效格式，最长 191 字符） |
+| name | string | 否 | - | 称呼（最长 100 字符） |
+| source | string | 否 | website | 来源标识（字母、数字、下划线、连字符，最长 50 字符） |
+
+**模拟请求**
+
+```json
+POST /v1/content/subscribe
+{
+    "email": "user@example.com",
+    "name": "张三",
+    "source": "website"
+}
+```
+
+**模拟响应**
+
+```json
+{
+    "code": "rest_ok",
+    "message": "订阅成功",
+    "data": {
+        "status": 201
+    }
+}
+```
+
+**错误响应（频率过高）**
+
+```json
+{
+    "code": "rest_rate_limited",
+    "message": "提交过于频繁，请稍后再试",
+    "data": {
+        "status": 429
+    }
+}
+```
+
+> 响应头包含 `Retry-After`，指示重试等待秒数。
+
+---
+
+> 文档版本: v1.3  
+> 更新日期: 2026-08-23

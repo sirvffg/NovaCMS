@@ -1,6 +1,6 @@
 <?php
 $pageTitle = '片刻';
-$pageKey = 'shuoshuo';
+$pageKey = 'instant';
 $pageDescription = '没有写成长文的想法，也值得被认真保存。';
 $communityCssVersion = (string)(@filemtime($themePath . '/assets/css/community.css') ?: 1);
 $communityJsVersion = (string)(@filemtime($themePath . '/assets/js/community.js') ?: 1);

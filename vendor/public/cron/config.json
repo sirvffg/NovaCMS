@@ -1,0 +1,21 @@
+{
+    "tabs": [
+        {
+            "title": "执行模式",
+            "description": "选择定时任务的执行模式。服务器模式需在宝塔 / 1Panel 后台配置定时任务调用 cron.php；虚拟面板模式由访客请求自动触发，适合无 cron 的虚拟主机。此配置文件独立存放于 vendor/public/cron/，卸载插件不会丢失。",
+            "fields": [
+                {
+                    "type": "select",
+                    "name": "mode",
+                    "label": "执行模式",
+                    "value": "server",
+                    "options": {
+                        "server": "服务器模式（面板定时任务调用 cron.php）",
+                        "visit": "虚拟面板模式（访客请求自动触发）"
+                    },
+                    "help": "服务器模式：关闭访问触发，需配置面板定时任务（推荐，执行准点）；虚拟面板模式：无需配置，由访客请求异步触发 cron.php，不阻塞访客。"
+                }
+            ]
+        }
+    ]
+}

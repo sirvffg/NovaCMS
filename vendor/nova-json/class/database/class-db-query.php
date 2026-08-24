@@ -6,7 +6,7 @@
  *
  * 用法：
  *   $q = new Nova_DB_Query();
- *   $results = $q->from('shuoshuo')
+ *   $results = $q->from('instant')
  *                 ->where('status', 1)
  *                 ->orderBy('id', 'DESC')
  *                 ->limit(10)

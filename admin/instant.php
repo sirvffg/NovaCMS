@@ -19,8 +19,8 @@ if (isset($_POST['delete_id'])) {
         $error = '安全验证失败，请刷新页面后重试';
     } else {
         $id = (int)$_POST['delete_id'];
-        $db->prepare("DELETE FROM shuoshuo WHERE id=?")->execute([$id]);
-        resetShuoshuoIds($db);
+        $db->prepare("DELETE FROM instant WHERE id=?")->execute([$id]);
+        resetInstantIds($db);
         // PRG模式：重定向避免重复提交
         header('Location: ' . $_SERVER['REQUEST_URI']);
         exit;
@@ -28,11 +28,11 @@ if (isset($_POST['delete_id'])) {
 }
 
 // 重置ID函数（最新的ID=最大）
-function resetShuoshuoIds($db) {
+function resetInstantIds($db) {
     try {
         $db->exec("SET @row := 0");
-        $db->exec("UPDATE shuoshuo SET id = (@row := @row + 1) ORDER BY created_at ASC");
-        $db->exec("ALTER TABLE shuoshuo AUTO_INCREMENT = 1");
+        $db->exec("UPDATE instant SET id = (@row := @row + 1) ORDER BY created_at ASC");
+        $db->exec("ALTER TABLE instant AUTO_INCREMENT = 1");
     } catch (Exception $e) {
         // 忽略错误
     }
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_id'])) {
     } else {
         // Handle Image Upload
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = '../uploads/shuoshuo/';
+            $uploadDir = '../uploads/instant/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_id'])) {
                 $targetFile = $uploadDir . $newFileName;
                 
                 if (move_uploaded_file($_FILES['image']['tmp_name'], $targetFile)) {
-                    $image_path = '/uploads/shuoshuo/' . $newFileName;
+                    $image_path = '/uploads/instant/' . $newFileName;
                 } else {
                     $error = '图片上传失败';
                 }
@@ -81,9 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_id'])) {
         }
 
         if (empty($error)) {
-            $stmt = $db->prepare("INSERT INTO shuoshuo (content, image_path) VALUES (?, ?)");
+            $stmt = $db->prepare("INSERT INTO instant (content, image_path) VALUES (?, ?)");
             $stmt->execute([$content, $image_path]);
-            resetShuoshuoIds($db);
+            resetInstantIds($db);
             // PRG模式：重定向避免重复提交
             header('Location: ' . $_SERVER['REQUEST_URI']);
                 exit;
@@ -92,11 +92,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_id'])) {
     }
 }
 
-// Get All Shuoshuo
-$shuoshuos = $db->query("SELECT * FROM shuoshuo ORDER BY created_at DESC")->fetchAll();
-$page_title = '说说管理';
+// Get All Instant
+$instants = $db->query("SELECT * FROM instant ORDER BY created_at DESC")->fetchAll();
+$page_title = '片刻管理';
 $extra_css = <<<'CSS'
-.shuoshuo-img-preview {
+.instant-img-preview {
     max-width: 100px;
     max-height: 100px;
     object-fit: cover;
@@ -107,11 +107,11 @@ require_once 'includes/header.php'; ?>
 
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
                     <div>
-                        <h1 class="h2 mb-1">说说管理</h1>
+                        <h1 class="h2 mb-1">片刻管理</h1>
                         <p class="text-muted mb-0">发布和管理你的日常动态</p>
                     </div>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
-                        <i class="bi bi-plus-lg"></i> 发布说说
+                        <i class="bi bi-plus-lg"></i> 发布片刻
                     </button>
                 </div>
 
@@ -136,7 +136,7 @@ require_once 'includes/header.php'; ?>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($shuoshuos as $item): ?>
+                                    <?php foreach ($instants as $item): ?>
                                     <tr>
                                         <td class="ps-4"><?= $item['id'] ?></td>
                                         <td style="max-width: 400px;">
@@ -145,7 +145,7 @@ require_once 'includes/header.php'; ?>
                                         <td>
                                             <?php if (!empty($item['image_path'])): ?>
                                             <a href="<?= e($item['image_path']) ?>" target="_blank">
-                                                <img src="<?= e($item['image_path']) ?>" class="shuoshuo-img-preview" alt="Image">
+                                                <img src="<?= e($item['image_path']) ?>" class="instant-img-preview" alt="Image">
                                             </a>
                                             <?php else: ?>
                                             <span class="text-muted small">无图片</span>
@@ -154,19 +154,19 @@ require_once 'includes/header.php'; ?>
                                         <td class="text-muted small"><?= $item['created_at'] ?></td>
                                         <td class="text-end pe-4">
                                             <button type="button" class="btn btn-sm btn-light text-danger" 
-                                               onclick="deleteShuoshuo(<?= $item['id'] ?>)" title="删除">
+                                               onclick="deleteInstant(<?= $item['id'] ?>)" title="删除">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
                                     
-                                    <?php if (empty($shuoshuos)): ?>
+                                    <?php if (empty($instants)): ?>
                                     <tr>
                                         <td colspan="5" class="text-center py-5">
                                             <div class="text-muted">
                                                 <i class="bi bi-chat-square-dots display-4 d-block mb-3"></i>
-                                                暂无说说
+                                                暂无片刻
                                             </div>
                                         </td>
                                     </tr>
@@ -182,7 +182,7 @@ require_once 'includes/header.php'; ?>
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">发布新说说</h5>
+                    <h5 class="modal-title">发布新片刻</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -214,8 +214,8 @@ require_once 'includes/header.php'; ?>
 
     <script src="<?= getResourceUrl('/assets/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js') ?>"></script>
     <script>
-        function deleteShuoshuo(id) {
-            if (confirm('确定要删除这条说说吗？')) {
+        function deleteInstant(id) {
+            if (confirm('确定要删除这条片刻吗？')) {
                 document.getElementById('deleteId').value = id;
                 document.getElementById('deleteForm').submit();
             }

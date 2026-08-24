@@ -48,13 +48,9 @@ Nova_Backend_Menu::add_menu('页面', 'pages', '/admin/pages.php', 'bi-window-si
 Nova_Backend_Menu::add_menu('评论', 'comments', '/admin/comments.php', 'bi-chat-square-text', 30, $contentMenu);
 Nova_Backend_Menu::add_menu('附件', 'files', '/admin/files.php', 'bi-folder2', 40, $contentMenu);
 Nova_Backend_Menu::add_menu('图库', 'gallery', '/admin/gallery.php', 'bi-image', 50, $contentMenu);
-Nova_Backend_Menu::add_menu('瞬间', 'shuoshuo', '/admin/shuoshuo.php', 'bi-globe2', 60, $contentMenu);
-Nova_Backend_Menu::add_menu('文档', 'documents', '/admin/documents.php', 'bi-journal', 70, $contentMenu);
+Nova_Backend_Menu::add_menu('片刻', 'instant', '/admin/instant.php', 'bi-globe2', 60, $contentMenu);
 Nova_Backend_Menu::add_menu('链接', 'links', '/admin/links.php', 'bi-link-45deg', 80, $contentMenu);
 Nova_Backend_Menu::add_menu('订阅', 'subscriptions', '/admin/subscriptions.php', 'bi-rss', 90, $contentMenu);
-Nova_Backend_Menu::add_menu('智能问答', 'ai_qa', '', 'bi-stars', 100, $contentMenu);
-Nova_Backend_Menu::add_submenu('ai_qa', '知识库', 'ai_knowledge', '/admin/ai_qa.php', 10, ['icon' => 'bi-database']);
-Nova_Backend_Menu::add_submenu('ai_qa', '助手设置', 'ai_settings', '/admin/ai_settings.php', 20, ['icon' => 'bi-sliders2']);
 
 Nova_Backend_Menu::add_menu('网站配置', 'config', '/admin/config.php', 'bi-sliders', 10, $systemMenu);
 Nova_Backend_Menu::add_menu('用户管理', 'admins', '/admin/admins.php', 'bi-people', 20, $systemMenu);

@@ -110,7 +110,7 @@ INSERT INTO `blog_categories` (`id`, `name`, `slug`, `description`, `sort_order`
 (3, '工具', 'tools', '一些实用的工具', 3, '2025-12-02 19:21:11', '#ffc107'),
 (4, '项目', 'projects', '一些其他的分享', 6, '2025-12-02 19:21:11', '#6c757d'),
 (5, '游戏', 'game', '游戏', 4, '2026-03-06 00:25:29', '#20c997'),
-(6, '说说', 'shuoshuo', '一些杂谈', 5, '2026-05-11 18:53:19', '#17a2b8');
+(6, '片刻', 'instant', '一些杂谈', 5, '2026-05-11 18:53:19', '#17a2b8');
 
 -- --------------------------------------------------------
 
@@ -623,10 +623,10 @@ CREATE TABLE `rate_limits` (
 -- --------------------------------------------------------
 
 --
--- 表的结构 `shuoshuo`
+-- 表的结构 `instant`
 --
 
-CREATE TABLE `shuoshuo` (
+CREATE TABLE `instant` (
   `id` int(10) UNSIGNED NOT NULL,
   `content` text NOT NULL,
   `image_path` varchar(255) DEFAULT NULL,
@@ -1034,9 +1034,9 @@ ALTER TABLE `rate_limits`
   ADD KEY `idx_blocked_until` (`blocked_until`);
 
 --
--- 表的索引 `shuoshuo`
+-- 表的索引 `instant`
 --
-ALTER TABLE `shuoshuo`
+ALTER TABLE `instant`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -1261,9 +1261,9 @@ ALTER TABLE `rate_limits`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- 使用表AUTO_INCREMENT `shuoshuo`
+-- 使用表AUTO_INCREMENT `instant`
 --
-ALTER TABLE `shuoshuo`
+ALTER TABLE `instant`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -1293,7 +1293,7 @@ ALTER TABLE `website_config`
 -- --------------------------------------------------------
 
 --
--- 新内容模块（页面、文档、订阅、智能问答）
+-- 新内容模块（页面、订阅）
 --
 
 CREATE TABLE IF NOT EXISTS `cms_pages` (
@@ -1313,26 +1313,6 @@ CREATE TABLE IF NOT EXISTS `cms_pages` (
   KEY `idx_cms_pages_public` (`status`,`show_in_nav`,`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 页面';
 
-CREATE TABLE IF NOT EXISTS `cms_documents` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `slug` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `summary` text COLLATE utf8mb4_unicode_ci,
-  `content` longtext COLLATE utf8mb4_unicode_ci,
-  `file_url` varchar(2048) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
-  `is_featured` tinyint(1) NOT NULL DEFAULT '0',
-  `download_count` int unsigned NOT NULL DEFAULT '0',
-  `sort_order` int NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_cms_documents_slug` (`slug`),
-  KEY `idx_cms_documents_public` (`status`,`is_featured`,`sort_order`),
-  KEY `idx_cms_documents_category` (`category`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 文档';
-
 CREATE TABLE IF NOT EXISTS `cms_subscribers` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `email` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -1347,39 +1327,6 @@ CREATE TABLE IF NOT EXISTS `cms_subscribers` (
   UNIQUE KEY `uk_cms_subscribers_email` (`email`),
   KEY `idx_cms_subscribers_status` (`status`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 邮件订阅';
-
-CREATE TABLE IF NOT EXISTS `cms_ai_qa` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `question` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `answer` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `keywords` varchar(1000) COLLATE utf8mb4_unicode_ci,
-  `category` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `sort_order` int NOT NULL DEFAULT '0',
-  `hit_count` int unsigned NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_cms_ai_qa_public` (`status`,`sort_order`),
-  KEY `idx_cms_ai_qa_category` (`category`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 智能问答知识库';
-
-CREATE TABLE IF NOT EXISTS `cms_ai_settings` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `enabled` tinyint(1) NOT NULL DEFAULT '1',
-  `welcome_message` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '您好，请问有什么可以帮您？',
-  `fallback_message` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '暂时没有找到合适的答案，请换个说法再试。',
-  `match_threshold` decimal(5,4) NOT NULL DEFAULT '0.3500',
-  `max_results` smallint unsigned NOT NULL DEFAULT '3',
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CMS 智能问答设置';
-
-INSERT INTO `cms_ai_settings`
-  (`id`, `enabled`, `welcome_message`, `fallback_message`, `match_threshold`, `max_results`)
-VALUES
-  (1, 1, '您好，请问有什么可以帮您？', '暂时没有找到合适的答案，请换个说法再试。', 0.3500, 3)
-ON DUPLICATE KEY UPDATE `id` = `id`;
 
 --
 -- 限制导出的表

@@ -112,8 +112,7 @@ include $themePath . '/partials/navbar.php';
                     <section class="blog-widget quick-widget" aria-labelledby="home-explore-title">
                         <h2 id="home-explore-title">更多内容</h2>
                         <nav>
-                            <a href="/docs"><span><i class="bi bi-book" aria-hidden="true"></i><strong>文档中心</strong></span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
-                            <a href="/shuoshuo"><span><i class="bi bi-chat-heart" aria-hidden="true"></i><strong>片刻动态</strong></span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+                            <a href="/instant"><span><i class="bi bi-chat-heart" aria-hidden="true"></i><strong>片刻动态</strong></span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
                             <a href="/gallery"><span><i class="bi bi-images" aria-hidden="true"></i><strong>影像相册</strong></span><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
                         </nav>
                     </section>

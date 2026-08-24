@@ -6,9 +6,9 @@
  *
  * 用法：
  *   $seeder = new Nova_DB_Seeder();
- *   $seeder->table('shuoshuo')->columns(['content', 'created_at'])->seed([
- *       ['第一条说说', '2025-01-01 12:00:00'],
- *       ['第二条说说', '2025-01-02 12:00:00'],
+ *   $seeder->table('instant')->columns(['content', 'created_at'])->seed([
+ *       ['第一条片刻', '2025-01-01 12:00:00'],
+ *       ['第二条片刻', '2025-01-02 12:00:00'],
  *   ]);
  *
  *   // 使用 Fakert 生成指定数量的随机数据

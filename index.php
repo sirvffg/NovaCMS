@@ -123,6 +123,7 @@ require_once $novaCoreDir . '/database/class-db.php';
 require_once $novaCoreDir . '/rest/class-server.php';
 require_once $novaCoreDir . '/plugin/class-plugin.php';
 require_once $novaCoreDir . '/plugin/class-plugin-registry.php';
+require_once $novaCoreDir . '/system/class-cron.php';
 
 foreach (Nova_Plugin_Registry::scan_all() as $pi) {
     if (!empty($pi['duplicate'])) continue;
@@ -132,6 +133,10 @@ foreach (Nova_Plugin_Registry::scan_all() as $pi) {
     }
 }
 Nova_Hooks::do_action('nova_init');
+
+// 虚拟主机访问触发定时任务（异步触发 cron.php 在独立进程执行，不阻塞访客）
+// 有 cron 的环境也可保留：仅作为兜底，未到期任务会快速跳过
+Nova_Cron::maybe_run_on_visit();
 
 // 开启输出缓冲，脚本结束时统一向 HTML 注入钩子输出
 ob_start();
@@ -342,16 +347,11 @@ function loadTheme($template, array $data = []) {
 // 路由分发
 // =============================================
 $pageMatches = [];
-$documentMatches = [];
-$documentDownloadMatches = [];
 $route = match(true) {
     $requestPath === '/' || $requestPath === '/index.php'                => 'index',
     $requestPath === '/blog' || $requestPath === '/blog.php'             => 'blog',
     preg_match('#^/page/([^/]+)/?$#u', $requestPath, $pageMatches) === 1  => 'page',
-    $requestPath === '/docs' || $requestPath === '/docs/'                 => 'docs',
-    preg_match('#^/docs/([^/]+)/download/?$#u', $requestPath, $documentDownloadMatches) === 1 => 'document-download',
-    preg_match('#^/docs/([^/]+)/?$#u', $requestPath, $documentMatches) === 1 => 'document',
-    strpos($requestPath, '/shuoshuo') === 0 || $requestPath === '/vendor/shuoshuo.php' => 'shuoshuo',
+    strpos($requestPath, '/instant') === 0 || $requestPath === '/vendor/instant.php' => 'instant',
     strpos($requestPath, '/guestbook') === 0 || $requestPath === '/vendor/guestbook.php' => 'guestbook',
     strpos($requestPath, '/gallery') === 0 || $requestPath === '/vendor/gallery.php' => 'gallery',
     strpos($requestPath, '/friend-links') === 0 || $requestPath === '/vendor/friend-links.php' => 'friend-links',
@@ -378,62 +378,6 @@ try {
             theme404();
         }
         $routeData['contentPage'] = $contentPage;
-    } elseif ($route === 'docs') {
-        $routeData['documentResults'] = contentModuleListPublishedDocuments([
-            'page'     => $_GET['page'] ?? 1,
-            'per_page' => 12,
-            'category' => $_GET['category'] ?? '',
-            'search'   => $_GET['q'] ?? '',
-        ]);
-        $routeData['documentCategories'] = contentModuleGetDocumentCategories();
-    } elseif ($route === 'document') {
-        $document = contentModuleGetPublishedDocumentBySlug($documentMatches[1] ?? '');
-        if (!$document) {
-            theme404();
-        }
-        $routeData['document'] = $document;
-    } elseif ($route === 'document-download') {
-        $requestMethod = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
-        if (!in_array($requestMethod, ['GET', 'HEAD'], true)) {
-            header('Allow: GET, HEAD');
-            http_response_code(405);
-            exit;
-        }
-        $document = contentModuleGetPublishedDocumentBySlug($documentDownloadMatches[1] ?? '');
-        $downloadUrl = contentModuleSafeUrl($document['file_url'] ?? '');
-        if (!$document || $downloadUrl === '') {
-            theme404();
-        }
-
-        // Count a document at most once per session in a short window so page
-        // refreshes, browser retries and HEAD probes do not inflate statistics.
-        if ($requestMethod === 'GET') {
-            $downloadSessionKey = 'content_document_download_' . (int)$document['id'];
-            $lastCountedAt = (int)($_SESSION[$downloadSessionKey] ?? 0);
-            if ($lastCountedAt < time() - 600) {
-                $statement = $db->prepare("UPDATE cms_documents SET download_count = download_count + 1 WHERE id = ? AND status = 'published'");
-                $statement->execute([(int)$document['id']]);
-                $_SESSION[$downloadSessionKey] = time();
-            }
-        }
-
-        // External attachments pass through the existing departure page rather
-        // than turning a trusted /docs URL into an immediate cross-site redirect.
-        $downloadParts = parse_url($downloadUrl);
-        if (is_array($downloadParts) && !empty($downloadParts['host'])) {
-            $requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
-            $requestHost = preg_replace('/:\d+$/', '', $requestHost);
-            $targetHost = strtolower((string)$downloadParts['host']);
-            if ($requestHost === '' || !hash_equals(trim($requestHost, '[]'), trim($targetHost, '[]'))) {
-                $downloadUrl = '/vendor/redirect.php?' . http_build_query([
-                    'url'   => $downloadUrl,
-                    'title' => (string)($document['title'] ?? '文档附件'),
-                    'delay' => 3,
-                ]);
-            }
-        }
-        header('Location: ' . $downloadUrl, true, 302);
-        exit;
     }
 } catch (Throwable $e) {
     error_log('Content page rendering failed: ' . $e->getMessage());

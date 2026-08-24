@@ -54,7 +54,7 @@ NovaCMS 采用主题机制控制前台页面渲染。主题位于 `vendor/nova-t
 
 主题是一组 PHP 模板 + 静态资源 + 清单文件的集合，控制前台所有页面的渲染。开发者通过主题可以：
 
-- **渲染页面** — 文章、独立页面、文档、说说、相册、留言板、友链、个人中心
+- **渲染页面** — 文章、独立页面、片刻、相册、留言板、友链、个人中心
 - **注册 REST 路由** — 通过 `theme.php` + `Nova_Theme` 基类
 - **挂载系统钩子** — `nova_head` / `nova_footer` / `nova_inject` 等
 - **读取站点配置** — `$config` 全局数组（favicon、网站名、社交链接等）
@@ -136,9 +136,7 @@ vendor/nova-themes/
         ├── 404.php             # 404 模板（必须）
         ├── blog.php            # 文章列表页（推荐）
         ├── page.php            # 独立页面模板（推荐，对应后台「页面」）
-        ├── document.php        # 文档详情页（推荐）
-        ├── docs.php            # 文档列表页（推荐）
-        ├── shuoshuo.php        # 说说页（推荐）
+        ├── instant.php        # 片刻页（推荐）
         ├── guestbook.php       # 留言板页（推荐）
         ├── gallery.php         # 相册页（推荐）
         ├── friend-links.php    # 友链页（推荐）
@@ -426,10 +424,7 @@ NovaCMS 前台在 `index.php` 用 `match(true)` 表达式匹配请求路径，�
 | `/`、`/index.php`                    | `index`              | `index.php`      | —                                                           |
 | `/blog`、`/blog.php`                 | `blog`               | `blog.php`       | —                                                           |
 | `/page/{slug}`                      | `page`               | `page.php`       | `contentPage` = `contentModuleGetPublishedPageBySlug()`    |
-| `/docs`、`/docs/`                    | `docs`               | `docs.php`       | `documentResults`、`documentCategories`                      |
-| `/docs/{slug}`                      | `document`           | `document.php`   | `document` = `contentModuleGetPublishedDocumentBySlug()`     |
-| `/docs/{slug}/download`             | `document-download`  | （重定向，不渲染模板）      | —                                                           |
-| `/shuoshuo`                         | `shuoshuo`          | `shuoshuo.php`   | —                                                           |
+| `/instant`                         | `instant`          | `instant.php`   | —                                                           |
 | `/guestbook`                        | `guestbook`         | `guestbook.php`  | —                                                           |
 | `/gallery`                         | `gallery`          | `gallery.php`    | —                                                           |
 | `/friend-links`                    | `friend-links`     | `friend-links.php` | —                                                           |
@@ -482,9 +477,6 @@ function loadTheme($template, array $data = []) {
 | `$extraHead`         | 模板自定义                       | string | 注入到 `</head>` 之前的额外 HTML     |
 | `$extraFooter`       | 模板自定义                       | string | 注入到 `</body>` 之前的额外 HTML     |
 | `$contentPage`       | `extract`（路由 `page`）         | array  | 独立页面数据                      |
-| `$document`          | `extract`（路由 `document`）     | array  | 文档数据                        |
-| `$documentResults`   | `extract`（路由 `docs`）        | array  | 文档列表分页结果                    |
-| `$documentCategories`| `extract`（路由 `docs`）        | array  | 文档分类列表                      |
 
 #### 常用全局常量
 
@@ -891,11 +883,11 @@ new MyTheme();
 | ------------------- | ----------- | ----- | --------------------------------------------------------------------- |
 | `routes/posts/`     | 文章          | `v1`  | `/v1/posts`、`/v1/posts/{id}`、`/v1/posts/slug/{slug}`、`/v1/categories`、`/v1/tags`、`/v1/comments`、`/v1/search`、`/v1/posts/privacy`、`/v1/posts/paid`、`/v1/posts/{id}/download` |
 | `routes/links/`     | 友链          | `v1`  | `/v1/links`、`/v1/links/categories`、`/v1/links/apply`、`/v1/links/siteinfo` |
-| `routes/statuses/`  | 动态/社区       | `v1`  | `/v1/statuses/settings`、`/v1/statuses/shuoshuo`、`/v1/statuses/gallery/*`、`/v1/statuses/guestbook`、`/v1/statuses/terms` |
+| `routes/statuses/`  | 动态/社区       | `v1`  | `/v1/statuses/settings`、`/v1/statuses/instant`、`/v1/statuses/gallery/*`、`/v1/statuses/guestbook`、`/v1/statuses/terms` |
 | `routes/users/`     | 用户          | `v1`  | `/v1/auth/login`、`/v1/auth/verify`、`/v1/auth/me`、`/v1/auth/logout`    |
-| `routes/content/`   | 内容（页面/文档）   | `v1`  | 内容模块（页面/文档）相关端点                                                        |
+| `routes/content/`   | 内容（页面/订阅）   | `v1`  | 内容模块（页面/订阅）相关端点                                                        |
 
-完整端点列表见 `vendor/nova-json/index.php` 头部注释或 `docs/routes.md`。主题注册的路由与系统路由共用同一前缀（`/nova-json/v1/`），建议用主题 slug 作命名空间隔离（如 `/v1/my-theme/posts`）。
+完整端点列表见 `vendor/nova-json/index.php` 头部注释或 `cms-docs/routes.md`。主题注册的路由与系统路由共用同一前缀（`/nova-json/v1/`），建议用主题 slug 作命名空间隔离（如 `/v1/my-theme/posts`）。
 
 #### 调用本地 API 的两种方式
 
@@ -1158,7 +1150,7 @@ $result = Nova_API::post('/v1/statuses/guestbook', [
 $result = Nova_API::put('/v1/statuses/gallery/albums/1', ['title' => '新标题']);
 
 // DELETE 请求
-$result = Nova_API::delete('/v1/statuses/shuoshuo/5');
+$result = Nova_API::delete('/v1/statuses/instant/5');
 ```
 
 返回值是数组或 `Nova_REST_Response`。若端点返回 `Nova_REST_Response`，其 `get_data()` 即为业务数据。

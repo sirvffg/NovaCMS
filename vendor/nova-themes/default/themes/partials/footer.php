@@ -126,8 +126,7 @@ $themeScriptVersion = isset($themePath) ? (int)@filemtime($themePath . '/assets/
                 <nav class="site-footer-column" aria-label="探索">
                     <h2>探索</h2>
                     <a href="/blog">博客文章</a>
-                    <a href="/docs">文档中心</a>
-                    <a href="/shuoshuo">片刻动态</a>
+                    <a href="/instant">片刻动态</a>
                     <a href="/gallery">影像相册</a>
                 </nav>
 
@@ -187,7 +186,6 @@ $themeScriptVersion = isset($themePath) ? (int)@filemtime($themePath . '/assets/
             <div class="nova-search-shortcuts">
                 <span>快速前往</span>
                 <a href="/blog">全部文章</a>
-                <a href="/docs">文档中心</a>
                 <a href="/gallery">相册</a>
             </div>
         </form>

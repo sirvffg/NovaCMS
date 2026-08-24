@@ -56,7 +56,7 @@ php_value error_reporting E_ALL
     RewriteEngine On
     RewriteRule ^index\.php$ - [L]
     # NovaCMS 虚拟路由：即使目录/文件存在也交给 index.php 处理
-    RewriteRule ^(docs|blog|page|shuoshuo|guestbook|gallery|friend-links|announcement|profile|qq_avatar)(/|$) /index.php [L]
+    RewriteRule ^(blog|page|instant|guestbook|gallery|friend-links|announcement|profile|qq_avatar)(/|$) /index.php [L]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule . /index.php [L]

@@ -8,7 +8,7 @@
  * 用法：
  *   $cache = new Nova_DB_Cache();
  *   $result = $cache->get('my_key', function() use ($db) {
- *       return $db->get_results("SELECT * FROM shuoshuo");
+ *       return $db->get_results("SELECT * FROM instant");
  *   }, 3600);
  */
 
