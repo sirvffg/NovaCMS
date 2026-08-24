@@ -1,4 +1,4 @@
-# Nginx 伪静态规则 (WordPress 风格)
+# Nginx 伪静态规则
 # 所有请求交给 index.php 处理
 
 location / {
