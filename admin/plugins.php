@@ -133,25 +133,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '')
     $activePluginIds = array_values(array_diff($activePluginIds, [$uninstallId]));
     save_active_plugins($db, $activePluginIds);
 
-    // 递归删除插件目录
+    // 递归删除插件目录（使用真正的递归迭代器，支持任意深度嵌套）
     $pluginDir = $uninstallTarget['plugin_dir'];
     $deleted = false;
+    $deleteErrors = [];
     if (is_dir($pluginDir)) {
-        $items = array_diff(scandir($pluginDir), ['.', '..']);
-        foreach ($items as $item) {
-            $path = $pluginDir . '/' . $item;
-            if (is_dir($path)) {
-                // 递归删除子目录
-                $subItems = array_diff(scandir($path), ['.', '..']);
-                foreach ($subItems as $sub) {
-                    @unlink($path . '/' . $sub);
+        // 先关闭可能存在的目录句柄，避免 Windows 下占用
+        @closedir(@opendir($pluginDir));
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($pluginDir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $file) {
+            $realPath = $file->getRealPath();
+            if ($file->isDir()) {
+                if (!@rmdir($realPath)) {
+                    $deleteErrors[] = '目录: ' . $realPath
+                        . ' (失败原因: ' . error_get_last()['message'] . ')';
                 }
-                @rmdir($path);
             } else {
-                @unlink($path);
+                if (!@unlink($realPath)) {
+                    $deleteErrors[] = '文件: ' . $realPath
+                        . ' (失败原因: ' . error_get_last()['message'] . ')';
+                }
             }
         }
-        $deleted = @rmdir($pluginDir);
+        // 最后删除插件根目录
+        if (empty($deleteErrors)) {
+            $deleted = @rmdir($pluginDir);
+            if (!$deleted) {
+                $deleteErrors[] = '根目录: ' . $pluginDir
+                    . ' (失败原因: ' . error_get_last()['message'] . ')';
+            }
+        }
     }
 
     if ($deleted) {
@@ -163,7 +177,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAjax && ($_POST['action'] ?? '')
             'disabled_count' => max(0, count($plugins) - 1 - count($activePluginIds)),
         ]);
     } else {
-        echo json_encode(['ok' => false, 'msg' => '删除目录失败，请检查目录权限']);
+        // 构造详细错误信息
+        $phpUser = function_exists('posix_getpwuid') && function_exists('posix_geteuid')
+            ? posix_getpwuid(posix_geteuid())['name'] ?? '未知'
+            : (getenv('APACHE_RUN_USER') ?: getenv('USER') ?: '未知');
+        $errMsg = '删除目录失败';
+        if (!empty($deleteErrors)) {
+            // 只显示前 5 个错误，避免响应过长
+            $errMsg .= '，以下项无法删除：' . implode('；', array_slice($deleteErrors, 0, 5));
+            if (count($deleteErrors) > 5) {
+                $errMsg .= '；等共 ' . count($deleteErrors) . ' 项';
+            }
+        }
+        // Linux 权限提示
+        if (DIRECTORY_SEPARATOR === '/') {
+            $errMsg .= '。【排查建议】当前 PHP 运行用户: ' . $phpUser
+                . '，请确保 vendor/nova-plugins/ 目录及子目录的属主为该用户'
+                . '（chown -R ' . $phpUser . ':' . $phpUser . ' vendor/nova-plugins/）'
+                . '，或赋予该用户 rwx 权限（chmod -R u+w vendor/nova-plugins/）。'
+                . ' 注意：755 仅属主可写，若 PHP 用户不是属主依然删不了。';
+        }
+        echo json_encode(['ok' => false, 'msg' => $errMsg]);
     }
     exit;
 }

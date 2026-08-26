@@ -112,6 +112,34 @@ if ($pluginPageHandled) {
 }
 
 // =============================================
+// 隐藏 URL 中的 .php 后缀
+// GET/HEAD：所有以 .php 结尾的访问（/index.php 自身除外），统一 301 重定向到剥掉 .php 后的干净路径
+// POST/PUT/PATCH/DELETE：不做跳转，直接放行（否则 301/302 会丢失 POST 数据），由下方文件回退层加载同名 .php 文件
+// 后续在直接文件回退中会尝试加载同名 .php 文件，确保无后缀 URL 能正常访问
+// 例外：/nova-json/*（API）、/uploads/*（静态上传）、/index.php 自身
+// =============================================
+if (stripos($requestPath, '.php') !== false
+    && preg_match('#^(?P<before>.+)\.php$#iu', $requestPath, $phpm) === 1
+    && strpos($requestPath, '/nova-json') !== 0
+    && strpos($requestPath, '/uploads/') !== 0
+    && $requestPath !== '/index.php') {
+    $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    if ($method === 'GET' || $method === 'HEAD') {
+        $clean  = '/' . ltrim($phpm['before'], '/');
+        $qs     = $_SERVER['QUERY_STRING'] ?? '';
+        $target = $clean;
+        if ($qs !== '') {
+            $target .= '?' . $qs;
+        }
+        header('Location: ' . $target, true, 301);
+        header('X-Robots-Tag: noindex');
+        exit;
+    }
+    // 非 GET 的 .php 请求：不跳转，直接走下方文件回退逻辑（相当于 .php 请求会命中 $filePath 真实存在的文件）
+    unset($method, $clean, $qs, $target, $phpm);
+}
+
+// =============================================
 // 前台插件运行时（输出缓冲 + 钩子注入）
 // 不修改主题文件，通过缓冲拦截向 head / body / nav / footer 注入内容
 // 另提供 nova_inject 通用过滤器，支持任意 CSS 选择器位置注入（基于 JS）
@@ -348,24 +376,100 @@ function loadTheme($template, array $data = []) {
 // =============================================
 $pageMatches = [];
 $route = match(true) {
-    $requestPath === '/' || $requestPath === '/index.php'                => 'index',
-    $requestPath === '/blog' || $requestPath === '/blog.php'             => 'blog',
-    preg_match('#^/page/([^/]+)/?$#u', $requestPath, $pageMatches) === 1  => 'page',
-    strpos($requestPath, '/instant') === 0 || $requestPath === '/vendor/instant.php' => 'instant',
-    strpos($requestPath, '/guestbook') === 0 || $requestPath === '/vendor/guestbook.php' => 'guestbook',
-    strpos($requestPath, '/gallery') === 0 || $requestPath === '/vendor/gallery.php' => 'gallery',
-    strpos($requestPath, '/friend-links') === 0 || $requestPath === '/vendor/friend-links.php' => 'friend-links',
-    strpos($requestPath, '/announcement') === 0 || $requestPath === '/vendor/announcement.php' => 'announcement',
-    $requestPath === '/profile' || $requestPath === '/vendor/profile.php' => 'profile',
+    $requestPath === '/'                                                          => 'index',
+    $requestPath === '/blog'                                                      => 'blog',
+    preg_match('#^/page/([^/]+)/?$#u', $requestPath, $pageMatches) === 1          => 'page',
+    strpos($requestPath, '/instant') === 0                                        => 'instant',
+    strpos($requestPath, '/guestbook') === 0                                      => 'guestbook',
+    strpos($requestPath, '/gallery') === 0                                        => 'gallery',
+    strpos($requestPath, '/friend-links') === 0                                   => 'friend-links',
+    strpos($requestPath, '/announcement') === 0                                   => 'announcement',
+    $requestPath === '/profile'                                                   => 'profile',
     default => false,
 };
 
+// 主题自定义路由映射（theme.json routes 字段声明，由主题自主添加文件映射）
+// 支持父主题继承：当前主题未匹配的路径会回退到父主题 routes；当前主题同键覆盖父主题
 if ($route === false) {
-    // 不在路由表中的路径，尝试直接加载文件（兼容旧路径和登录/注册）
+    // 系统内置标准路由（条款与隐私）—— 统一在 index.php 里声明；不再兼容 .php 后缀
+    $standardRoutes = [
+        '/terms'   => 'terms',
+        '/privacy' => 'terms',
+    ];
+
+    $themeRoutes = [];
+    if (!empty($resolvedTheme['parent'])) {
+        $parentSlug = (string)$resolvedTheme['parent'];
+        if (function_exists('novaThemeFind')) {
+            $parentTheme = novaThemeFind($parentSlug);
+            if ($parentTheme !== null && !empty($parentTheme['routes']) && is_array($parentTheme['routes'])) {
+                $themeRoutes = $parentTheme['routes'];
+            }
+        }
+    }
+    if (!empty($resolvedTheme['routes']) && is_array($resolvedTheme['routes'])) {
+        $themeRoutes = array_merge($themeRoutes, $resolvedTheme['routes']);
+    }
+
+    // 系统路由打底；主题 routes 可覆盖同键
+    $mergedRoutes = array_merge($standardRoutes, $themeRoutes);
+
+    if (!empty($mergedRoutes)) {
+        $templateName = $mergedRoutes[$requestPath] ?? null;
+        if (is_string($templateName) && $templateName !== '') {
+            // 先在当前主题目录找模板；找不到（且存在父主题）回退到父主题 themes/ 目录
+            // loadTheme() 只加载 $themePath 下的模板，所以找不到时直接 require 父主题文件
+            $currentFile = $themePath . '/' . $templateName . '.php';
+            if (is_file($currentFile)) {
+                $route = $templateName;
+            } elseif (!empty($parentTheme)) {
+                $parentFile = $parentTheme['path'] . '/themes/' . $templateName . '.php';
+                if (is_file($parentFile)) {
+                    // 手动装载：提取 routeData → require
+                    try {
+                        if (isset($routeData) && is_array($routeData)) {
+                            extract($routeData, EXTR_SKIP);
+                        }
+                        require $parentFile;
+                        exit;
+                    } catch (Throwable $e) {
+                        error_log('Theme parent route render failed: ' . $e->getMessage());
+                    }
+                }
+            }
+        }
+    }
+}
+
+if ($route === false) {
+    // 不在路由表中的路径，先尝试直接加载文件（兼容旧路径和登录/注册）
     $filePath = __DIR__ . $requestPath;
     if (file_exists($filePath) && is_file($filePath)) {
         require $filePath;
         exit;
+    }
+    // 无后缀访问没命中：允许访问不带 .php 的 URL，但实际加载同名 .php 文件
+    // 这样 /vendor/register、/vendor/login、/vendor/forgot_password 等都能在无后缀下正常工作
+    // 安全约束：只允许字母/数字/下划线/连字符/斜杠/点，避免路径穿越 & 防止 /license/terms 意外命中 terms.php 绕过主题 routes
+    if (preg_match('#^/[A-Za-z0-9_\-/.]+$#D', $requestPath) === 1
+        && substr($requestPath, -4) !== '.php'
+        && substr($requestPath, -1) !== '/') {
+        $phpPath = $filePath . '.php';
+        if (is_file($phpPath)) {
+            // /terms、/privacy、/cookies 这类单 segment 干净路径不要走这里的物理文件，
+            // 让它们回到主题 routes 机制（standardRoutes）里找模板
+            $segments = explode('/', rtrim($requestPath, '/'));
+            $depth    = count($segments) - 1; // 开头空串算一位
+            $isSingleSegment = $depth === 1;
+            $isTermsLikeRoute = $isSingleSegment
+                && in_array($segments[1], ['terms', 'privacy', 'cookies'], true);
+            if (!$isTermsLikeRoute) {
+                require $phpPath;
+                exit;
+            }
+            unset($segments, $depth, $isSingleSegment, $isTermsLikeRoute);
+        }
+        unset($phpPath);
     }
     theme404();
 }

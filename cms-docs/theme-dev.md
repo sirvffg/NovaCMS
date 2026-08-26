@@ -21,8 +21,9 @@ NovaCMS 采用主题机制控制前台页面渲染。主题位于 `vendor/nova-t
   - [模板作用域变量](#45-模板作用域变量)
   - [partials 与 assets](#46-partials-与-assets)
   - [页面模板（page_templates）](#47-页面模板page_templates)
-  - [父主题继承](#48-父主题继承)
-  - [主题预览](#49-主题预览)
+  - [自定义路由（routes，主题自主声明文件映射）](#48-自定义路由routes主题自主声明文件映射)
+  - [父主题继承](#49-父主题继承)
+  - [主题预览](#410-主题预览)
 - [🗃 进阶能力](#5-进阶能力)
   - [theme.php 入口与 Nova_Theme 基类](#51-themephp-入口与-nova_theme-基类)
   - [钩子系统](#52-钩子系统)
@@ -410,6 +411,7 @@ NovaCMS 前台入口 `index.php` 加载主题的流程：
 | `min_nova_version`  | string | 否  | 最低 NovaCMS 版本要求                                                                     |
 | `parent`            | string | 否  | 父主题 slug，用于模板继承                                                                     |
 | `page_templates`    | object | 否  | 页面模板映射，key 为模板 slug（必须满足 slug 规则），value 为显示名。系统会自动补 `default`。详见 [4.7 页面模板](#47-页面模板page_templates) |
+| `routes`            | object | 否  | **主题自定义路由**，声明「请求路径 → 主题模板名」的映射。由主题自主添加文件映射，**无需改动 index.php**。详见 [4.8 自定义路由](#48-自定义路由routes主题自主声明文件映射) |
 
 > **slug 校验**：`novaThemeIsValidSlug()`（[config/theme_functions.php#L17](file:///d:/File/代码/网站源码/NovaCMS/config/theme_functions.php#L17)）使用正则 `/\A[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}\z/D`（`\A`/`\z` 严格首尾锚 + `D` 修饰符禁用 `$` 多行匹配），等价于 `^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$` 语义，首位必须是字母或数字，长度 1-100。
 
@@ -611,7 +613,109 @@ if (is_file($file)) {
 
 ***
 
-### 4.8 父主题继承
+### 4.8 自定义路由（routes，主题自主声明文件映射）
+
+主题可以在 `theme.json` 中用 `routes` 字段声明「请求路径 → 主题模板文件」的映射，**由主题自主添加文件映射，不需要修改 `index.php`**。这是给主题新增独立页面（条款、落地页、专题页等）的推荐方式。
+
+#### 工作流程
+
+```
+theme.json: routes
+       ↓
+config/theme_functions.php: novaThemeInspect()
+       ↓  （校验路径 /^\/[A-Za-z0-9_\-\/\.]+$/；模板名 /^[A-Za-z0-9_\-]+$/）
+index.php: 系统路由 match() 未命中 → 合并 standardRoutes + parentRoutes + currentRoutes
+       ↓  （array_merge，同名 key 覆盖：父 < 当前主题 < 系统标准路由）
+$mergedRoutes[$requestPath] 匹配到模板名
+       ↓
+在当前主题 themes/ 下找 {template}.php → loadTheme() 渲染
+       ↓  找不到且有父主题
+在父主题 themes/ 下找 {template}.php → 直接 require（已展开 $routeData）
+       ↓  都找不到
+继续走 404 / 直接文件访问回退
+```
+
+源码入口：
+- 解析与校验：[config/theme_functions.php](file:///d:/File/代码/网站源码/NovaCMS/config/theme_functions.php) 中 `novaThemeInspect()`
+- 路由匹配与父主题继承合并：[index.php](file:///d:/File/代码/网站源码/NovaCMS/index.php) 中「主题自定义路由映射」分支（系统 `$standardRoutes` 打底 + 父子主题 `routes` 覆盖）
+
+#### theme.json 示例
+
+```json
+{
+    "name": "示例主题",
+    "slug": "my-theme",
+    "routes": {
+        "/about-me":        "about",
+        "/links":           "friend-links",
+        "/terms":           "terms",
+        "/privacy":         "terms",
+        "/special/landing": "landing-special"
+    }
+}
+```
+
+主题目录里对应的模板文件：
+
+```
+vendor/nova-themes/my-theme/themes/
+├── about.php
+├── friend-links.php
+├── terms.php
+└── landing-special.php
+```
+
+#### 字段规范（校验失败的条目会被丢弃并记录 notice，不致命）
+
+| 位置     | 正则                                                                   | 示例                                          |
+| ------ | -------------------------------------------------------------------- | ------------------------------------------- |
+| 路径（key）  | `/^\/[A-Za-z0-9_\-\/\.]+$/D`，必须以 `/` 开头，只允许字母/数字/`_`/`-`/`/`/`.` | `/about`、`/privacy`、`/special/landing`、`/terms.php` |
+| 模板名（value） | `/^[A-Za-z0-9_\-]+$/D`，只允许字母/数字/`_`/`-`，不写扩展名                        | `about`（对应 `themes/about.php`）               |
+
+> 路径**不要带站点子目录**，写站点根路径即可（如 `/terms`，不是 `/mysite/terms`）。入口会自动处理子目录部署。
+
+#### 路由优先级（从高到低）
+
+| 优先级 | 类别               | 位置                                  | 说明                                             |
+| --- | ---------------- | ----------------------------------- | ---------------------------------------------- |
+| 1   | 系统内置路由           | `index.php` 中的 `match()` 表达式              | `/blog`、`/page/{slug}`、`/profile` 等，永远最先命中         |
+| 2   | 主题 routes（含父主题继承） | `theme.json.routes` + 父主题同字段 + 系统 `$standardRoutes` | 同键覆盖：系统标准路由 < 父主题 routes < 当前主题 routes |
+| 3   | 直接文件访问（回退）       | 根目录实际存在的 PHP 文件                        | `/vendor/login.php` 等旧入口兼容                        |
+| 4   | 404              | `themes/404.php`                     | 以上全部未命中时触发                                     |
+
+> 目前系统内置 `$standardRoutes` 仅包含条款/隐私的通用别名（`/terms`、`/privacy`、`/terms.php`、`/privacy.php`、`/license/terms.php`、`/vendor/terms.php` → `terms`），属于最低优先级的打底，主题用自己的 `routes` 声明同 key 就能覆盖。
+
+#### 模板作用域里拿到「当前请求路径」
+
+`routes` 匹配后，模板仍可通过 `$GLOBALS['requestPath']`（或在模板开头赋值 `$requestPath = $_SERVER['REQUEST_URI_PATH'] ?? ''`）读取实际请求路径，用来切换 tab 等分支：
+
+```php
+<?php
+// themes/terms.php 内部：根据访问路径决定当前激活的 Tab
+$requestPath = $GLOBALS['requestPath'] ?? '';
+$activeTab = 'terms';
+if ($requestPath === '/privacy' || ($_GET['tab'] ?? '') === 'privacy') {
+    $activeTab = 'privacy';
+}
+?>
+```
+
+#### 父主题路由继承
+
+- 若 `theme.json` 声明了 `"parent": "default"`，系统会先合并**父主题的 `routes`**（打底），再合并**当前主题的 `routes`**（同 key 覆盖父主题）。
+- 模板查找：**先在当前主题 `themes/` 下找**模板 PHP 文件；找不到且有父主题时，**回退到父主题 `themes/` 下找同名模板**并手动 `require`（`$routeData` 已通过 `extract()` 注入作用域）。
+- 利用这一点，常见做法是：子主题**只写自己的 routes + 个性化模板**，其余模板（如 `terms.php`）用 `include` 引入父主题对应文件即可：
+
+```php
+<?php
+// lumen/themes/terms.php 直接复用父主题（default）
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+include dirname($themePath) . '/default/themes/terms.php';
+```
+
+***
+
+### 4.9 父主题继承
 
 通过 `theme.json` 的 `parent` 字段声明父主题：
 
@@ -629,8 +733,9 @@ if (is_file($file)) {
 | 字段/资源            | 是否继承自父主题 | 说明                                       |
 | ---------------- | -------- | ---------------------------------------- |
 | `page_templates` | 是        | 子主题未声明时，使用父主题的；子主题声明则覆盖                  |
+| `routes`         | 是        | 父主题 routes 作为打底，子主题同 key 覆盖；**模板查找也会回退到父主题 themes/ 目录**。详见 [4.8 自定义路由](#48-自定义路由routes主题自主声明文件映射) |
 | `min_nova_version` | 否        | 各自独立                                     |
-| 模板文件             | 否        | 模板查找不回退到父主题，子主题需自己提供（或用 `include` 显式引用父主题文件） |
+| 模板文件             | 见 routes   | 普通模板查找**不自动回退**；但 `routes` 命中的模板，若当前主题缺文件且有父主题，会在父主题 `themes/` 下查找 |
 | `assets/`        | 否        | 资源路径基于当前主题 `NOVA_THEME_URL`，不回退          |
 
 > **常见用法**：子主题只重写部分模板（如 `index.php`），其他模板用 `include` 显式引入父主题：
@@ -643,7 +748,7 @@ if (is_file($file)) {
 
 ***
 
-### 4.9 主题预览
+### 4.10 主题预览
 
 管理员可在不切换当前主题的情况下临时预览其他主题：
 

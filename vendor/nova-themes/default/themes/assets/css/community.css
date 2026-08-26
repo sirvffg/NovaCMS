@@ -496,7 +496,6 @@
 .guestbook-compose h2 { margin: .5rem 0; font-size: 1.8rem; letter-spacing: -.035em; }
 .guestbook-compose > p { margin: 0 0 1.4rem; color: var(--community-muted); line-height: 1.65; }
 .guestbook-compose form { display: grid; gap: 1rem; }
-.form-honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
 .form-row { display: grid; gap: .45rem; }
 .form-row label { font-size: .8rem; font-weight: 750; }

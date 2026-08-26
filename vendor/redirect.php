@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once '../config/database.php';
-require_once '../config/functions.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/functions.php';
 
 // 获取目标URL参数
 $url = isset($_GET['url']) ? $_GET['url'] : '';

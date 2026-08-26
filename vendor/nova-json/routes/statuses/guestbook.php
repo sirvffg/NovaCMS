@@ -183,15 +183,6 @@ function nova_create_guestbook($request) {
     $email     = trim(strip_tags($request->get_param('email') ?? ''));
     $website   = trim(strip_tags($request->get_param('website') ?? ''));
     $parentId  = (int)($request->get_param('parent_id') ?? 0);
-    $honeypot  = trim((string)($request->get_param('company') ?? ''));
-
-    if ($honeypot !== '') {
-        return [
-            'code' => 'rest_ok',
-            'message' => '留言成功',
-            'data' => ['status' => 201],
-        ];
-    }
 
     if ($nickname === '') {
         return nova_guestbook_error('rest_missing_fields', '昵称不能为空');

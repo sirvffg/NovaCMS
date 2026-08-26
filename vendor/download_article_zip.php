@@ -16,9 +16,9 @@ ini_set('memory_limit', '512M');
 
 ob_start();
 session_start();
-require_once '../config/database.php';
-require_once '../config/functions.php';
-require_once '../config/email_config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/email_config.php';
 
 // ==================== 权限与安全验证 ====================
 

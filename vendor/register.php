@@ -1,8 +1,8 @@
 <?php
 session_start();
-require_once '../config/database.php';
-require_once '../config/functions.php';
-require_once '../config/email_config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/email_config.php';
 
 // 封禁 IP 禁止访问
 if (isBotBlacklisted()) { http_response_code(403); header('Location: /vendor/public/error/banned.html'); exit; }
@@ -189,9 +189,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
     // CSRF验证
     if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
         $register_error = '安全验证失败，请刷新页面后重试';
-    } elseif (checkHoneypot()) {
-        // 蜜罐触发：假装注册成功，不暴露蜜罐
-        $register_success = '注册成功，请登录';
     } else {
         // 人机验证
         $captcha_token = $_POST['captcha_token'] ?? '';
@@ -670,8 +667,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
                     </div>
                 </div>
             </div>
-            <div class="auth-sidebar-content auth-sidebar-footer">
-                <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+            <div class="auth-sidebar-content auth-sidebar-footer" style="gap:12px;align-items:flex-start;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+                    <nav aria-label="法律" style="font-size:.78rem;display:flex;gap:12px;flex-wrap:wrap;opacity:.92;">
+                        <a href="/terms" style="color:rgba(255,255,255,.82);text-decoration:none;">服务条款</a>
+                        <a href="/privacy" style="color:rgba(255,255,255,.82);text-decoration:none;">隐私政策</a>
+                    </nav>
+                </div>
                 <span class="auth-security-pill"><i class="bi bi-shield-lock" aria-hidden="true"></i> 安全注册</span>
             </div>
         </div>
@@ -700,7 +703,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
 
             <form method="POST" id="registerForm">
                 <?= csrfField() ?>
-                <?= honeypotField('website_hp') ?>
                 <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($redirect_url) ?>">
                 <input type="hidden" name="captcha_token" id="registerCaptchaToken" value="">
                 
@@ -764,6 +766,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
                 <button type="button" class="btn account-btn-primary w-100 mb-4" onclick="submitRegister()">
                     <span>创建账户</span><i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </button>
+
+                <p class="text-center mb-4" style="font-size:.78rem;color:var(--account-muted);line-height:1.6;">
+                    注册即表示您同意我们的 <a href="/terms" class="account-link" style="text-decoration:none;">服务条款</a> 和 <a href="/privacy" class="account-link" style="text-decoration:none;">隐私政策</a>
+                </p>
 
                 <div class="text-center">
                     <span style="color:var(--account-muted)">已有账号？</span>

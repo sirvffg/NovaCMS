@@ -110,9 +110,6 @@ function recordVisit($page_url = '') {
 
     // 注册 shutdown 回调：在 HTML 响应已发送给浏览器之后才执行
     register_shutdown_function(function() use ($ip, $user_agent, $page_url, $visitor_username, $visitor_email) {
-        // 确保蜜罐相关表存在
-        ensureHoneypotTables();
-
         // 记录爬虫日志
         logCrawler();
 
@@ -1457,65 +1454,6 @@ function cleanupOldFailedLogs() {
     }
 }
 
-// ========== 蜜罐系统 (Honeypot) ==========
-
-/**
- * 输出表单蜜罐隐藏字段
- * 机器人会自动填写隐藏字段，真实用户不会看到
- *
- * @param string $name 字段名（伪装成正常字段如 website、company）
- * @return string HTML
- */
-function honeypotField($name = 'website_hp') {
-    $id = 'hp_' . md5($name . session_id());
-    return '<div style="position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;overflow:hidden;" aria-hidden="true" tabindex="-1" autocomplete="off">' .
-        '<label for="' . $id .">请勿填写此字段</label>" .
-        '<input type="text" id="' . $id . '" name="' . htmlspecialchars($name) . '" value="" tabindex="-1" autocomplete="off">' .
-        '</div>';
-}
-
-/**
- * 检查表单蜜罐是否被触发
- *
- * @param array $fields 要检查的蜜罐字段名数组，默认 ['website_hp']
- * @return bool true = 机器人触发（应拒绝提交），false = 正常
- */
-function checkHoneypot($fields = ['website_hp']) {
-    foreach ($fields as $field) {
-        $value = trim($_POST[$field] ?? '');
-        if ($value !== '') {
-            // 蜜罐被触发，记录并标记该 IP
-            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-            $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-            recordHoneypotTrigger($ip, $ua, $field, $value);
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * 记录蜜罐触发日志并封禁 IP
- */
-function recordHoneypotTrigger($ip, $ua, $trapType, $trapValue) {
-    try {
-        $db = getDB();
-        $stmt = $db->prepare(
-            "INSERT INTO honeypot_logs (ip_address, user_agent, trap_type, trap_value, triggered_at) VALUES (?, ?, ?, ?, NOW())"
-        );
-        $stmt->execute([$ip, substr($ua, 0, 500), $trapType, substr($trapValue, 0, 200)]);
-
-        // 同一 IP 在 1 小时内触发 3 次以上，加入黑名单
-        $count = $db->prepare("SELECT COUNT(*) FROM honeypot_logs WHERE ip_address = ? AND triggered_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
-        $count->execute([$ip]);
-        if ($count->fetchColumn() >= 3) {
-            addBotBlacklist($ip, $ua);
-        }
-    } catch (Exception $e) {
-        error_log('Honeypot log error: ' . $e->getMessage());
-    }
-}
-
 /**
  * 将 IP 加入机器人黑名单
  */
@@ -1571,76 +1509,6 @@ function isBotBlacklisted() {
     } catch (Exception $e) {
         return false;
     }
-}
-
-/**
- * 自动创建蜜罐日志表
- */
-function ensureHoneypotTables() {
-    static $initialized = false;
-    if ($initialized) return;
-
-    try {
-        $db = getDB();
-
-        // 预检查 visit_stats 表已有字段，避免每次都执行注定失败的 ALTER TABLE
-        // 独立 try-catch：即使 visit_stats 不存在也不影响后续建表
-        try {
-            $existingCols = $db->query("SHOW COLUMNS FROM visit_stats")->fetchAll(PDO::FETCH_COLUMN);
-            if ($existingCols && !in_array('visitor_username', $existingCols, true)) {
-                $db->exec("ALTER TABLE visit_stats ADD COLUMN visitor_username VARCHAR(50) DEFAULT NULL AFTER page_url");
-            }
-            if ($existingCols && !in_array('visitor_email', $existingCols, true)) {
-                $db->exec("ALTER TABLE visit_stats ADD COLUMN visitor_email VARCHAR(100) DEFAULT NULL AFTER visitor_username");
-            }
-        } catch (Exception $e) {
-            // visit_stats 表可能尚不存在（全新安装），静默跳过
-        }
-
-        $db->exec("CREATE TABLE IF NOT EXISTS honeypot_logs (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ip_address VARCHAR(45) NOT NULL,
-            user_agent VARCHAR(500),
-            trap_type VARCHAR(50) NOT NULL,
-            trap_value VARCHAR(200),
-            triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_ip (ip_address),
-            INDEX idx_time (triggered_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-
-        $db->exec("CREATE TABLE IF NOT EXISTS bot_blacklist (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ip_address VARCHAR(45) NOT NULL UNIQUE,
-            reason VARCHAR(500),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            expires_at DATETIME DEFAULT NULL,
-            INDEX idx_ip (ip_address)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-
-        // IP白名单表
-        $db->exec("CREATE TABLE IF NOT EXISTS bot_whitelist_ip (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ip_address VARCHAR(45) NOT NULL UNIQUE,
-            reason VARCHAR(500),
-            added_by INT DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_ip (ip_address)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-
-        // UA白名单表
-        $db->exec("CREATE TABLE IF NOT EXISTS bot_whitelist_ua (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ua_pattern VARCHAR(500) NOT NULL,
-            reason VARCHAR(500),
-            added_by INT DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_ua (ua_pattern(191))
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-    } catch (Exception $e) {
-        error_log('Honeypot tables creation error: ' . $e->getMessage());
-    }
-
-    $initialized = true;
 }
 
 /**

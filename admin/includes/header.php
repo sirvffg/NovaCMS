@@ -62,14 +62,6 @@ Nova_Backend_Menu::add_menu('访问统计', 'stats', '/admin/stats.php', 'bi-bar
 Nova_Backend_Menu::add_menu('留言管理', 'guestbook', '/admin/guestbook.php', 'bi-chat-left-dots', 20, $toolMenu);
 Nova_Backend_Menu::add_menu('邮件测试', 'email_test', '/admin/email_test.php', 'bi-envelope-check', 30, $toolMenu);
 Nova_Backend_Menu::add_menu('系统日志', 'view_logs', '/admin/view_logs.php', 'bi-journal-text', 50, $toolMenu);
-Nova_Backend_Menu::add_menu(
-    '系统状态',
-    'system_status',
-    '/admin/system_status.php',
-    'bi-heart-pulse',
-    55,
-    $toolMenu
-);
 // 自动注册已启用插件的后台菜单（插件提供 plugin/admin/index.php 即可）
 require_once __DIR__ . '/../../vendor/nova-json/class/plugin/class-plugin-registry.php';
 $_novaActivePluginIds = null;

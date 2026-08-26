@@ -1,8 +1,8 @@
 <?php
 session_start();
-require_once '../config/database.php';
-require_once '../config/functions.php';
-require_once '../config/email_config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/email_config.php';
 
 // 封禁 IP 禁止访问
 if (isBotBlacklisted()) { http_response_code(403); header('Location: /vendor/public/error/banned.html'); exit; }
@@ -146,10 +146,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // CSRF验证
         if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
             $login_error = '安全验证失败，请刷新页面后重试';
-        } elseif (checkHoneypot()) {
-            // 蜜罐触发：假装登录失败，不暴露蜜罐
-            sleep(2);
-            $login_error = '用户名或密码错误';
         } else {
         // 人机验证
         $captcha_token = $_POST['captcha_token'] ?? '';
@@ -764,8 +760,14 @@ if ($need_email_verify) {
                     </li>
                 </ul>
             </div>
-            <div class="auth-sidebar-content auth-sidebar-footer">
-                <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+            <div class="auth-sidebar-content auth-sidebar-footer" style="gap:12px;align-items:flex-start;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+                    <nav aria-label="法律" style="font-size:.78rem;display:flex;gap:12px;flex-wrap:wrap;opacity:.92;">
+                        <a href="/terms" style="color:rgba(255,255,255,.82);text-decoration:none;">服务条款</a>
+                        <a href="/privacy" style="color:rgba(255,255,255,.82);text-decoration:none;">隐私政策</a>
+                    </nav>
+                </div>
                 <span class="auth-security-pill"><i class="bi bi-shield-lock" aria-hidden="true"></i> 安全连接</span>
             </div>
         </div>
@@ -805,7 +807,6 @@ if ($need_email_verify) {
 
                 <form method="POST" id="formTraditional">
                     <?= csrfField() ?>
-                    <?= honeypotField('website_hp') ?>
                     <input type="hidden" name="action" value="login">
                     <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($redirect_url) ?>">
                     <input type="hidden" name="captcha_token" id="loginCaptchaToken" value="">
@@ -852,6 +853,10 @@ if ($need_email_verify) {
                     <button type="submit" class="btn account-btn-primary w-100 mb-4" id="btnLogin">
                         <span>登录账户</span><i class="bi bi-arrow-right" aria-hidden="true"></i>
                     </button>
+
+                    <p class="text-center mb-4" style="font-size:.78rem;color:var(--account-muted);line-height:1.6;">
+                        登录即表示您同意我们的 <a href="/terms" class="account-link" style="text-decoration:none;">服务条款</a> 和 <a href="/privacy" class="account-link" style="text-decoration:none;">隐私政策</a>
+                    </p>
 
                     <div class="text-center">
                         <span style="color: var(--account-muted);">还没有账号？</span>

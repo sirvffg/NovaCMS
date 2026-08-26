@@ -1,9 +1,9 @@
 <?php
 // 申诉页面不使用 PHP session，完全用签名 cookie + 数据库 token 实现登录态
 
-require_once '../config/database.php';
-require_once '../config/functions.php';
-require_once '../config/email_config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/email_config.php';
 
 // 获取网站配置
 $db = getDB();
@@ -77,23 +77,6 @@ function appealValidateCsrf($input) {
     if (count($parts) !== 2 || strlen($parts[0]) !== 32) return false;
     $sig = hash_hmac('sha256', $parts[0], 'appeal_csrf_' . date('YmdH'));
     return hash_equals($sig, $parts[1]);
-}
-
-// 独立 honeypot（不依赖 session_id）
-function appealHoneypotField($name = 'website_hp') {
-    $id = 'hp_' . md5($name . 'appeal_static_salt');
-    return '<div style="position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;overflow:hidden;" aria-hidden="true" tabindex="-1" autocomplete="off">' .
-        '<label for="' . $id . '">请勿填写此字段</label>' .
-        '<input type="text" id="' . $id . '" name="' . htmlspecialchars($name) . '" value="" tabindex="-1" autocomplete="off">' .
-        '</div>';
-}
-
-function appealCheckHoneypot($fields = ['website_hp']) {
-    foreach ($fields as $field) {
-        $value = trim($_POST[$field] ?? '');
-        if ($value !== '') return true;
-    }
-    return false;
 }
 function appealLogin($user_id, $db, $secret) {
     $token = bin2hex(random_bytes(32));
@@ -216,11 +199,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         echo json_encode(['success' => false, 'message' => '安全验证失败，请刷新页面']);
         exit;
     }
-    if (appealCheckHoneypot()) {
-        sleep(2);
-        echo json_encode(['success' => false, 'message' => '用户名或密码错误']);
-        exit;
-    }
 
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -299,11 +277,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         echo json_encode(['success' => false, 'message' => '安全验证失败，请刷新页面']);
         exit;
     }
-    if (appealCheckHoneypot()) {
-        echo json_encode(['success' => true, 'message' => '注册成功，请登录']);
-        exit;
-    }
-
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
@@ -555,11 +528,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // ===================== 申诉表单提交 =====================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_appeal') {
     header('Content-Type: application/json');
-
-    if (appealCheckHoneypot()) {
-        echo json_encode(['success' => true, 'message' => '申诉已提交，请耐心等待审核']);
-        exit;
-    }
 
     if (!appealValidateCsrf($_POST['csrf_token'] ?? null)) {
         echo json_encode(['success' => false, 'message' => '安全验证失败，请刷新页面']);
@@ -953,7 +921,6 @@ $type_map = [
             <?php elseif ($selected_type === $type_key): ?>
             <form method="POST" id="appealForm" onsubmit="submitAppeal(event)">
                 <?= appealCsrfField() ?>
-                <?= appealHoneypotField('website_hp') ?>
                 <input type="hidden" name="action" value="submit_appeal">
                 <input type="hidden" name="appeal_type" value="<?= $type_key ?>">
                 <div class="row g-3">
@@ -1044,7 +1011,6 @@ $type_map = [
                     <div id="loginAlert"></div>
                     <form id="loginForm" onsubmit="doLogin(event)">
                         <?= appealCsrfField() ?>
-                        <?= appealHoneypotField('login_hp') ?>
                         <input type="hidden" name="action" value="builtin_login">
                         <div class="form-floating mb-3">
                             <input type="text" class="form-control" id="loginUsername" name="username" placeholder="用户名" required>
@@ -1082,7 +1048,6 @@ $type_map = [
                     <div id="registerAlert"></div>
                     <form id="registerForm" onsubmit="doRegister(event)">
                         <?= appealCsrfField() ?>
-                        <?= appealHoneypotField('reg_hp') ?>
                         <input type="hidden" name="action" value="builtin_register">
                         <div class="form-floating mb-3">
                             <input type="text" class="form-control" id="regUsername" name="username" placeholder="用户名" required minlength="3" maxlength="20">

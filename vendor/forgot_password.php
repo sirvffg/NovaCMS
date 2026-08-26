@@ -1,8 +1,8 @@
 <?php
 session_start();
-require_once '../config/database.php';
-require_once '../config/functions.php';
-require_once '../config/email_config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '/../config/email_config.php';
 
 // 记录访问
 recordVisit($_SERVER['REQUEST_URI']);
@@ -30,8 +30,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
     
     if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
         $error = '安全验证失败，请刷新页面后重试';
-    } elseif (checkHoneypot()) {
-        $email_sent = '如果该邮箱已注册，验证码已发送';
     } else {
         $captchaToken = $_POST['captcha_token'] ?? '';
         require_once __DIR__ . '/public/captcha/AuthApi.php';
@@ -42,7 +40,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
     }
 
     if ($error !== '' || $email_sent !== '') {
-        // 验证失败或蜜罐命中时不再处理邮箱。
+        // 验证失败时不再处理邮箱。
     } elseif (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = '请输入有效的邮箱地址';
     } else {
@@ -560,8 +558,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
                     </ul>
                 </div>
             </div>
-            <div class="auth-sidebar-content auth-sidebar-footer">
-                <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+            <div class="auth-sidebar-content auth-sidebar-footer" style="gap:12px;align-items:flex-start;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <span>&copy; <?= date('Y') ?> <?= e($config['website_name']) ?></span>
+                    <nav aria-label="法律" style="font-size:.78rem;display:flex;gap:12px;flex-wrap:wrap;opacity:.92;">
+                        <a href="/terms" style="color:rgba(255,255,255,.82);text-decoration:none;">服务条款</a>
+                        <a href="/privacy" style="color:rgba(255,255,255,.82);text-decoration:none;">隐私政策</a>
+                    </nav>
+                </div>
                 <span class="auth-security-pill"><i class="bi bi-shield-lock"></i> 隐私保护</span>
             </div>
         </div>
@@ -591,7 +595,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
 
             <form method="POST" id="forgotForm">
                 <?= csrfField() ?>
-                <?= honeypotField('website_hp') ?>
                 <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($redirect_url) ?>">
                 
                 <div class="mb-4">

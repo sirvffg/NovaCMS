@@ -286,6 +286,25 @@ if (!function_exists('novaThemeInspect')) {
             $theme['page_templates'] = ['default' => '默认页面'] + $theme['page_templates'];
         }
 
+        // theme.json routes：{"/path": "template"} 页面路由映射（主题自主声明）
+        $theme['routes'] = [];
+        if (!empty($manifest['routes']) && is_array($manifest['routes'])) {
+            foreach ($manifest['routes'] as $routePath => $templateName) {
+                if (!is_string($routePath) || $routePath === '' || !is_string($templateName) || $templateName === '') {
+                    continue;
+                }
+                if (!preg_match('#^/[A-Za-z0-9/_.-]{0,200}$#', $routePath)) {
+                    $theme['warnings'][] = 'routes 路径不合法（仅支持字母数字、_-.、/ 且总长度不超过 200）：' . $routePath;
+                    continue;
+                }
+                if (!preg_match('/^[a-z0-9_-]{1,100}$/i', $templateName)) {
+                    $theme['warnings'][] = 'routes 模板名不合法（仅限字母数字下划线短横线）：' . $templateName;
+                    continue;
+                }
+                $theme['routes'][$routePath] = $templateName;
+            }
+        }
+
         $theme['valid'] = empty($theme['errors']);
         return $theme;
     }
