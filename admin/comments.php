@@ -221,7 +221,7 @@ require_once 'includes/header.php'; ?>
             if ($post_filter !== 'all') $link .= '&post=' . $post_filter;
             if ($search !== '') $link .= '&q=' . urlencode($search);
         ?>
-        <a href="<?= e($link) ?>" class="content-stat-card <?= $is_active ? 'tone-' . e($card['accent']) : '' ?>" style="<?= $is_active ? '' : '' ?>">
+        <a href="<?= e($link) ?>" class="content-stat-card text-decoration-none <?= $is_active ? 'tone-' . e($card['accent']) : '' ?>">
             <span><i class="bi <?= $card['icon'] ?>" aria-hidden="true"></i></span>
             <div>
                 <strong data-stat-count="<?= e($card['key']) ?>"><?= number_format($stats[$card['key']]) ?></strong>

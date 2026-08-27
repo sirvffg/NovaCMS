@@ -46,11 +46,9 @@ Nova_Backend_Menu::add_submenu('posts', '全部文章', 'posts_all', '/admin/pos
 Nova_Backend_Menu::add_submenu('posts', '分类管理', 'categories', '/admin/categories.php', 20, ['icon' => 'bi-tags']);
 Nova_Backend_Menu::add_menu('页面', 'pages', '/admin/pages.php', 'bi-window-sidebar', 20, $contentMenu);
 Nova_Backend_Menu::add_menu('评论', 'comments', '/admin/comments.php', 'bi-chat-square-text', 30, $contentMenu);
-Nova_Backend_Menu::add_menu('附件', 'files', '/admin/files.php', 'bi-folder2', 40, $contentMenu);
-Nova_Backend_Menu::add_menu('图库', 'gallery', '/admin/gallery.php', 'bi-image', 50, $contentMenu);
+Nova_Backend_Menu::add_menu('相册', 'gallery', '/admin/gallery.php', 'bi-image', 50, $contentMenu);
 Nova_Backend_Menu::add_menu('片刻', 'instant', '/admin/instant.php', 'bi-globe2', 60, $contentMenu);
 Nova_Backend_Menu::add_menu('链接', 'links', '/admin/links.php', 'bi-link-45deg', 80, $contentMenu);
-Nova_Backend_Menu::add_menu('订阅', 'subscriptions', '/admin/subscriptions.php', 'bi-rss', 90, $contentMenu);
 
 Nova_Backend_Menu::add_menu('网站配置', 'config', '/admin/config.php', 'bi-sliders', 10, $systemMenu);
 Nova_Backend_Menu::add_menu('用户管理', 'admins', '/admin/admins.php', 'bi-people', 20, $systemMenu);

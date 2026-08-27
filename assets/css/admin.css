@@ -384,6 +384,17 @@ body.admin-shell [tabindex]:focus-visible {
     border-radius: 0;
     font-size: 18px;
     font-weight: 700;
+    line-height: 0;
+}
+
+.menu-icon > i {
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.menu-icon .bi::before,
+.menu-icon [class^="bi-"]::before {
+    vertical-align: middle;
 }
 
 .sidebar-menu .menu-item > :is(a, button):hover .menu-icon,
@@ -397,6 +408,9 @@ body.admin-shell [tabindex]:focus-visible {
 .menu-text {
     min-width: 0;
     flex: 1;
+    display: flex;
+    align-items: center;
+    min-height: 22px;
     overflow: hidden;
     text-overflow: ellipsis;
 }

@@ -44,8 +44,7 @@
                         { label: '管理评论', href: '/admin/comments.php', icon: 'bi-chat-left-dots' },
                         { label: '审核申请', href: '/admin/privacy_access.php', icon: 'bi-shield-check' },
                         { label: '网站设置', href: '/admin/config.php', icon: 'bi-sliders' },
-                        { label: '用户管理', href: '/admin/admins.php', icon: 'bi-people' },
-                        { label: '文件管理', href: '/admin/files.php', icon: 'bi-folder2-open' }
+                        { label: '用户管理', href: '/admin/admins.php', icon: 'bi-people' }
                     ]
             };
         },

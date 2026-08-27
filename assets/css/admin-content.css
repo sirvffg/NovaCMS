@@ -160,6 +160,14 @@
     font-size: 11px;
 }
 
+a.content-stat-card,
+a.content-stat-card:hover,
+a.content-stat-card:focus,
+a.content-stat-card:active {
+    color: inherit;
+    text-decoration: none;
+}
+
 .content-panel,
 .content-form-card,
 .content-editor-side-card {
