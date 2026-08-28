@@ -1,7 +1,5 @@
 # 插件开发
 
-版本：1.2（对应 NovaCMS 1.1+ 插件规范）
-
 ***
 
 NovaCMS 采用可插拔架构，插件与核心解耦：安装即放入目录、卸载即删除目录，通过 `plugin.json` 声明元数据，通过钩子、REST 路由、页面路由、后台页面四种方式扩展系统能力。本文档基于系统实际实现（`vendor/nova-json/` 框架 + `vendor/nova-plugins/` 内置插件）描述如何开发 NovaCMS 插件。

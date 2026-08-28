@@ -1,7 +1,5 @@
 # 主题开发
 
-版本：1.2
-
 ***
 
 NovaCMS 通过主题机制控制前台页面渲染。主题位于 `vendor/nova-themes/`，每个主题一个独立目录，通过 `theme.json` 声明元数据，模板文件放在 `themes/` 子目录输出 HTML。本文档基于系统实际实现（`config/theme_functions.php` 主题校验 + `index.php` 路由分发）描述如何从零开发一个 NovaCMS 主题。
