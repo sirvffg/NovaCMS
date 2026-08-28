@@ -1,10 +1,10 @@
 # 插件开发
 
-版本：1.0
+版本：1.2（对应 NovaCMS 1.1+ 插件规范）
 
 ***
 
-NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，支持用户按需安装、卸载插件，操作便捷。同时提供插件开发接口以确保较高的扩展性和可维护性，这个系列的文档将帮助你了解如何开发 NovaCMS 插件。
+NovaCMS 采用可插拔架构，插件与核心解耦：安装即放入目录、卸载即删除目录，通过 `plugin.json` 声明元数据，通过钩子、REST 路由、页面路由、后台页面四种方式扩展系统能力。本文档基于系统实际实现（`vendor/nova-json/` 框架 + `vendor/nova-plugins/` 内置插件）描述如何开发 NovaCMS 插件。
 
 ***
 
@@ -16,29 +16,17 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
 - [🗃 基础](#4-基础)
   - [插件基类与生命周期](#41-插件基类与生命周期)
   - [钩子系统：Actions & Filters](#42-钩子系统actions--filters)
-  - [前台注入钩子](#前台注入钩子nova_head--nova_body_start--nova_navbar_end--nova_footer)
-  - [任意位置注入（nova_inject）](#任意位置注入nova_inject)
-  - [注册 REST API 路由](#43-注册-rest-api-路由)
-  - [数据库操作](#44-数据库操作)
-  - [后台页面与菜单](#45-后台页面与菜单)
-  - [文件上传与图片处理](#46-文件上传与图片处理)
-  - [定时任务（Nova_Cron）](#47-定时任务nova_cron)
+  - [前台注入钩子与 nova_inject](#43-前台注入钩子与-nova_inject)
+  - [注册 REST API 路由](#44-注册-rest-api-路由)
+  - [注册自定义页面路由（page_routes）](#45-注册自定义页面路由page_routes)
+  - [插件配置（config.json 声明式表单）](#46-插件配置configjson-声明式表单)
+  - [后台管理页面与菜单](#47-后台管理页面与菜单)
+  - [数据库操作](#48-数据库操作)
+  - [文件上传与图片处理](#49-文件上传与图片处理)
+  - [定时任务（Nova_Cron）](#410-定时任务nova_cron)
 - [🗃 API 参考](#5-api-参考)
-  - [Nova\_Plugin](#51-nova_plugin)
-  - [Nova\_Hooks](#52-nova_hooks)
-  - [register\_rest\_route](#53-register_rest_route)
-  - [Nova\_DB](#54-nova_db)
-  - [Nova\_Backend\_Page](#55-nova_backend_page)
-  - [Nova\_Backend\_Menu](#56-nova_backend_menu)
-  - [Nova\_Backend\_Ajax](#57-nova_backend_ajax)
-  - [Nova\_Backend\_Notice](#58-nova_backend_notice)
-  - [Nova\_API](#59-nova_api)
-  - [Nova\_Proxy](#510-nova_proxy)
-  - [Nova\_Cron](#511-nova_cron)
-- [🗃 案例和最佳实践](#6-案例和最佳实践)
-  - [示例一：文章统计插件](#61-示例一文章统计插件)
-  - [示例二：内容审核插件](#62-示例二内容审核插件)
-  - [示例三：自定义短代码插件](#63-示例三自定义短代码插件)
+- [🗃 案例与最佳实践](#6-案例与最佳实践)
+- [🗃 附录](#7-附录)
 
 ***
 
@@ -46,49 +34,58 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
 
 ### 什么是 NovaCMS 插件？
 
-插件是用于扩展 NovaCMS 功能的独立 PHP 代码包。通过插件机制，开发者可以在不影响核心代码的前提下：
+插件是放置在 `vendor/nova-plugins/{slug}/` 目录下的独立 PHP 代码包。通过插件，开发者可以在不修改核心代码的前提下：
 
-- **注册新的 REST API 端点** — 扩展 API 能力
-- **挂载系统钩子** — 在特定时机执行自定义逻辑
-- **创建后台管理页面** — 提供配置界面
-- **操作数据库** — 读写数据、创建表结构
-- **处理文件上传** — 管理附件资源
+- **注册 REST API 端点** — 通过 `plugin/routes/` 或 `register_route()`，挂到 `/nova-json/` 下
+- **挂载系统钩子** — `nova_init` / `nova_head` / `nova_footer` / `nova_inject` 等
+- **提供前台虚拟页面** — 通过 `plugin.json` 的 `page_routes` 声明路径映射
+- **提供后台管理页面** — 放置 `plugin/admin/index.php`，由系统通用渲染器加载，侧边栏菜单自动注册
+- **提供声明式配置界面** — 通过 `config.json` 自动生成后台设置表单
+- **注册定时任务** — 通过 `Nova_Cron::register()`
 
 ### 插件架构概览
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      前台/客户端                          │
-└──────────────────────┬──────────────────────────────────┘
-                       │ HTTP/REST
-┌──────────────────────▼──────────────────────────────────┐
-│            Nova_REST_Server (路由分发引擎)                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │ 系统内置路由  │  │  插件注册路由  │  │  主题注册路由  │  │
-│  └──────────────┘  └──────────────┘  └──────────────┘  │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              Nova_Hooks (钩子事件系统)                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │  Action 钩子  │  │  Filter 钩子  │  │  生命周期钩子  │  │
-│  └──────────────┘  └──────────────┘  └──────────────┘  │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│                Nova_DB (数据库层)                         │
-│    Nova_DB_Query / Nova_DB_Schema / Nova_DB_Migration   │
-└─────────────────────────────────────────────────────────┘
+浏览器请求
+   │
+   ├─ /nova-json/* ──────────────► vendor/nova-json/init.php（API 侧加载）
+   │                                  1. 加载全部核心类（class/*.php）
+   │                                  2. Nova_Plugin_Registry::scan_all() 扫描插件
+   │                                  3. 启用插件 → require 入口文件
+   │                                     禁用插件 → 仅加载其 routes/（注册路由供拦截）
+   │                                  4. do_action('nova_init') → 插件 init()
+   │                                  5. Nova_REST_Server::serve_request() 分发
+   │
+   └─ 其他路径 ──────────────────► index.php（前台侧加载）
+                                      1. 插件 page_routes 匹配（先于一切渲染）
+                                      2. 加载启用插件入口 → do_action('nova_init')
+                                      3. 输出缓冲 + shutdown 回调：
+                                         nova_head / nova_body_start / nova_navbar_end /
+                                         nova_footer / nova_inject 注入 HTML
+                                      4. 主题模板渲染
 ```
 
 ### 核心概念
 
-| 概念      | 说明                                                    |
-| ------- | ----------------------------------------------------- |
-| **插件**  | 继承 `Nova_Plugin` 的 PHP 类，放在 `vendor/nova-plugins/` 目录 |
-| **路由**  | REST API 端点，通过 `register_rest_route()` 注册             |
-| **钩子**  | 事件（Action）和过滤器（Filter），通过 `Nova_Hooks` 管理             |
-| **扩展点** | 系统预定义的可扩展位置，插件可注入自定义逻辑                                |
+| 概念 | 说明 |
+| --- | --- |
+| **slug** | 插件目录名，`vendor/nova-plugins/{slug}/`，全局唯一 |
+| **id** | 插件唯一标识，在 `plugin.json` 中手动填写（必须英文），排在 `name` 之前；启用/禁用状态以此为准 |
+| **入口文件** | `plugin/plugin.php`（默认，可经 `entry` 字段修改），入口中实例化 `Nova_Plugin` 子类 |
+| **注册表** | `Nova_Plugin_Registry`，被 `init.php`、`index.php`、`admin/plugins.php`、`admin/plugin-page.php` 共用 |
+| **钩子** | 事件（Action）与过滤器（Filter），由 `Nova_Hooks` 管理，写法类似 WordPress |
+| **页面路由** | `plugin.json` 的 `page_routes` 字段，声明「路径 → PHP 文件」映射，由前台 `index.php` 匹配 |
+
+### 内置插件（可作为开发参考）
+
+| 插件 | id | 类型 | 参考价值 |
+| --- | --- | --- | --- |
+| Backup | `backup` | 后台管理型 | 后台页面 `plugin/admin/index.php` + 核心类拆分 + 备份存储 |
+| Comments | `comments` | 前台增强型 | QQ 头像拉取 + 页面路由 |
+| Cron Manager | `cron-manager` | 后台配置型 | `config_path` 配置重定向 + `detail_tab` 自定义详情页 |
+| Netease Player | `netease-player` | 前台注入型 | `nova_head`/`nova_footer` 注入 + `nova_inject` + config.json 表单 |
+| RSS | `rss` | 页面路由型 | `page_routes` 输出 XML + config.json 读取 |
+| Sitemap | `sitemap` | 页面路由型 | `page_routes` 输出 sitemap.xml |
 
 ***
 
@@ -96,40 +93,40 @@ NovaCMS 采用可插拔架构，功能模块之间耦合度低、灵活性高，
 
 ### 环境要求
 
-| 项目      | 要求                         |
-| ------- | -------------------------- |
-| PHP     | 7.4+ 推荐 8.0+               |
-| 数据库     | MySQL 5.7+ / MariaDB 10.3+ |
-| 扩展      | PDO, GD (图片处理), JSON       |
-| Web 服务器 | Apache / Nginx / IIS       |
+| 项目 | 要求 |
+| --- | --- |
+| PHP | 7.4+（推荐 8.0+） |
+| 数据库 | MySQL 5.7+ / MariaDB 10.3+ |
+| 扩展 | PDO、GD（图片处理）、JSON、mbstring |
+| Web 服务器 | Apache / Nginx（需配置伪静态，见根目录 `伪静态.txt`） |
 
 ### 目录结构
 
-NovaCMS 的插件系统约定插件应放置在 `vendor/nova-plugins/` 目录，每个插件一个独立文件夹。**自 NovaCMS 1.1 起，插件采用统一的目录规范**：代码统一放在 `plugin/` 子目录，元数据通过根目录的 `plugin.json` 声明，其中 `id` 字段由开发者手动填写（必须为英文）：
+插件放置在 `vendor/nova-plugins/` 目录，每个插件一个独立文件夹。**自 NovaCMS 1.1 起，插件代码统一放在 `plugin/` 子目录**，元数据通过根目录的 `plugin.json` 声明：
 
 ```
 vendor/nova-plugins/
-├── my-plugin/                  # 插件目录（slug，唯一）
-│   ├── plugin/                 # 插件代码目录（所有 PHP 代码）
-│   │   ├── plugin.php          # 入口文件（默认 entry）
-│   │   ├── class-my-plugin.php # 插件主类（推荐）
-│   │   ├── routes/             # 路由文件目录（自动加载）
-│   │   │   ├── api.php
-│   │   │   └── web.php
-│   │   ├── views/              # 视图模板目录
-│   │   │   └── settings.php
-│   │   └── admin/              # 后台管理页面
-│   │       └── index.php
-│   ├── plugin.json             # 元数据（含 id，必须为英文；可声明 page_routes）
-│   ├── config.json             # 插件配置表单定义及存储（可选，详见 4.3.2）
-│   ├── LICENSE                 # 许可证文件
-│   ├── assets/                 # 静态资源目录（可选）
-│   │   ├── css/
-│   │   └── js/
-│   └── data/                   # 运行时数据目录（可选，如备份、缓存等）
+└── my-plugin/                  # 插件目录（slug，唯一）
+    ├── plugin.json             # 元数据（含 id，必须为英文）
+    ├── config.json             # 声明式配置表单（可选，详见 4.6）
+    ├── LICENSE                 # 许可证文件
+    ├── plugin/                 # 插件代码目录（所有 PHP 代码）
+    │   ├── plugin.php          # 入口文件（默认 entry）
+    │   ├── class-my-plugin.php # 插件主类（推荐）
+    │   ├── routes/             # REST 路由文件目录（实例化时自动加载）
+    │   │   └── api.php
+    │   └── admin/              # 后台管理页面（存在 index.php 即自动注册侧边栏菜单）
+    │       ├── index.php       # 管理页面（由 admin/plugin-page.php 渲染）
+    │       └── detail.php      # 插件详情页自定义 Tab（需配合 detail_tab 字段）
+    ├── assets/                 # 静态资源目录（可选）
+    │   ├── css/
+    │   └── js/
+    └── data/                   # 运行时数据目录（可选，如备份、缓存）
 ```
 
-#### plugin.json 格式
+> 所有目录均可选，最小插件只需 `plugin.json` + `plugin/plugin.php`。
+
+### plugin.json 格式
 
 ```json
 {
@@ -141,174 +138,113 @@ vendor/nova-plugins/
     "author": "你的名字",
     "author_uri": "https://example.com",
     "entry": "plugin/plugin.php",
-    "min_nova_version": "1.0"
+    "min_nova_version": "1.1",
+    "page_routes": {
+        "/my-page": "plugin/pages/page.php",
+        "/my-page/{id}": "plugin/pages/detail.php"
+    },
+    "sidebar": true,
+    "config_path": "",
+    "detail_tab": "数据统计"
 }
 ```
 
-| 字段                 | 类型     | 必填 | 说明                                                                                                                     |
-| ------------------ | ------ | -- | ---------------------------------------------------------------------------------------------------------------------- |
-| `id`               | string | 是  | 插件唯一标识符，**必须为英文**（字母、数字、下划线 `_`、连字符 `-`），**不可与其他插件重复**，建议与目录名一致。排在 `name` 之前。启用/禁用以此 id 为准。若未填写，系统自动以目录名（slug）作为 id 回退 |
-| `name`             | string | 是  | 插件显示名称                                                                                                                 |
-| `uri`              | string | 否  | 插件主页 URL                                                                                                               |
-| `description`      | string | 否  | 插件描述                                                                                                                   |
-| `version`          | string | 是  | 版本号                                                                                                                    |
-| `author`           | string | 否  | 作者                                                                                                                     |
-| `author_uri`       | string | 否  | 作者主页                                                                                                                   |
-| `entry`            | string | 否  | 入口文件相对路径，默认 `plugin/plugin.php`                                                                                        |
-| `min_nova_version` | string | 否  | 最低 NovaCMS 版本要求                                                                                                        |
-| `page_routes`      | object | 否  | 自定义页面路由映射，key 为 URL 路径，value 为要执行的 PHP 文件路径（相对插件目录）。详见 [4.3.1 注册自定义页面路由](#431-注册自定义页面路由)                               |
+#### 字段说明（Nova_Plugin_Registry 实际解析的全部字段）
 
-> **注意**：`id` 字段必须为英文（字母、数字、下划线、连字符），由开发者在 `plugin.json` 中手动填写，排在 `name` 字段之前。**每个插件的 id 必须唯一，不可重复**。若未填写，系统会自动以插件目录名（slug）作为 id 回退并写回文件。
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `id` | string | **是** | 插件唯一标识。**必须为英文**：以字母开头，仅含字母/数字/下划线/连字符；不可与其他插件重复；**排在 `name` 之前**。启用/禁用以此 id 为准。若未填写，系统自动以目录名（slug）回退并写回文件 |
+| `name` | string | 是 | 插件显示名称（可中文），留空时以 slug 显示 |
+| `version` | string | 否 | 版本号，默认 `1.0.0` |
+| `description` | string | 否 | 插件描述，显示在后台插件列表 |
+| `author` | string | 否 | 作者名 |
+| `author_uri` | string | 否 | 作者主页 |
+| `uri` | string | 否 | 插件主页 |
+| `entry` | string | 否 | 入口文件相对路径，默认 `plugin/plugin.php` |
+| `min_nova_version` | string | 否 | 最低 NovaCMS 版本要求 |
+| `page_routes` | object | 否 | 前台页面路由映射：`"路径": "PHP 文件相对插件根目录的路径"`，支持 `{param}` 占位符（详见 4.5） |
+| `sidebar` | bool | 否 | 是否在后台侧边栏注册菜单，默认 `true`；设 `false` 可隐藏（详见 4.7） |
+| `config_path` | string | 否 | 配置文件重定向路径（相对插件根目录），用于把 config.json 放到插件目录之外（详见 4.6） |
+| `detail_tab` | string | 否 | 插件详情页自定义 Tab 标题，需配合 `plugin/admin/detail.php`（详见 4.7） |
 
-### 快速启动模板
-
-创建一个最基本的插件目录和文件结构：
-
-```bash
-cd vendor/nova-plugins/
-mkdir -p my-plugin/plugin/routes my-plugin/plugin/views my-plugin/plugin/admin my-plugin/assets
-# 创建元数据文件
-cat > my-plugin/plugin.json << 'EOF'
-{
-    "id": "my-plugin",
-    "name": "My Plugin",
-    "description": "插件描述",
-    "version": "1.0.0",
-    "author": "你的名字",
-    "entry": "plugin/plugin.php"
-}
-EOF
-# 创建入口文件
-touch my-plugin/plugin/plugin.php
-```
+> ⚠️ `id` 重复的两个插件都会被扫描，但第二个会被标记 `duplicate`，系统加载时跳过，后台插件管理页提示删除。
 
 ***
 
 ## 3. 入门：Hello World
 
-此文档将帮助你了解如何构建你的第一个插件并在 NovaCMS 中使用它。
+下面创建一个最小可运行插件：提供一条 REST 接口 + 一个前台虚拟页面。
 
-### 创建插件类
+### 3.1 创建目录与 plugin.json
 
-在 `vendor/nova-plugins/my-plugin/plugin/class-my-plugin.php` 中创建插件主类：
-
-```php
-<?php
-// vendor/nova-plugins/my-plugin/plugin/class-my-plugin.php
-
-defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
-
-class MyPlugin extends Nova_Plugin {
-
-    protected $name    = 'my-plugin';
-    protected $version = '1.0.0';
-
-    /**
-     * 插件初始化入口
-     * 在系统加载时自动调用
-     */
-    public function init() {
-        // 注册一个 REST API 路由
-        $this->register_route('v1', '/my-plugin/hello', [
-            'methods'  => 'GET',
-            'callback' => [$this, 'hello'],
-        ]);
-
-        // 注册一个后台管理页面
-        Nova_Backend_Menu::add_menu(
-            '我的插件',          // 菜单显示名称
-            'my-plugin',        // 菜单唯一 ID
-            '/admin/my-plugin.php', // 页面 URL
-            '🔌',               // 菜单图标
-            30                  // 菜单位置
-        );
-
-        // 注册后台 AJAX 处理器
-        Nova_Backend_Ajax::add('my_plugin_data', [$this, 'ajaxHandler']);
-    }
-
-    /**
-     * REST API 回调
-     */
-    public function hello($request) {
-        return new Nova_REST_Response([
-            'code'    => 'rest_ok',
-            'message' => '你好，世界！',
-            'data'    => [
-                'status'  => 200,
-                'version' => $this->version,
-                'greeting' => 'Hello from My Plugin!',
-            ],
-        ]);
-    }
-
-    /**
-     * AJAX 处理器
-     */
-    public function ajaxHandler($input) {
-        return [
-            'success' => true,
-            'data'    => ['message' => 'AJAX 请求成功'],
-        ];
-    }
-}
-
-// 实例化插件（必须）
-new MyPlugin();
+```
+vendor/nova-plugins/hello/
+├── plugin.json
+└── plugin/
+    └── plugin.php
 ```
 
-### 创建入口文件
-
-在 `vendor/nova-plugins/my-plugin/plugin/plugin.php` 中创建入口文件：
-
-```php
-<?php
-// vendor/nova-plugins/my-plugin/plugin/plugin.php
-defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
-require_once __DIR__ . '/class-my-plugin.php';
-// 系统会自动扫描并加载此文件
-```
-
-### 创建 plugin.json
-
-在 `vendor/nova-plugins/my-plugin/plugin.json` 中声明元数据：
+**plugin.json**
 
 ```json
 {
-    "id": "my-plugin",
-    "name": "My Plugin",
-    "uri": "https://example.com/my-plugin",
-    "description": "我的第一个 NovaCMS 插件",
+    "id": "hello",
+    "name": "Hello World",
+    "description": "最小示例插件",
     "version": "1.0.0",
     "author": "你的名字",
-    "author_uri": "https://example.com",
     "entry": "plugin/plugin.php",
-    "min_nova_version": "1.0"
-}
-```
-
-> `id` 字段必须为英文（字母、数字、下划线、连字符），由开发者手动填写，排在 `name` 之前。每个插件的 id 必须唯一，不可重复。若未填写，系统自动以目录名作为 id 回退。
-
-### 验证插件
-
-1. 将插件目录 `my-plugin` 放入 `vendor/nova-plugins/`，确保包含 `plugin.json`（含英文 `id`）和 `plugin/plugin.php`
-2. 访问后台「插件管理」页面，系统会自动识别插件
-3. 访问任意前台页面，插件即自动加载（需处于启用状态）
-4. 访问 `GET /nova-json/v1/my-plugin/hello` 测试 API
-
-**响应示例：**
-
-```json
-{
-    "code": "rest_ok",
-    "message": "你好，世界！",
-    "data": {
-        "status": 200,
-        "version": "1.0.0",
-        "greeting": "Hello from My Plugin!"
+    "page_routes": {
+        "/hello": "plugin/hello-page.php"
     }
 }
 ```
+
+### 3.2 创建入口文件
+
+**plugin/plugin.php**
+
+```php
+<?php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+
+class Hello_Plugin extends Nova_Plugin {
+
+    protected $name    = 'hello';
+    protected $version = '1.0.0';
+
+    public function init() {
+        // 注册一条 REST 路由：GET /nova-json/v1/hello
+        $this->register_route('v1', '/hello', [
+            'methods'  => 'GET',
+            'callback' => function () {
+                return ['message' => 'Hello, NovaCMS!'];
+            },
+        ]);
+    }
+}
+
+new Hello_Plugin();
+```
+
+### 3.3 创建页面路由文件
+
+**plugin/hello-page.php**（由 `page_routes` 的 `/hello` 指向）
+
+```php
+<?php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
+
+header('Content-Type: text/html; charset=utf-8');
+echo '<h1>Hello, NovaCMS!</h1><p>这是插件提供的前台页面。</p>';
+```
+
+### 3.4 验证
+
+1. 后台「插件」页面应出现 Hello World 插件，开关为启用（`active_plugins` 为 NULL 时全部启用）
+2. 访问 `http://your-domain/hello` → 输出 Hello 页面
+3. 访问 `http://your-domain/nova-json/v1/hello` → 返回 JSON
+4. 在后台关闭该插件 → `/hello` 返回 403「此插件已禁用」，API 返回禁用提示
 
 ***
 
@@ -316,506 +252,411 @@ require_once __DIR__ . '/class-my-plugin.php';
 
 ### 4.1 插件基类与生命周期
 
-#### Nova\_Plugin 类
+#### Nova_Plugin 类
 
-所有插件必须继承 `Nova_Plugin` 基类，该类提供了：
+所有插件主类应继承 `Nova_Plugin`（定义于 `vendor/nova-json/class/plugin/class-plugin.php`）：
 
-- **自动路径检测** — 自动识别插件文件和目录路径
-- **自动路由加载** — 自动加载 `routes/` 目录下的 PHP 文件
-- **生命周期管理** — 通过 `init()` 方法在系统初始化时执行
+```php
+class My_Plugin extends Nova_Plugin {
+    protected $name    = 'my-plugin';   // 插件名（留空则取类文件所在目录名）
+    protected $version = '1.0.0';
 
-#### 生命周期
-
-```
-系统启动
-    │
-    ├── 加载全部插件文件
-    │
-    ├── 实例化插件类 (__construct)
-    │   ├── 自动检测插件路径/URL
-    │   ├── 自动加载 routes/ 目录
-    │   └── 注册 init() 到钩子系统
-    │
-    ├── Nova_Hooks::do_action('nova_init')
-    │   └── 执行所有插件的 init() 方法
-    │
-    ├── Nova_Hooks::do_action('rest_api_init')
-    │   └── 执行所有路由注册
-    │
-    └── 处理请求 → 路由分发 → 执行回调
+    public function init() { /* 注册路由、挂载钩子 */ }
+}
+new My_Plugin();   // 入口文件末尾实例化
 ```
 
-#### 可用属性
+**构造函数自动完成：**
 
-| 属性             | 类型     | 说明              |
-| -------------- | ------ | --------------- |
-| `$name`        | string | 插件名称（用于日志标识）    |
-| `$version`     | string | 插件版本号           |
-| `$plugin_path` | string | 插件目录绝对路径（自动检测）  |
-| `$plugin_url`  | string | 插件 URL 地址（自动检测） |
+1. 通过反射推导 `plugin_path`（类文件所在目录）、`plugin_url`、`plugin_slug`（插件根目录名）
+2. 通过 `Nova_Plugin_Registry::scan_all()` 反查 `plugin_id`
+3. 设置 REST 插件上下文 → **自动加载 `plugin/routes/*.php`** → 清除上下文（保证路由文件里的 `register_rest_route()` 能归属到本插件，禁用时可拦截）
+4. 若插件**已启用**且存在 `init()` 方法，注册到 `nova_init` 钩子（禁用插件不注册，避免副作用）
+
+#### 生命周期（两条加载路径）
+
+| 时机 | API 请求（`/nova-json/*`） | 前台请求（其他路径） |
+| --- | --- | --- |
+| 加载者 | `vendor/nova-json/init.php` | `index.php` |
+| 启用插件 | require 入口文件（实例化 → 自动加载 routes） | require 入口文件 |
+| 禁用插件 | **不加载入口**，仅加载其 `routes/`（路由仍注册，访问时被拦截返回禁用提示） | 完全不加载 |
+| 初始化钩子 | `do_action('nova_init')` → 执行各插件 `init()` | 同左 |
+| 后续 | REST 分发输出 JSON | 页面路由 → 主题渲染 → shutdown 注入钩子输出 |
+
+> 💡 **禁用插件在 API 侧仍加载 routes 的原因**：让路由注册后能被 `Nova_REST_Server::dispatch()` 识别并返回「此插件已禁用」的明确提示，而不是含糊的 404。
+
+#### 可用属性（protected）
+
+| 属性 | 类型 | 说明 |
+| --- | --- | --- |
+| `$name` | string | 插件名，用于日志前缀 |
+| `$version` | string | 版本号 |
+| `$plugin_path` | string | 插件**代码目录**绝对路径（`plugin/`），反射自动推导 |
+| `$plugin_url` | string | 插件代码目录的完整 URL（自动按 http/https 推导） |
+| `$plugin_id` | string | 插件 id（与 plugin.json 一致） |
+| `$plugin_slug` | string | 插件目录名 |
 
 #### 可用方法
 
-| 方法                                       | 说明              |
-| ---------------------------------------- | --------------- |
-| `register_route(namespace, route, args)` | 快捷注册 REST 路由    |
-| `db()`                                   | 获取 `Nova_DB` 实例 |
-| `log(message, level)`                    | 写入 PHP 错误日志     |
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `register_route()` | `protected register_route($namespace, $route, $args)` | 注册 REST 路由（快捷方式），自动附加 `plugin_id`/`plugin_slug` 便于禁用拦截 |
+| `load_routes()` | `protected load_routes()` | 自动加载 `plugin_path/routes/*.php`（构造时已调用，一般无需手动） |
+| `db()` | `protected db(): Nova_DB` | 获取数据库实例 |
+| `log()` | `protected log($message, $level = 'INFO')` | 写入插件日志（error_log，前缀 `[插件名][级别]`） |
+| `get_plugin_id()` | `public get_plugin_id(): string` | 获取插件 id |
+| `get_plugin_slug()` | `public get_plugin_slug(): string` | 获取插件 slug |
+
+#### 插件启用/禁用机制
+
+- 启用列表存于数据库 `website_config.active_plugins` 字段（JSON 数组）
+- **NULL / 空 = 全部启用**（向后兼容：未使用过后台开关时所有插件可用）
+- 由 `Nova_Plugin_Registry::get_active_plugin_ids()` / `is_plugin_active($pluginId)` 读取
+- 后台插件管理页（`admin/plugins.php`）通过 Bootstrap 滑动开关 AJAX 更新，切换后侧边栏菜单自动刷新
+- 状态变更后系统调用 `Nova_Plugin_Registry::clear_cache()` 清除缓存
 
 ***
 
 ### 4.2 钩子系统：Actions & Filters
 
-NovaCMS 提供了类似 WordPress 的钩子系统（`Nova_Hooks`），包含两种钩子类型：
+钩子由 `Nova_Hooks`（`vendor/nova-json/class/system/class-hooks.php`）管理，写法类似 WordPress。
 
-#### Actions（动作钩子）
-
-在特定时机执行代码，不返回值。
-
-// 注册动作
-
-Nova\_Hooks::add\_action('nova\_init', 'my\_callback', $priority = 10);
-
-<br />
-
-// 执行动作（系统在适当时机调用）
-
-Nova\_Hooks::do\_action('nova\_init');
-
-#### Filters（过滤器钩子）
-
-修改传递的值并返回。
+#### Actions（动作钩子）— 执行副作用
 
 ```php
-// 注册过滤器
-Nova_Hooks::add_filter('nova_post_data', 'my_filter_callback', $priority = 10);
+// 注册：add_action(钩子名, 回调, 优先级)
+Nova_Hooks::add_action('nova_init', [$this, 'init']);
+Nova_Hooks::add_action('nova_footer', 'my_footer_fn', 20);
 
-// 应用过滤器（系统在适当时机调用）
-$data = Nova_Hooks::apply_filters('nova_post_data', $originalData);
+// 触发：do_action(钩子名, ...参数)
+Nova_Hooks::do_action('nova_footer');
 ```
 
-#### 系统内置钩子
-
-| 钩子名称                            | 类型     | 时机             | 适用范围      |
-| ------------------------------- | ------ | -------------- | --------- |
-| `nova_init`                     | Action | 系统初始化完成时       | API + 前台  |
-| `rest_api_init`                 | Action | REST API 路由注册时 | 仅 API     |
-| `nova_head`                     | Action | 前台 `</head>` 之前 | 仅前台       |
-| `nova_body_start`               | Action | 前台 `<body>` 之后 | 仅前台       |
-| `nova_navbar_end`               | Action | 前台首个 `</nav>` 之后（主导航末尾） | 仅前台       |
-| `nova_footer`                   | Action | 前台 `</body>` 之前 | 仅前台       |
-| `nova_inject`                   | Filter | 页面输出前收集任意位置注入项 | 仅前台       |
-| `nova_backend_render_{menu_id}` | Action | 后台页面渲染时        | 仅后台       |
-| `nova_backend_menu_capability`  | Filter | 检查菜单权限时        | 仅后台       |
-| `nova_backend_user_capability`  | Filter | 检查用户权限时        | 仅后台       |
-| `nova_post_data`                | Filter | 获取文章数据时        | API        |
-
-#### 插件示例：使用钩子扩展功能
+#### Filters（过滤器钩子）— 修改并返回值
 
 ```php
-class MyPlugin extends Nova_Plugin {
-    public function init() {
-        // 在系统初始化时执行
-        Nova_Hooks::add_action('nova_init', [$this, 'onSystemInit']);
+// 注册
+Nova_Hooks::add_filter('nova_inject', function (array $items) {
+    $items[] = ['selector' => 'main', 'html' => '<div>...</div>'];
+    return $items;
+});
 
-        // 修改文章数据
-        Nova_Hooks::add_filter('nova_post_data', [$this, 'modifyPostData']);
-    }
-
-    public function onSystemInit() {
-        // 自定义初始化逻辑
-        $this->log('插件已加载');
-    }
-
-    public function modifyPostData($data) {
-        // 为每篇文章添加自定义字段
-        $data['plugin_info'] = '由 My Plugin 处理';
-        return $data;
-    }
-}
+// 应用：$value 依次经过所有回调，返回最终值
+$items = Nova_Hooks::apply_filters('nova_inject', []);
 ```
 
-#### 前台注入钩子（nova_head / nova_body_start / nova_navbar_end / nova_footer）
+#### 完整 API
 
-插件可以向**前台页面**注入 HTML（按钮、浮窗、播放器、统计脚本、CSS 等），而**无需修改任何主题文件**。
+| 方法 | 说明 |
+| --- | --- |
+| `add_action($tag, $callback, $priority = 10)` | 注册动作，priority 越小越先执行 |
+| `do_action($tag, ...$args)` | 执行动作 |
+| `remove_action($tag, $callback, $priority = 10)` | 移除动作 |
+| `has_action($tag, $callback = null)` | 是否已注册（callback 为 null 时检查任意回调） |
+| `add_filter($tag, $callback, $priority = 10)` | 注册过滤器 |
+| `apply_filters($tag, $value, ...$args)` | 应用过滤器，返回修改后的值 |
+| `remove_filter($tag, $callback, $priority = 10)` | 移除过滤器 |
+| `has_filter($tag, $callback = null)` | 是否已注册 |
 
-##### 工作原理
+#### 系统内置钩子清单
 
-前台入口 `index.php` 在加载主题模板前会：
-1. 加载所有已启用插件的入口文件
-2. 触发 `nova_init`（让插件在 `init()` 里注册钩子回调）
-3. 开启输出缓冲（`ob_start`）
-4. 脚本结束时（`register_shutdown_function`）拦截整页 HTML，把以下 4 个钩子的输出正则插入到对应位置
+| 钩子 | 类型 | 触发时机 | 常见用途 |
+| --- | --- | --- | --- |
+| `nova_init` | Action | 插件加载完毕后（API 与前台各触发一次） | 插件初始化：注册路由、挂其他钩子 |
+| `rest_api_init` | Action | REST Server 启动时，回调收到 `$server` 实例 | 低层路由注册（一般用 `register_rest_route()` 即可） |
+| `nova_head` | Action | 页面 `</head>` 前（前台 shutdown 注入） | 注入 CSS link / meta / script |
+| `nova_body_start` | Action | `<body>` 标签之后 | 注入首屏加载动画等 |
+| `nova_navbar_end` | Action | 首个 `</nav>` 之后 | 注入导航栏下方横幅 |
+| `nova_footer` | Action | `</body>` 前 | 注入统计代码、播放器 DOM |
+| `nova_inject` | Filter | shutdown 注入阶段 | 任意位置 DOM 注入（见下节） |
 
-| 钩子名               | 注入位置            | 典型用途            |
-| ------------------- | ------------------ | ------------------ |
-| `nova_head`         | `</head>` 之前      | 插件 CSS、meta 标签  |
-| `nova_body_start`   | `<body>` 标签之后    | 顶部公告条          |
-| `nova_navbar_end`   | 首个 `</nav>` 之后   | 导航栏追加菜单项     |
-| `nova_footer`       | `</body>` 之前      | 浮动组件、统计 JS    |
-
-> 注入只对**首个**匹配标签生效（如导航栏只替换第一个 `</nav>`，通常即主导航）。后台页面（`/admin/*`）和 `/nova-json/*` API 响应不经过此机制，不会被污染。
-
-##### 示例：向前台注入浮动按钮 + 导航菜单项
-
-```php
-class FloatingButtonPlugin extends Nova_Plugin {
-    protected $name = 'floating-button';
-
-    public function init() {
-        Nova_Hooks::add_action('nova_head',       [$this, 'injectCss']);
-        Nova_Hooks::add_action('nova_navbar_end', [$this, 'injectNavItem']);
-        Nova_Hooks::add_action('nova_footer',    [$this, 'injectButton']);
-    }
-
-    public function injectCss() {
-        echo '<link rel="stylesheet" href="' . e($this->plugin_url) . '/assets/style.css">';
-    }
-
-    public function injectNavItem() {
-        echo '<li class="nav-item"><a class="nav-link" href="/my-page">我的页面</a></li>';
-    }
-
-    public function injectButton() {
-        echo '<a href="#top" class="nova-floating-btn" style="position:fixed;right:20px;bottom:20px;z-index:9999;">回到顶部</a>';
-    }
-}
-new FloatingButtonPlugin();
-```
-
-> **注意**：钩子输出会原样插入 HTML，请自行对动态内容做转义（`e()` / `htmlspecialchars`）防止 XSS。若插件被禁用，其入口文件不会加载，钩子回调自然不会注册，前台即不再注入该插件的内容。
-
-#### 任意位置注入（nova_inject）
-
-`nova_head` / `nova_footer` 等 4 个固定锚点只能注入到页面固定位置。如需注入到**任意 DOM 位置**（如某篇文章正文末尾、评论框之前、导航栏某个菜单项之后），使用 `nova_inject` 过滤器。
-
-##### 工作原理
-
-`nova_inject` 是 Filter 钩子，回调返回注入项数组。框架把所有注入项序列化为 JSON 并输出一段通用 JS，由 JS 按 CSS 选择器把 HTML 插入到目标位置。注入项支持**重试**，适配异步渲染的页面。
-
-##### 注入项格式
-
-```php
-$items[] = [
-    'selector' => 'article.article-shell',  // CSS 选择器（必填，支持逗号分隔多个）
-    'position' => 'after',                  // before | after | prepend | append（默认 append）
-    'html'     => '<div>注入内容</div>',     // 要注入的 HTML（必填）
-    'retry'    => 3,                         // 选择器未匹配时的重试次数（默认 3，最大 10）
-    'delay'    => 200,                       // 重试间隔毫秒（默认 200，最大 5000）
-];
-return $items;
-```
-
-| position 值 | 插入位置 |
-|---|---|
-| `before` | 目标元素**之前**（同级） |
-| `after` | 目标元素**之后**（同级） |
-| `prepend` | 目标元素内部**开头** |
-| `append` | 目标元素内部**末尾** |
-
-##### 示例：在文章正文末尾注入组件
-
-```php
-class ArticleWidgetPlugin extends Nova_Plugin {
-    protected $name = 'article-widget';
-
-    public function init() {
-        // 仅文章详情页注入
-        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-        if (($path === '/blog' || $path === '/blog.php') && (int)($_GET['id'] ?? 0) > 0) {
-            Nova_Hooks::add_filter('nova_inject', [$this, 'registerInjection']);
-        }
-    }
-
-    public function registerInjection(array $items): array {
-        $items[] = [
-            'selector' => '[data-post-body], article.article-shell',
-            'position' => 'append',
-            'html'     => '<div class="article-widget">这里放你的组件 HTML</div>',
-            'retry'    => 5,
-            'delay'    => 300,
-        ];
-        return $items;
-    }
-}
-new ArticleWidgetPlugin();
-```
-
-##### 与固定锚点钩子的对比
-
-| | `nova_head`/`nova_footer` 等 | `nova_inject` |
-|---|---|---|
-| 注入位置 | 4 个固定锚点 | 任意 CSS 选择器 |
-| 实现方式 | PHP 正则替换 | JS DOM 操作 |
-| 执行时机 | 页面输出前 | 页面加载后（DOMContentLoaded） |
-| 异步内容 | 不支持 | 支持（`retry` + `delay` 重试） |
-| 内联 script | 直接执行 | 自动重新创建 script 元素执行 |
-| 性能 | 最优 | 略有 JS 开销 |
-
-##### 注意事项
-
-- **XSS 防护**：HTML 由插件提供，请自行转义动态内容（`e()` / `htmlspecialchars`）
-- **内联 script**：框架会自动重新创建 `<script>` 元素确保执行（`template.innerHTML` 默认不执行脚本）
-- **选择器匹配**：`querySelector` 只注入到**第一个匹配元素**。如需注入到多个元素，注册多个注入项
-- **插件禁用**：插件被禁用后入口不加载，过滤器不注册，自然不注入
-- **后台/API 不受影响**：仅作用于前台 HTML 页面
+> 前台注入类钩子（`nova_head` 等）基于输出缓冲：`index.php` 在 `ob_start()` 后渲染主题，脚本结束时统一将钩子输出用正则插入 HTML 锚点。因此**回调中直接 `echo` 即可**，无需返回值。
 
 ***
 
-### 4.3 注册 REST API 路由
+### 4.3 前台注入钩子与 nova_inject
 
-插件可以通过 `register_rest_route()` 函数或 `Nova_Plugin::register_route()` 注册 API 端点。
+#### 固定锚点注入
+
+```php
+public function init() {
+    Nova_Hooks::add_action('nova_head',   [$this, 'injectCss']);
+    Nova_Hooks::add_action('nova_footer', [$this, 'injectWidget']);
+}
+
+public function injectCss() {
+    echo '<link rel="stylesheet" href="' . e($this->plugin_url) . '/assets/css/widget.css">' . "\n";
+}
+
+public function injectWidget() {
+    echo '<div id="my-widget">...</div>' . "\n";
+}
+```
+
+#### 任意位置注入（nova_inject 过滤器）
+
+无需修改任何主题文件，通过 CSS 选择器把 HTML 注入到页面任意位置。系统在 shutdown 阶段收集所有注入项，生成一段 JS（含重试机制，适配异步渲染的 DOM）插到 `</body>` 前：
+
+```php
+Nova_Hooks::add_filter('nova_inject', function (array $items) {
+    $items[] = [
+        'selector' => 'article.article-shell', // CSS 选择器（注入到第一个匹配元素）
+        'position' => 'append',                // before | after | prepend | append
+        'html'     => '<div class="my-box">点赞</div>',
+        'retry'    => 5,                       // 目标不存在时重试次数（默认 3，上限 10）
+        'delay'    => 300,                     // 重试间隔毫秒（默认 200，上限 5000）
+    ];
+    return $items;
+});
+```
+
+**注入项规范：**
+
+| 键 | 必填 | 说明 |
+| --- | --- | --- |
+| `selector` | 是 | 合法 CSS 选择器，注入到**第一个**匹配元素 |
+| `html` | 是 | 注入的 HTML 片段（内联 `<script>` 会被重新激活执行） |
+| `position` | 否 | `before` / `after` / `prepend` / `append`，默认 `append` |
+| `retry` | 否 | 选择器未命中时的重试次数，默认 3，范围 0–10 |
+| `delay` | 否 | 重试间隔（毫秒），默认 200，范围 0–5000 |
+
+系统会按 `selector + position + html 摘要` 去重，多个插件注入相同内容不会重复。
+
+> 📖 真实示例：`vendor/nova-plugins/netease-player/plugin/plugin.php` 中 `injectPlayer()` 演示了「静态位置用 nova_inject 注入文章容器 / 固定位置直接 echo」的双模式写法。
+
+***
+
+### 4.4 注册 REST API 路由
 
 #### 基本路由
 
-```php
-register_rest_route('v1', '/my-plugin/items', [
-    'methods'  => 'GET',
-    'callback' => function($request) {
-        return new Nova_REST_Response([
-            'code' => 'rest_ok',
-            'data' => ['items' => ['item1', 'item2']],
-        ]);
-    },
-    'permission_callback' => function($request) {
-        return true; // 公开访问
-    },
-]);
-```
-
-#### 带 URL 参数的路由
+在插件 `init()` 中使用基类快捷方法：
 
 ```php
-register_rest_route('v1', '/my-plugin/items/(?P<id>\d+)', [
-    'methods'  => 'GET',
-    'callback' => function($request) {
-        $id = $request->get_param('id');
-        return new Nova_REST_Response([
-            'code' => 'rest_ok',
-            'data' => ['id' => $id],
-        ]);
-    },
-]);
+public function init() {
+    $this->register_route('v1', '/my-plugin/data', [
+        'methods'  => 'GET',
+        'callback' => [$this, 'get_data'],
+    ]);
+}
+
+public function get_data($request) {
+    return ['ok' => true, 'data' => []];
+}
 ```
 
-#### 多种请求方法
+等效于在 `plugin/routes/api.php` 中写（两条路二选一）：
 
 ```php
 register_rest_route('v1', '/my-plugin/data', [
-    [
-        'methods'  => 'GET',
-        'callback' => 'handle_get',
-    ],
-    [
-        'methods'  => 'POST',
-        'callback' => 'handle_post',
-        'permission_callback' => function($request) {
-            return is_admin();
-        },
-    ],
+    'methods'  => 'GET',
+    'callback' => function ($request) {
+        return ['ok' => true];
+    },
+]);
+```
+
+> `plugin/routes/*.php` 在插件实例化时**自动加载**（含 API 侧加载的禁用插件），加载期间 REST 上下文已指向本插件，`register_rest_route()` 注册的路由自动带上 `plugin_id`。
+
+最终访问地址：`/nova-json/v1/my-plugin/data`（namespace `v1` 会自动成为 URL 前缀）。
+
+#### 带 URL 参数的路由
+
+路由中的 `{name}` 占位符会被转为命名捕获组（`[^/]+`）：
+
+```php
+$this->register_route('v1', '/my-plugin/item/(?P<id>\d+)', [
+    'methods'  => 'GET',
+    'callback' => function ($request) {
+        $id = (int) $request->get_param('id');
+        return ['id' => $id];
+    },
+]);
+```
+
+> 也支持简写 `'/my-plugin/item/{id}'`（系统自动转换），正则写法 `(?P<id>\d+)` 可约束格式。
+
+#### 多请求方法
+
+```php
+$this->register_route('v1', '/my-plugin/items', [
+    'methods'  => ['GET', 'POST'],
+    'callback' => [$this, 'handle_items'],
 ]);
 ```
 
 #### 权限控制
 
 ```php
-// 公开访问
-'permission_callback' => function($request) {
-    return true;
-}
-
-// 需要登录
-'permission_callback' => function($request) {
-    return !empty($_SESSION['user_id']);
-}
-
-// 需要管理员权限
-'permission_callback' => function($request) {
-    return !empty($_SESSION['admin_id']);
-}
-
-// 自定义权限验证
-'permission_callback' => function($request) {
-    $userId = $_SESSION['user_id'] ?? 0;
-    return $userId > 0 && v1_is_admin($userId);
-}
+$this->register_route('v1', '/my-plugin/admin', [
+    'methods'             => 'POST',
+    'callback'            => [$this, 'admin_action'],
+    'permission_callback' => function () {
+        return v1_is_admin(v1_get_current_user_id());   // 系统内置助手函数
+    },
+]);
 ```
+
+`init.php` 提供两个全局助手：
+
+| 函数 | 说明 |
+| --- | --- |
+| `v1_get_current_user_id()` | 当前登录用户 id（Session 或 Bearer Token），未登录返回 0 |
+| `v1_is_admin($userId)` | 从数据库核验该用户是否为 `admin` 角色且未封禁 |
 
 #### 获取请求参数
 
+回调收到 `Nova_REST_Request` 对象：
+
 ```php
-// URL 路径参数 (?P<id>\d+)
-$request->get_param('id');
-
-// URL 查询参数 (?page=1&per_page=10)
-$request->get_param('page');
-$request->get_param('per_page');
-
-// POST 请求体参数
-$request->get_param('name');
-$request->get_param('email');
-
-// 获取所有合并参数
-$params = $request->get_params();
-
-// 获取请求头
-$token = $request->get_header('authorization');
+$method = $request->get_method();          // GET / POST ...
+$id     = $request->get_param('id');        // 路由参数 + 查询参数 + JSON body 合并
+$query  = $request->get_query_params();     // $_GET
+$body   = $request->get_body_params();      // POST body（JSON 已解码）
+$file   = $request->get_file_params();      // $_FILES
 ```
+
+#### 返回值
+
+回调返回数组即自动 JSON 输出（`Content-Type: application/json`，状态码 200）；需要错误状态时返回 `Nova_REST_Response`：
+
+```php
+return new Nova_REST_Response([
+    'code'    => 'my_error',
+    'message' => '参数不合法',
+    'data'    => ['status' => 400],
+], 400);
+```
+
+系统路由的错误惯例参考 `routes/statuses/guestbook.php` 的 `nova_guestbook_error($code, $message, $status)`。
 
 ***
 
-### 4.3.1 注册自定义页面路由
+### 4.5 注册自定义页面路由（page_routes）
 
-除了 REST API 路由（`/nova-json/v1/...`）之外，插件还可以注册**前台自定义页面路由**，让插件接管特定 URL 的页面输出。
+插件可以不经过主题、直接提供前台页面（如 `/rss.xml`、`/sitemap.xml`、`/docs`）。
 
 #### 工作原理
 
-在 `plugin.json` 中声明 `page_routes` 字段，系统会在主题路由之前检查当前请求路径是否匹配某个插件注册的页面路由。如果匹配：
+前台 `index.php` 在**主题渲染之前**扫描所有插件的 `page_routes`：
 
-- **插件已启用** → 加载对应的 PHP 文件，由该文件完全控制页面输出（可以输出 HTML、XML、JSON 等任意内容）
-- **插件已禁用** → 返回 403 + "此插件已禁用" 提示页面
+1. 把路由模式中的 `{param}` 转为正则捕获组并匹配当前请求路径
+2. 命中后把捕获的参数写入 `$_GET`
+3. 定义常量 `NOVA_PAGE_ROUTE`（路由模式）与 `NOVA_PAGE_ROUTE_PLUGIN`（插件 id）
+4. `require` 映射的目标 PHP 文件并退出
+5. **插件被禁用时**：返回 403 与「此插件已禁用」提示页
 
 #### plugin.json 示例
 
 ```json
 {
-    "id": "rss",
-    "name": "RSS 订阅",
-    "version": "1.0.0",
+    "id": "docs",
+    "name": "文档中心",
     "entry": "plugin/plugin.php",
     "page_routes": {
-        "/rss.xml": "plugin/rss.php",
-        "/feed": "plugin/feed.php",
-        "/feed/{category}": "plugin/feed.php"
+        "/docs": "plugin/docs-page.php",
+        "/docs/{slug}": "plugin/docs-detail.php"
     }
 }
 ```
 
-- **key** — URL 路径模式（相对于站点根目录），支持 `{param}` 参数占位符
-- **value** — 要执行的 PHP 文件路径（相对于插件目录根目录）
+访问 `/docs/php` 时，`plugin/docs-detail.php` 内可直接使用 `$_GET['slug']`（值为 `php`）。
 
 #### 路由参数
 
-路径中的 `{param}` 会被自动提取并设置到 `$_GET` 中，供插件文件使用：
-
-```
-/feed/{category}  →  访问 /feed/tech  →  $_GET['category'] = 'tech'
-```
+- `{param}`：参数名须为合法 PHP 变量名（字母开头），匹配 `[^/]+`
+- 参数在文件内通过 `$_GET['param']` 读取
+- 同一插件的多条路由按声明顺序匹配，先声明先命中
 
 #### 插件文件示例
 
 ```php
 <?php
-// vendor/nova-plugins/rss/plugin/rss.php
+// plugin/docs-detail.php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
-// 设置 Content-Type 为 XML
-header('Content-Type: application/xml; charset=utf-8');
+$slug = preg_replace('/[^a-z0-9_-]/i', '', $_GET['slug'] ?? '');
 
-// 可以通过 $_GET 获取路由参数
-$category = $_GET['category'] ?? 'all';
+// 可直接使用全局函数与数据库（前台环境已加载 config/*.php）
+$db   = getDB();
+$stmt = $db->prepare("SELECT * FROM my_docs WHERE slug = ? LIMIT 1");
+$stmt->execute([$slug]);
+$doc  = $stmt->fetch();
 
-// 输出 RSS XML 内容
-echo '<?xml version="1.0" encoding="UTF-8"?>';
-echo '<rss version="2.0">';
-echo '<channel>';
-echo '<title>My Site RSS</title>';
-echo '<link>https://example.com</link>';
-echo '<description>最新文章订阅</description>';
-// ... 输出文章列表
-echo '</channel>';
-echo '</rss>';
+header('Content-Type: text/html; charset=utf-8');
+if (!$doc) {
+    http_response_code(404);
+    echo '<h1>404 文档不存在</h1>';
+    exit;
+}
+echo '<h1>' . e($doc['title']) . '</h1>';
+echo $doc['content'];
 ```
 
 #### 可用常量
 
-在页面路由文件中，以下常量已定义：
-
-| 常量                       | 说明                    |
-| ------------------------ | --------------------- |
-| `NOVA_PAGE_ROUTE`        | 匹配的路由模式（如 `/rss.xml`） |
-| `NOVA_PAGE_ROUTE_PLUGIN` | 插件 id（如 `rss`）        |
+| 常量 | 说明 |
+| --- | --- |
+| `NOVA_BOOTSTRAP` | 框架启动标记（必须校验，防直接访问） |
+| `NOVA_PAGE_ROUTE` | 当前命中的路由模式（如 `/docs/{slug}`），用于分支判断 |
+| `NOVA_PAGE_ROUTE_PLUGIN` | 提供本页面的插件 id |
+| `NOVA_API` | API 请求时定义（页面路由场景为未定义） |
 
 #### 特点
 
-- **零代码加载** — 仅扫描 `plugin.json`，无需加载插件入口代码即可判断路由匹配
-- **任意扩展名** — `/rss.xml`、`/sitemap.xml`、`/manifest.json` 等均可注册，实际由 PHP 处理
-- **参数支持** — `{category}` 等占位符自动注入 `$_GET`
-- **禁用拦截** — 插件禁用后访问其页面路由会返回"此插件已禁用"提示
-- **优先级** — 页面路由在主题路由之前执行，不会与现有页面冲突
+- 优先级**高于**主题模板路由与 `.php` 后缀 301 重定向（在 `index.php` 最先匹配，仅 `/nova-json/*` API 更优先）
+- 路由路径**建议不带 `.php` 后缀**：带后缀的物理文件会被服务器直接执行（绕过 index.php），必须依赖伪静态回退才能进入路由层；干净路径（如 `/docs`）始终可靠
+- 页面文件必须以 `defined('NOVA_BOOTSTRAP') or exit` 开头
+- 运行环境已包含 `config/functions.php` 等公共函数（`e()`、`getDB()`、`generateCSRFToken()` 可直接用）
 
-> **注意**：`page_routes` 中的路径不要以 `/nova-json` 开头，该前缀保留给 REST API。
+> 📖 真实示例：`vendor/nova-plugins/rss/plugin.json` 声明 `"/rss.xml": "plugin/rss.php"`，输出 RSS XML；`vendor/nova-plugins/sitemap/` 同理。
 
 ***
 
-### 4.3.2 插件配置（config.json）
+### 4.6 插件配置（config.json 声明式表单）
 
-插件可以在目录根下创建 `config.json` 文件，声明配置表单。系统会自动在**插件详情页**（`/admin/plugin-detail.php?plugin=xxx`）中渲染配置标签页，无需编写任何 HTML。
+插件在根目录放置 `config.json`，后台「插件 → 详情」会**自动渲染**配置表单并处理保存——无需编写任何配置界面代码。
 
-#### 与 plugin-page.php 的区别
-
-| <br /> | plugin-detail.php   | plugin-page.php                |
-| ------ | ------------------- | ------------------------------ |
-| 来源     | 系统自动生成              | 插件自定义 `plugin/admin/index.php` |
-| 配置     | `config.json` 声明式表单 | 插件自行编写 HTML/PHP                |
-| 存储     | `config.json` 文件    | 插件自行管理                         |
-| 适用     | 简单键值对配置             | 复杂管理界面                         |
-
-#### config.json 格式
+#### config.json 格式（tabs → fields）
 
 ```json
 {
     "tabs": [
         {
             "title": "基本设置",
-            "description": "RSS 订阅的基本配置",
+            "description": "表单分组说明（可选）",
             "fields": [
                 {
                     "type": "text",
-                    "name": "rss_title",
-                    "label": "RSS 标题",
-                    "value": "我的站点订阅",
-                    "placeholder": "输入 RSS 标题",
-                    "help": "显示在 RSS 订阅中的标题"
-                },
-                {
-                    "type": "switch",
-                    "name": "enable_full_text",
-                    "label": "全文输出",
-                    "value": true,
-                    "help": "开启后 RSS 将输出完整文章内容"
+                    "name": "api_base_url",
+                    "label": "API 地址",
+                    "value": "https://api.example.com",
+                    "placeholder": "https://api.example.com",
+                    "help": "帮助文案"
                 },
                 {
                     "type": "select",
-                    "name": "update_interval",
-                    "label": "更新频率",
-                    "value": "hourly",
+                    "name": "theme",
+                    "label": "主题",
+                    "value": "auto",
                     "options": {
-                        "hourly": "每小时",
-                        "daily": "每天",
-                        "weekly": "每周"
+                        "auto": "跟随系统",
+                        "light": "浅色",
+                        "dark": "深色"
                     }
-                }
-            ]
-        },
-        {
-            "title": "高级设置",
-            "fields": [
+                },
                 {
-                    "type": "number",
-                    "name": "max_items",
-                    "label": "最大条目数",
-                    "value": 20,
-                    "min": 1,
-                    "max": 100,
-                    "help": "RSS 中最多显示的文章数量"
+                    "type": "switch",
+                    "name": "autoplay",
+                    "label": "自动播放",
+                    "value": false
                 },
                 {
                     "type": "textarea",
-                    "name": "custom_css",
-                    "label": "自定义样式",
-                    "value": "",
-                    "rows": 6,
-                    "placeholder": "输入自定义 CSS"
+                    "name": "custom_paths",
+                    "label": "自定义路径",
+                    "value": "/",
+                    "rows": 5
                 }
             ]
         }
@@ -825,1047 +666,551 @@ echo '</rss>';
 
 #### 支持的字段类型
 
-| type       | 说明    | 额外属性                                |
-| ---------- | ----- | ----------------------------------- |
-| `text`     | 文本输入框 | `placeholder`                       |
-| `number`   | 数字输入框 | `min`, `max`, `step`, `placeholder` |
-| `textarea` | 多行文本  | `rows`, `placeholder`               |
-| `switch`   | 开关    | 值为 `true`/`false`                   |
-| `select`   | 下拉选择  | `options`（key-value 对象）             |
+| type | 控件 | 值类型 |
+| --- | --- | --- |
+| `text` | 单行输入框 | string |
+| `textarea` | 多行输入框（`rows` 可选） | string |
+| `select` | 下拉框（`options` 为 `{值: 标签}` 对象） | string |
+| `switch` | Bootstrap 开关 | bool |
 
 #### 通用字段属性
 
-| 属性      | 说明              |
-| ------- | --------------- |
-| `name`  | 字段名（唯一标识，保存时使用） |
-| `label` | 显示标签            |
-| `value` | 当前值（保存后自动更新）    |
-| `help`  | 帮助文本（显示在字段下方）   |
+| 属性 | 说明 |
+| --- | --- |
+| `type` | 控件类型 |
+| `name` | 字段名（保存键名） |
+| `label` | 显示标签 |
+| `value` | 默认值/当前值（后台保存后回写此处） |
+| `placeholder` | 占位提示（text/textarea） |
+| `help` | 字段下方帮助文案 |
+| `options` | select 的选项映射 |
+| `rows` | textarea 行数 |
 
 #### 在插件代码中读取配置
 
+配置保存后**回写到同一个 config.json 的 `value` 字段**，因此读取就是解析该文件（可参考内置插件写法）：
+
 ```php
-class MyPlugin extends Nova_Plugin {
-    public function init() {
-        // 读取 config.json
-        $configFile = $this->plugin_path . '/../config.json';
-        if (is_file($configFile)) {
-            $config = json_decode(file_get_contents($configFile), true);
-            $rssTitle = $config['tabs'][0]['fields'][0]['value'] ?? '默认标题';
-            $enableFullText = $config['tabs'][0]['fields'][1]['value'] ?? false;
+private ?array $cfgCache = null;
+
+private function getConfig(): array {
+    if ($this->cfgCache !== null) {
+        return $this->cfgCache;
+    }
+    $file = dirname($this->plugin_path) . '/config.json';  // plugin/ 的上级 = 插件根目录
+    $cfg  = [];
+    if (is_file($file)) {
+        $data = json_decode((string) file_get_contents($file), true);
+        if (is_array($data) && !empty($data['tabs'])) {
+            foreach ($data['tabs'] as $tab) {
+                foreach ($tab['fields'] ?? [] as $field) {
+                    if (isset($field['name'])) {
+                        $cfg[$field['name']] = $field['value'] ?? '';
+                    }
+                }
+            }
         }
     }
+    return $this->cfgCache = $cfg;
 }
 ```
 
-> **注意**：`config.json` 路径是插件**目录根**（与 `plugin.json` 同级），不是 `plugin/` 子目录内。插件主类中通过 `$this->plugin_path` 获取的是 `plugin/` 目录，因此需要 `dirname($this->plugin_path) . '/config.json'`。
+#### config_path：把配置放到插件目录之外
+
+插件被卸载（删目录）时配置会一同丢失。通过 `plugin.json` 的 `config_path` 可把配置文件重定向到插件目录之外：
+
+```json
+{
+    "id": "cron-manager",
+    "config_path": "../../public/cron/config.json"
+}
+```
+
+规则（`Nova_Plugin_Registry::resolve_config_file()` 实现）：
+
+- 路径相对**插件根目录**解析（上例实际指向 `vendor/public/cron/config.json`）
+- 解析结果必须位于**项目根目录之内**，越界（路径逃逸）自动回退默认 `config.json`
+- 目标目录不存在时同样回退默认路径
+
+> 📖 真实示例：`vendor/nova-plugins/cron-manager/`（config_path 用法）、`vendor/nova-plugins/netease-player/`（纯 config.json 用法）。
 
 ***
 
-插件可以使用 `Nova_DB` 系列类操作数据库。
+### 4.7 后台管理页面与菜单
 
-#### 基础 CRUD
+#### 机制：零注册的后台页面
+
+后台管理页面**不需要手动注册菜单**，完整流程由系统自动完成：
+
+1. 插件提供 `plugin/admin/index.php`
+2. 后台侧边栏（`admin/includes/header.php`）扫描所有插件：存在 `admin/index.php` 且 `sidebar` 未设为 `false` 且插件已启用 → 自动在「系统」分组下注册菜单项，链接到 `/admin/plugin-page.php?plugin={id}`
+3. 管理员点击菜单 → `admin/plugin-page.php` 通用渲染器：
+   - 解析 `?plugin=` 参数（接受 id 或 slug）
+   - 校验插件存在、已启用（禁用则渲染提示页）
+   - 引入 `includes/header.php` / `includes/footer.php`（后台外壳：导航、CSRF meta、样式）
+   - `include` 插件的 `plugin/admin/index.php`
+
+#### 编写后台页面
+
+后台页面是「在后台外壳内的 HTML 片段」，**自行负责加载依赖**：
 
 ```php
-$db = new Nova_DB();
+<?php
+// plugin/admin/index.php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
-// 查询
-$results = $db->get_results("SELECT * FROM posts WHERE status = ?", ['publish']);
-$row     = $db->get_row("SELECT * FROM users WHERE id = ?", [1]);
-$count   = $db->get_var("SELECT COUNT(*) FROM comments");
+// 自加载依赖，使本文件可通过 admin/plugin-page.php 独立引入
+require_once __DIR__ . '/../class-my-plugin.php';
 
-// 插入
-$id = $db->insert('my_plugin_data', [
-    'key'   => 'setting_key',
-    'value' => 'setting_value',
-]);
+$myPlugin = new My_Plugin_Core();
+$items    = $myPlugin->getItems();
+?>
 
-// 更新
-$affected = $db->update('my_plugin_data', 
-    ['value' => 'new_value'],
-    ['key' => 'setting_key']
-);
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1"><i class="bi bi-gear me-2"></i>我的插件管理</h4>
+                <p class="text-muted mb-0">插件功能说明</p>
+            </div>
+            <button class="btn btn-primary" onclick="doAction()"><i class="bi bi-plus-circle me-1"></i>新建</button>
+        </div>
+    </div>
 
-// 删除
-$affected = $db->delete('my_plugin_data', ['id' => 1]);
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <!-- Bootstrap 5 卡片/表格 -->
+        </div>
+    </div>
+</div>
+
+<script>
+function doAction() {
+    // AJAX 请求需带 CSRF token（后台已注入 <meta name="csrf-token">）
+    const token = document.querySelector('meta[name="csrf-token"]').content;
+    const fd = new FormData();
+    fd.append('csrf_token', token);
+    fetch('/nova-json/v1/my-plugin/action', { method: 'POST', body: fd })
+        .then(r => r.json()).then(console.log);
+}
+</script>
 ```
 
-#### 链式查询构建器
+#### 后台页面可用环境
+
+| 能力 | 说明 |
+| --- | --- |
+| 后台外壳 | header/footer 已引入：Bootstrap 5 样式、侧边栏、深色模式切换 |
+| CSRF | `<meta name="csrf-token">` 已注入，取值后随 AJAX/表单提交（`validateCSRFToken()` 服务端校验） |
+| 全局函数 | `e()`、`getDB()`、`generateCSRFToken()`、`validateCSRFToken()` 可直接使用 |
+| 图标 | Bootstrap Icons（`bi bi-*` 类）已加载 |
+| 页面标题 | 渲染器已设置 `$page_title`（插件名） |
+
+#### 隐藏侧边栏菜单
+
+`plugin.json` 中声明：
+
+```json
+{ "sidebar": false }
+```
+
+适用场景：插件只有配置表单（config.json 自动渲染）而无独立管理页，或通过 `detail_tab` 提供详情页内容。
+
+#### 插件详情页自定义 Tab（detail_tab）
+
+后台插件详情页（`admin/plugins.php?plugin=xxx`）默认展示元数据表。插件可追加自定义 Tab：
+
+1. `plugin.json` 声明 `"detail_tab": "数据统计"`
+2. 放置 `plugin/admin/detail.php`（内容格式与 index.php 相同，在详情页内渲染）
+
+> 📖 真实示例：`vendor/nova-plugins/cron-manager/plugin/admin/detail.php` 展示定时任务列表。
+>
+> 📖 真实示例：`vendor/nova-plugins/backup/plugin/admin/index.php` 演示了完整后台页面（统计卡片 + 列表 + 操作按钮）。
+
+#### 低层菜单 API（供特殊需求）
+
+`Nova_Backend_Menu` 类（`vendor/nova-json/class/backend/class-backend-menu.php`）可注册任意后台菜单，通常供核心或深度定制使用；插件常规场景**用不上**（系统已自动注册）：
 
 ```php
-$q = new Nova_DB_Query();
+Nova_Backend_Menu::add_menu('工具名', 'my-tool', '/admin/my-tool.php', 'bi-gear', 30, [
+    'group'       => 'tools',        // 分组
+    'group_label' => '工具',
+    'badge'       => '3',            // 徽标
+    'badge_type'  => 'danger',
+]);
 
-$results = $q->from('posts')
-    ->where('status', 'publish')
-    ->where('category', '技术')
-    ->orderBy('created_at', 'DESC')
-    ->limit(10)
-    ->get();
+Nova_Backend_Menu::add_submenu('my-tool', '子项', 'my-tool-sub', '/admin/my-tool-sub.php');
+```
 
-// 分页查询
-$pageData = $q->from('comments')
-    ->where('post_id', 1)
-    ->paginate(20); 
-// ['items'=>[], 'total'=>N, 'page'=>1, 'per_page'=>20, 'pages'=>N]
+同理存在 `Nova_Backend_Page` / `Nova_Backend_List_Table` / `Nova_Backend_Ajax` / `Nova_Backend_Notice` 等后台构建类，主要用于核心后台页面；插件后台建议直接写 `plugin/admin/index.php` HTML 片段（更直观、无额外学习成本）。
+
+***
+
+### 4.8 数据库操作
+
+#### Nova_DB 基础 CRUD
+
+```php
+$db = new Nova_DB();   // 或 $this->db()（插件基类内）
+
+// 查询
+$row    = $db->get_row("SELECT * FROM my_table WHERE id = ?", [5]);
+$rows   = $db->get_results("SELECT * FROM my_table ORDER BY id DESC LIMIT 20");
+$count  = $db->get_var("SELECT COUNT(*) FROM my_table");
+
+// 写入（参数化）
+$db->insert('my_table', ['name' => 'a', 'value' => 'b']);
+$db->insert_batch('my_table', [['name' => 'a'], ['name' => 'b']]);
+$newId  = $db->insert_id();
+
+$db->update('my_table', ['value' => 'new'], ['id' => 5]);
+$db->delete('my_table', ['id' => 5]);
+
+// 事务
+$db->begin();
+try {
+    $db->insert(...); $db->update(...);
+    $db->commit();
+} catch (Throwable $e) {
+    $db->rollback();
+}
 ```
 
 #### 创建数据表
 
 ```php
-// 使用 Nova_DB_Schema 创建表
-$schema = new Nova_DB_Schema();
-
-if (!$schema->hasTable('my_plugin_data')) {
-    $schema->create('my_plugin_data', [
-        'id INT AUTO_INCREMENT PRIMARY KEY',
-        'key VARCHAR(100) NOT NULL UNIQUE',
-        'value TEXT',
-        'created_at DATETIME DEFAULT CURRENT_TIMESTAMP',
-    ], [
-        'engine'  => 'InnoDB',
-        'comment' => '插件数据表',
-    ]);
-}
-
-// 添加字段
-$schema->addColumn('my_plugin_data', 'status', "TINYINT(1) DEFAULT 1 AFTER value");
-
-// 添加索引
-$schema->addIndex('my_plugin_data', 'idx_key', ['key'], 'UNIQUE');
-```
-
-#### 数据库迁移
-
-```php
-$mig = new Nova_DB_Migration();
-
-// 编程式迁移
-$mig->create('v1_create_plugin_tables', function($schema) {
-    $schema->create('my_plugin_data', [
-        'id INT AUTO_INCREMENT PRIMARY KEY',
-        'key VARCHAR(100) NOT NULL UNIQUE',
-        'value TEXT',
-        'created_at DATETIME DEFAULT CURRENT_TIMESTAMP',
-    ]);
-});
-
-// 生成迁移文件
-$filepath = $mig->generate('add_status_column');
-
-// 查看迁移状态
-$status = $mig->status();
-```
-
-#### 缓存查询结果
-
-```php
-$cache = new Nova_DB_Cache();
-
-$data = $cache->get('my_plugin_stats', function() use ($db) {
-    return $db->get_results("SELECT ...");
-}, 3600); // 缓存 1 小时
-
-// 数据变更时清除缓存
-$cache->delete('my_plugin_stats');
-// 或清空全部
-// $cache->flush();
-```
-
-***
-
-### 4.5 访问控制
-
-NovaCMS 使用 `NOVA_BOOTSTRAP` 常量防止 PHP 文件被直接 HTTP 访问。
-
-#### 原理
-
-- `index.php` 在启动时定义 `NOVA_BOOTSTRAP`
-- 所有敏感 PHP 文件（类文件、插件入口、路由文件、page\_routes 文件）在开头检查此常量
-- 通过 `require_once` 加载的文件继承常量（进程内操作）
-- 直接 HTTP 访问是新进程，常量不存在 → `exit('禁止直接访问')`
-
-#### 插件文件必须添加的检查
-
-**入口文件**（`plugin/plugin.php`）：
-
-```php
-<?php
-defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
-```
-
-**类文件**（`plugin/class-*.php`）：
-
-```php
-<?php
-defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
-```
-
-**API 路由文件**（`plugin/routes/api.php`）：
-
-```php
-<?php
-defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
-```
-
-**page\_routes 文件**（如 `plugin/rss.php`）：
-
-```php
-<?php
-defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
-```
-
-#### 额外防护
-
-- `vendor/nova-json/.htaccess` 和 `vendor/nova-plugins/.htaccess` 阻止直接 HTTP 访问（Apache 级别）
-- `NOVA_BOOTSTRAP` 是 PHP 级别的次级防线（Nginx 等环境也有效）
-
-#### 常量说明
-
-| 常量               | 定义位置                                | 用途                                     |
-| ---------------- | ----------------------------------- | -------------------------------------- |
-| `NOVA_BOOTSTRAP` | `index.php` / `admin-bootstrap.php` | 访问控制 — 表示请求经过框架                        |
-| `NOVA_API`       | `init.php`                          | 业务逻辑 — 区分是否为 API 请求（仅 `/nova-json` 路径） |
-
-***
-
-### 4.6 后台页面与菜单
-
-#### 注册菜单
-
-```php
-// 顶级菜单
-Nova_Backend_Menu::add_menu(
-    '插件名称',       // 菜单名
-    'my-plugin',      // 唯一 ID
-    '/admin/my-plugin.php', // URL
-    '🔌',            // 图标
-    30               // 位置
-);
-
-// 子菜单
-Nova_Backend_Menu::add_submenu(
-    'my-plugin',            // 父级菜单 ID
-    '设置',                 // 子菜单名
-    'my-plugin-settings',   // 唯一 ID
-    '/admin/my-plugin-settings.php',
-    10                      // 位置
-);
-
-// 带徽标的菜单
-Nova_Backend_Menu::add_menu('消息', 'messages', '/admin/messages.php', '💬', 20, [
-    'badge'      => '3',
-    'badge_type' => 'danger',
+$db->create_table('my_plugin_data', [
+    'id'         => 'INT AUTO_INCREMENT PRIMARY KEY',
+    'name'       => 'VARCHAR(191) NOT NULL',
+    'value'      => 'TEXT',
+    'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
 ]);
+
+// 升级时增量加列（已存在会报错，需先 table_exists 判断）
+if (!$db->table_exists('my_plugin_data')) {
+    $db->create_table(...);
+}
 ```
 
-#### 创建后台页面
+#### 原生 SQL
 
 ```php
-class MyPluginSettingsPage extends Nova_Backend_Page {
+$affected = $db->query("UPDATE my_table SET hits = hits + 1");   // 返回受影响行数
+$stmt     = $db->raw_query("SELECT * FROM my_table WHERE id = ?", [5]);
+$row      = $stmt->fetch();
 
-    protected $page_title    = '插件设置';
-    protected $menu_title    = '设置';
-    protected $menu_id       = 'my-plugin-settings';
-    protected $menu_icon     = '⚙';
-    protected $menu_position = 10;
-    protected $parent_menu   = 'my-plugin'; // 设为子菜单
-
-    public function render() {
-        $this->header();
-
-        // 显示提示消息
-        $this->success('设置已保存');
-
-        // 卡片容器
-        $this->card('基本配置');
-
-        $this->formOpen(['method' => 'post', 'action' => '']);
-
-        $this->formField('text', 'api_key', 'API Key', get_option('api_key'), [
-            'placeholder' => '请输入 API Key',
-            'help'        => '从第三方服务获取的 API 密钥',
-        ]);
-
-        $this->formField('select', 'theme', '主题样式', get_option('theme'), [
-            'options' => [
-                'light' => '浅色模式',
-                'dark'  => '深色模式',
-            ],
-        ]);
-
-        $this->formField('switch', 'enable_notify', '', get_option('enable_notify'), [
-            'checkbox_label' => '启用通知',
-        ]);
-
-        $this->formField('textarea', 'custom_css', '自定义 CSS', get_option('custom_css'), [
-            'class' => 'form-control font-monospace',
-            'help'  => '输入自定义样式代码',
-        ]);
-
-        $this->submitButton('保存配置');
-        $this->formClose();
-        $this->endCard();
-
-        $this->footer();
-    }
-}
-new MyPluginSettingsPage();
+$pdo = $db->get_pdo();   // 获取底层 PDO 实例
 ```
 
-#### 数据表格
+#### 也可以直接使用全局 getDB()
+
+前台环境（页面路由、主题模板）已加载 `config/functions.php`，可直接：
 
 ```php
-class MyDataTable extends Nova_Backend_List_Table {
-    public function prepareItems() {
-        $db = new Nova_DB();
-        $this->data  = $db->get_results("SELECT * FROM my_plugin_data ORDER BY id DESC");
-        $this->total = $db->get_var("SELECT COUNT(*) FROM my_plugin_data");
-    }
-
-    public function column($row, $col) {
-        if ($col === 'actions') {
-            return '<a href="?delete=' . $row['id'] . '" class="btn btn-sm btn-danger">删除</a>';
-        }
-        return htmlspecialchars($row[$col] ?? '');
-    }
-}
-
-$table = new MyDataTable([
-    'per_page'     => 20,
-    'columns'      => [
-        'id'    => 'ID',
-        'key'   => '键名',
-        'value' => '值',
-        'created_at' => '创建时间',
-    ],
-    'search'       => true,
-    'bulk_actions' => ['delete' => '删除选中'],
-    'sortable'     => ['id', 'created_at'],
-]);
-$table->render();
+$db   = getDB();                 // 全局 PDO 连接（与 Nova_DB 同一数据库）
+$stmt = $db->prepare("SELECT ...");
+$stmt->execute([$id]);
+$row  = $stmt->fetch(PDO::FETCH_ASSOC);
 ```
 
 ***
 
-### 4.6 文件上传与图片处理
+### 4.9 文件上传与图片处理
 
-#### 上传文件
+#### 上传文件（Nova_Upload）
 
 ```php
 $upload = new Nova_Upload($_FILES['file']);
-$upload->allowedTypes(['jpg', 'png', 'gif', 'pdf'])
-       ->maxSize(5 * 1024 * 1024)  // 5MB
-       ->subDir('my-plugin')
-       ->prefix('plugin_');
+
+$upload->allowedTypes(['jpg', 'png', 'pdf'])   // 允许的扩展名
+       ->maxSize(5 * 1024 * 1024)              // 最大 5MB
+       ->subDir('my-plugin')                   // 上传到 uploads/my-plugin/
+       ->prefix('plugin_');                    // 文件名前缀
 
 if ($upload->validate()) {
     $result = $upload->save();
     // $result['url'] => '/uploads/my-plugin/plugin_abc123.jpg'
-    echo '文件已上传：' . $result['url'];
 } else {
-    echo '上传失败：' . $upload->getError();
+    $error = $upload->getError();
 }
 ```
 
-#### 图片处理
+完整链式 API：
+
+| 方法 | 说明 |
+| --- | --- |
+| `allowedTypes(array $types)` | 允许的扩展名列表 |
+| `allowedMimes(array $mimes)` | 允许的 MIME 类型列表 |
+| `onlyImages()` | 仅允许图片（等效内置图片类型集合） |
+| `maxSize($bytes)` / `minSize($bytes)` | 文件大小限制 |
+| `toDir($dir)` / `toUrl($url)` | 自定义保存目录/URL 前缀（默认 `uploads/` 子目录） |
+| `subDir($subDir)` | uploads 下的子目录 |
+| `prefix($prefix)` | 文件名前缀 |
+| `overwrite(bool)` | 同名覆盖（默认追加随机后缀） |
+| `useOriginalName(bool)` | 保留原始文件名 |
+| `validate()` | 校验（返回 bool） |
+| `save()` | 保存，返回含 `url`/`path` 的数组 |
+| `saveGetUrl()` | 保存并直接返回 URL |
+| `getError()` | 最近一次错误信息 |
+| `getSavedPath()` / `getSavedUrl()` | 保存后的路径/URL |
+
+#### 图片处理（Nova_Image）
 
 ```php
 try {
-    $img = new Nova_Image('path/to/image.jpg');
+    $img = new Nova_Image('uploads/my-plugin/source.jpg');
 
-    // 生成缩略图
-    $img->thumb(300, 200)->save('path/to/thumb.jpg');
+    $img->thumb(300, 200)->save('uploads/my-plugin/thumb.jpg');   // 缩略图
 
-    // 添加水印
-    $img->watermark('path/to/watermark.png', 'bottom-right', 80)
-        ->save('path/to/watermarked.jpg');
-
-    // 格式转换
-    $img->saveAsWebp('path/to/image.webp');
-
+    $img->watermark('assets/images/mark.png', 'bottom-right', 80) // 水印
+        ->save('uploads/my-plugin/watermarked.jpg');
 } catch (Exception $e) {
-    echo '图片处理错误：' . $e->getMessage();
+    // GD 库异常
 }
 ```
+
+> 详细签名见 `vendor/nova-json/class/filesystem/class-image.php`。
 
 ***
 
-### 4.7 定时任务（Nova_Cron）
-
-NovaCMS 提供统一的定时任务机制（`Nova_Cron`），让插件可以注册周期性任务（清理过期数据、生成缓存、发送订阅邮件、数据同步等），无需自行实现调度。
+### 4.10 定时任务（Nova_Cron）
 
 #### 工作模式
 
-| 模式 | 调用方式 | 适用环境 |
-|------|----------|----------|
-| 面板定时任务 | 宝塔/1Panel 后台创建定时任务，调用 `vendor/public/cron/cron.php` | 有 cron 的服务器（推荐） |
-| 虚拟主机访问触发 | 由 `index.php` 自动调用 `Nova_Cron::maybe_run_on_visit()`，异步触发 `cron.php` 在独立进程执行 | 无 cron 的虚拟主机 |
+Nova_Cron 支持两种执行模式（可在 Cron Manager 插件中切换）：
 
-两种模式可共存：面板 cron 保证准点执行，访问触发作为兜底。任务并发由 DB 原子锁兜底，不会重复执行。
+| 模式 | 机制 | 适用环境 |
+| --- | --- | --- |
+| **服务器 Cron** | 面板配置 `crontab` 定时请求 `vendor/public/cron/cron.php` | VPS / 独立服务器（推荐） |
+| **访问触发** | 每次前台访问时 `Nova_Cron::maybe_run_on_visit()` 异步触发（独立进程，不阻塞访客） | 虚拟主机 / 无 Cron 环境 |
 
 #### 注册定时任务
 
-在插件 `init()` 中调用 `Nova_Cron::register()`，与 `Nova_Hooks::add_action()` 一致的调用风格：
+在插件 `init()` 中：
 
 ```php
-class MyPlugin extends Nova_Plugin {
-    public function init() {
-        // 参数：任务ID / 间隔秒数（最小 60） / 回调 / 描述
-        Nova_Cron::register('myplugin_cleanup', 3600, [$this, 'cleanup'], '每小时清理过期数据');
-    }
+public function init() {
+    Nova_Cron::register(
+        'my-plugin-daily',       // 任务 id：字母开头，仅字母/数字/下划线/连字符
+        86400,                   // 间隔（秒），最小 60
+        [$this, 'dailyJob'],     // 回调：无参数，失败抛异常即可
+        '我的插件：每日任务'      // 描述（后台任务列表展示）
+    );
+}
 
-    public function cleanup() {
-        $db = $this->db();
-        $db->delete('my_plugin_logs', ['created_at <' => date('Y-m-d H:i:s', strtotime('-7 days'))]);
-        // 失败抛异常即可，会被捕获并记录到 cms_cron_tasks.last_error
-    }
+public function dailyJob() {
+    // 业务逻辑；失败时 throw new Exception('原因')
 }
 ```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `$id` | string | 任务唯一 ID（字母开头，仅含字母/数字/下划线/连字符） |
-| `$interval` | int | 执行间隔（秒），最小 60 |
-| `$callback` | callable | 回调（无参数），失败抛异常即可 |
-| `$description` | string | 任务描述（可选） |
-
-> 任务 ID 建议以插件 slug 为前缀（如 `myplugin_cleanup`），避免与其他插件冲突。
-
-#### 配置面板定时任务（宝塔/1Panel）
-
-在宝塔或 1Panel 后台创建定时任务，二选一：
-
-```
-Shell 脚本：  php /www/wwwroot/站点目录/vendor/public/cron/cron.php
-访问 URL：    https://你的域名/vendor/public/cron/cron.php
-执行频率：    每 1~5 分钟
-```
-
-> 到期任务的实际执行周期由各任务注册时的 `interval` 决定，面板调用频率过高只会快速跳过未到期任务，无副作用。
-
-#### 虚拟主机自动触发
-
-前台 `index.php` 已内置访问触发：每次访客请求时调用 `Nova_Cron::maybe_run_on_visit()`，内部异步触发 `cron.php` 在独立进程执行（非阻塞），限频 60s 避免频繁触发。无需任何配置，部署到虚拟主机即自动生效。
 
 #### 任务状态与并发安全
 
-任务状态存储于 `cms_cron_tasks` 表（首次调用自动建表）：
+- 执行状态记录于数据库（`Nova_Cron` 自动建表），含上次执行时间、结果
+- 到期判断 + 锁机制保证并发安全（多访客同时触发不会重复执行）
+- 后台「定时任务」页面（cron-manager 插件）可查看已注册任务与执行状态
 
-| 字段 | 说明 |
-|------|------|
-| `task_id` | 任务 ID（主键） |
-| `last_run_at` | 上次执行时间 |
-| `last_status` | `success` / `failed` |
-| `last_error` | 失败时的异常信息 |
-| `locked_until` | 锁定截止时间，防止并发执行 |
+#### API
 
-并发安全通过 DB 原子 `UPDATE ... WHERE locked_until IS NULL OR locked_until < NOW()` 获取锁实现，CLI cron 与访问触发并发也不会重复执行同一任务。
-
-#### 查询任务状态
-
-```php
-// 获取上次执行信息
-$info = Nova_Cron::get_last_run('myplugin_cleanup');
-// ['last_run_at'=>'2026-08-23 10:00:00', 'last_status'=>'success', 'last_error'=>null]
-
-// 检查任务是否到期
-if (Nova_Cron::is_due('myplugin_cleanup')) {
-    // 即将执行
-}
-```
+| 方法 | 说明 |
+| --- | --- |
+| `register($id, $interval, $callback, $description = '')` | 注册任务（id 格式与 interval≥60 校验，失败返回 false） |
+| `unregister($id)` | 注销任务 |
+| `get_tasks()` | 已注册任务元数据列表 |
+| `run_due($force = false)` | 执行所有到期任务（返回各任务结果） |
+| `run_one($id, $force = false)` | 执行单个任务 |
+| `maybe_run_on_visit()` | 访问触发入口（index.php 自动调用，含限频） |
+| `enable_visit_trigger()` / `disable_visit_trigger()` | 开关访问触发模式 |
+| `is_visit_trigger_enabled()` | 访问触发是否启用 |
+| `get_last_run($id)` / `is_due($id)` | 查询任务状态 |
 
 ***
 
 ## 5. API 参考
 
-### 5.1 Nova\_Plugin
+### 5.1 Nova_Plugin_Registry
 
-插件基类，所有插件应继承此类。
+| 方法 | 说明 |
+| --- | --- |
+| `scan_all($force = false)` | 扫描 `vendor/nova-plugins/*/plugin.json`，返回插件信息数组（含 id/slug/name/version/entry/entry_path/plugin_dir/page_routes/sidebar/config_path/detail_tab/duplicate） |
+| `find_plugin($key)` | 按 id 或 slug 查找单个插件 |
+| `resolve_config_file(array $plugin)` | 解析插件配置文件路径（含 config_path 与安全校验） |
+| `get_active_plugin_ids($force = false)` | 已启用插件 id 数组；**null = 全部启用** |
+| `is_plugin_active($pluginId)` | 插件是否启用 |
+| `clear_cache()` | 清除扫描与启用状态缓存（切换开关后调用） |
 
-**文件**: `vendor/nova-json/class/plugin/class-plugin.php`
+### 5.2 Nova_Hooks
 
-**属性**
+见 [4.2 钩子系统](#42-钩子系统actions--filters) 完整方法表。
 
-| 属性             | 类型     | 默认值     | 说明             |
-| -------------- | ------ | ------- | -------------- |
-| `$name`        | string | ''      | 插件名称，自动识别目录名   |
-| `$version`     | string | '1.0.0' | 插件版本号          |
-| `$plugin_path` | string | ''      | 插件目录绝对路径（自动检测） |
-| `$plugin_url`  | string | ''      | 可公开访问的插件 URL   |
-
-**方法**
-
-| 方法                 | 签名                               | 说明                                    |
-| ------------------ | -------------------------------- | ------------------------------------- |
-| `__construct()`    | `void`                           | 构造函数：自动检测路径、加载 routes/ 目录、注册 `init()` |
-| `init()`           | `void`                           | 初始化入口，子类重写此方法                         |
-| `register_route()` | `(namespace, route, args): void` | 注册 REST 路由                            |
-| `db()`             | `(): Nova_DB`                    | 获取数据库实例                               |
-| `log()`            | `(message, level): void`         | 写入插件日志                                |
-
-***
-
-### 5.2 Nova\_Hooks
-
-钩子系统，管理 Actions 和 Filters。
-
-**文件**: `vendor/nova-json/class/system/class-hooks.php`
-
-**静态方法**
-
-| 方法                | 签名                             | 说明    |
-| ----------------- | ------------------------------ | ----- |
-| `add_action()`    | `(tag, callback, priority=10)` | 注册动作  |
-| `do_action()`     | `(tag, ...args)`               | 执行动作  |
-| `remove_action()` | `(tag, callback, priority=10)` | 移除动作  |
-| `has_action()`    | `(tag, callback=null): bool`   | 检查动作  |
-| `add_filter()`    | `(tag, callback, priority=10)` | 注册过滤器 |
-| `apply_filters()` | `(tag, value, ...args): mixed` | 执行过滤器 |
-| `remove_filter()` | `(tag, callback, priority=10)` | 移除过滤器 |
-| `has_filter()`    | `(tag, callback=null): bool`   | 检查过滤器 |
-
-***
-
-### 5.3 register\_rest\_route
-
-全局函数，注册 REST 路由。
-
-**文件**: `vendor/nova-json/class/rest/class-server.php`
+### 5.3 register_rest_route
 
 ```php
-register_rest_route(
-    string $namespace,  // 命名空间，如 'v1'
-    string $route,      // 路由路径，如 '/my-plugin/data'
-    array  $args,       // 路由配置
-    bool   $override = false // 是否覆盖已有路由
-);
+register_rest_route($namespace, $route, $args, $override = false);
 ```
 
-**$args 参数说明**
+| 参数 | 说明 |
+| --- | --- |
+| `$namespace` | 命名空间（如 `v1`），自动成为 URL 前缀 `/nova-json/{ns}/...` |
+| `$route` | 路由模式，如 `/posts/(?P<id>\d+)` 或 `/items/{id}` |
+| `$args` | 数组：`methods`（string/array）、`callback`（callable）、`permission_callback`（callable，可选）、`plugin_id`/`plugin_slug`（上下文自动注入） |
+| `$override` | 同名路由是否覆盖（默认合并） |
 
-| 参数                    | 类型           | 必填 | 说明                            |
-| --------------------- | ------------ | -- | ----------------------------- |
-| `methods`             | string/array | 是  | HTTP 方法 (GET/POST/PUT/DELETE) |
-| `callback`            | callable     | 是  | 请求处理回调                        |
-| `permission_callback` | callable     | 否  | 权限验证回调                        |
-| `args`                | array        | 否  | 参数验证规则                        |
+首次注册某 namespace 时会自动生成 namespace 索引路由（`GET /nova-json/{ns}` 列出该空间所有路由）。
 
-***
+### 5.4 Nova_DB
 
-### 5.4 Nova\_DB
+见 [4.8 数据库操作](#48-数据库操作)。另有 Nova_DB_Cache（查询缓存）、Nova_DB_Schema、Nova_DB_Query（查询构建）、Nova_DB_Migration、Nova_DB_Seeder 等扩展类，详见 `cms-docs/class.md`。
 
-数据库操作封装。
+### 5.5 Nova_REST_Server
 
-**文件**: `vendor/nova-json/class/database/class-db.php`
+| 方法 | 说明 |
+| --- | --- |
+| `register_route($ns, $route, $args, $override = false)` | 注册路由（自动注入当前插件上下文） |
+| `serve_request($path = null)` | 处理当前请求（init.php 入口） |
+| `dispatch($request)` | 路由匹配与分发（含禁用插件拦截） |
+| `get_namespaces()` / `get_routes($ns = '')` | 已注册命名空间 / 路由表 |
+| `set_current_plugin_context($id, $slug)` | 设置插件上下文（加载插件 routes 时系统自动调用） |
+| `clear_current_plugin_context()` | 清除上下文 |
 
-**方法**
+### 5.6 Nova_Cron
 
-| 方法                           | 说明        |
-| ---------------------------- | --------- |
-| `get_var(sql, params)`       | 获取单行单列值   |
-| `get_row(sql, params)`       | 获取单行关联数组  |
-| `get_results(sql, params)`   | 获取多行数组    |
-| `insert(table, data)`        | 插入并返回自增ID |
-| `update(table, data, where)` | 更新，返回行数   |
-| `delete(table, where)`       | 删除，返回行数   |
-| `begin()`                    | 开启事务      |
-| `commit()`                   | 提交事务      |
-| `rollback()`                 | 回滚事务      |
+见 [4.10 定时任务](#410-定时任务nova_cron) 完整方法表。
 
-***
+### 5.7 Nova_Upload / Nova_Image
 
-### 5.5 Nova\_Backend\_Page
+见 [4.9 文件上传与图片处理](#49-文件上传与图片处理)。
 
-后台页面基类。
+### 5.8 Nova_API / Nova_Proxy
 
-**文件**: `vendor/nova-json/class/backend/class-backend-page.php`
+- `Nova_API` — 内部调度本地 REST 路由，零网络开销
+- `Nova_Proxy` — 本地调度 + 公网代理请求
 
-**关键方法**
-
-| 方法                                             | 说明             |
-| ---------------------------------------------- | -------------- |
-| `header()`                                     | 输出页面头部(标题+面包屑) |
-| `footer()`                                     | 输出页面尾部(JS)     |
-| `card(title, class)`                           | 卡片容器开始         |
-| `endCard()`                                    | 卡片结束           |
-| `alert(type, message)`                         | 显示提示框          |
-| `table(headers, rows, options)`                | 渲染数据表格         |
-| `pagination(total, perPage, current, baseUrl)` | 分页HTML         |
-| `searchBox(keyword, placeholder)`              | 搜索框            |
-| `formOpen(options)`                            | 表单开始           |
-| `formClose()`                                  | 表单结束           |
-| `formField(type, name, label, value, options)` | 表单字段           |
-| `submitButton(text, class)`                    | 提交按钮           |
+详见 `cms-docs/class.md`。
 
 ***
 
-### 5.6 Nova\_Backend\_Menu
+## 6. 案例与最佳实践
 
-后台菜单管理。
+### 6.1 案例一：前台注入型（参考 netease-player）
 
-**文件**: `vendor/nova-json/class/backend/class-backend-menu.php`
+特点：挂载 `nova_head`/`nova_footer` 输出内容，配置驱动，无需数据库。
 
 ```php
-// 注册顶级菜单
-Nova_Backend_Menu::add_menu(
-    string $title,     // 显示名称
-    string $id,        // 唯一标识
-    string $url,       // 链接地址
-    string $icon = '', // 图标
-    int    $position = 50,
-    array  $options = []
-);
+<?php
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
-// 注册子菜单
-Nova_Backend_Menu::add_submenu(
-    string $parent_id,
-    string $title,
-    string $id,
-    string $url,
-    int    $position = 10,
-    array  $options = []
-);
-
-// 渲染菜单
-Nova_Backend_Menu::render();
-```
-
-***
-
-### 5.7 Nova\_Backend\_Ajax
-
-后台 AJAX 处理器。
-
-**文件**: `vendor/nova-json/class/backend/class-backend-ajax.php`
-
-```php
-// 注册需认证的 AJAX 处理器
-Nova_Backend_Ajax::add(
-    string   $action,     // 操作名
-    callable $callback,   // 处理回调
-    bool     $needAuth = true,
-    string   $method = 'POST'
-);
-
-// 注册公开 AJAX 处理器（无需登录）
-Nova_Backend_Ajax::addPublic(
-    string   $action,
-    callable $callback,
-    string   $method = 'POST'
-);
-```
-
-***
-
-### 5.8 Nova\_Backend\_Notice
-
-后台通知消息管理。
-
-**文件**: `vendor/nova-json/class/backend/class-backend-notice.php`
-
-```php
-// 添加通知
-Nova_Backend_Notice::success('操作成功');
-Nova_Backend_Notice::error('操作失败', true); // true=持久化到Session
-Nova_Backend_Notice::warning('请注意');
-Nova_Backend_Notice::info('提示信息');
-
-// 渲染输出
-Nova_Backend_Notice::render();
-```
-
-***
-
-### 5.9 Nova\_API
-
-内部 API 调用（零网络开销）。
-
-**文件**: `vendor/nova-json/class/system/class-api.php`
-
-```php
-// GET 请求
-$result = Nova_API::get('/v1/posts', ['per_page' => 5]);
-
-// POST 请求
-$result = Nova_API::post('/v1/statuses/guestbook', [
-    'nickname' => 'Test',
-    'content'  => 'Hello',
-]);
-
-// PUT 请求
-$result = Nova_API::put('/v1/statuses/guestbook/1/reply', [
-    'reply_content' => '谢谢',
-]);
-
-// DELETE 请求
-$result = Nova_API::delete('/v1/statuses/instant/5');
-```
-
-***
-
-### 5.10 Nova\_Proxy
-
-代理请求类（公网 + 内部）。仅供插件/主题在 PHP 层调用，**不暴露为 HTTP 端点**。
-
-**文件**: `vendor/nova-json/class/rest/class-proxy.php`
-
-调用来源校验通过 `debug_backtrace` 实现，只有调用栈中存在来自 `nova-plugins/` 或 `nova-themes/` 目录的帧才放行，否则抛出 `RuntimeException`。内置 SSRF 防护：仅允许公网 http/https、禁止内网/环回地址、DNS 固定解析防 Rebinding、超时与响应体大小限制。
-
-**静态方法**
-
-| 方法           | 签名                                                             | 说明                  |
-| ------------ | -------------------------------------------------------------- | ------------------- |
-| `request()`  | `(url, method='GET', options=[]): array/Response`              | 公网代理请求外部 URL        |
-| `internal()` | `(routeOrUrl, method='GET', params=[]): array/Response/string` | 内部代理调度本地 API（零网络开销） |
-
-**request 选项 (options)**
-
-| 键         | 类型    | 默认值    | 说明                |
-| --------- | ----- | ------ | ----------------- |
-| `headers` | array | `[]`   | 自定义请求头            |
-| `body`    | mixed | `null` | 请求体（string/array） |
-| `timeout` | int   | `10`   | 超时秒数（1-30）        |
-
-**示例**
-
-```php
-// 公网代理 — 请求外部 API（在插件/主题内调用）
-$resp = Nova_Proxy::request('https://api.github.com', 'GET', [
-    'headers' => ['Accept' => 'application/json'],
-    'timeout' => 10,
-]);
-// $resp['data']['body'] 为外部 API 返回的 JSON 解码结果
-
-// 公网代理 — POST 请求
-$resp = Nova_Proxy::request('https://api.example.com/webhook', 'POST', [
-    'headers' => ['Content-Type' => 'application/json'],
-    'body'    => ['event' => 'plugin_activated'],
-]);
-
-// 内部代理 — 调度本地 API 端点（零网络开销）
-$data = Nova_Proxy::internal('/v1/posts', 'GET', ['per_page' => 5]);
-
-// 内部代理 — 也可传完整 URL，自动解析为本地请求
-$data = Nova_Proxy::internal('https://你的域名/nova-json/v1/posts', 'GET');
-
-// 内部代理 — POST 调度
-$result = Nova_Proxy::internal('/v1/statuses/guestbook', 'POST', [
-    'nickname' => 'Test',
-    'content'  => 'Hello',
-]);
-```
-
-> **注意**: 在 `nova-plugins/` 或 `nova-themes/` 目录外的代码（如 `routes/` 路由文件、根目录脚本）调用 `Nova_Proxy` 会抛出 `RuntimeException`。
-
-***
-
-### 5.11 Nova\_Cron
-
-定时任务管理类，提供插件注册与调度执行定时任务的统一机制。
-
-**文件**: `vendor/nova-json/class/system/class-cron.php`
-
-**执行入口**: `vendor/public/cron/cron.php`（CLI / HTTP，供宝塔/1Panel 定时调用）
-
-**静态方法**
-
-| 方法 | 签名 | 说明 |
-|------|------|------|
-| `register()` | `(id, interval, callback, description=''): bool` | 注册定时任务（间隔最小 60s） |
-| `unregister()` | `(id): void` | 注销任务 |
-| `get_tasks()` | `(): array` | 获取所有已注册任务元数据 |
-| `run_due()` | `(force=false): array` | 执行所有到期任务，返回每个任务结果 |
-| `run_one()` | `(id, force=false): array` | 执行单个任务（status: success/failed/skipped） |
-| `maybe_run_on_visit()` | `(): void` | 访问触发（异步非阻塞，由 index.php 调用） |
-| `get_last_run()` | `(id): array/null` | 获取任务上次执行信息 |
-| `is_due()` | `(id): bool` | 检查任务是否到期 |
-
-**示例**
-
-```php
-class MyPlugin extends Nova_Plugin {
-    public function init() {
-        Nova_Cron::register('myplugin_sync', 1800, [$this, 'sync'], '每 30 分钟同步数据');
-    }
-
-    public function sync() {
-        // 任务逻辑
-    }
-}
-```
-
-详见 [4.7 定时任务（Nova_Cron）](#47-定时任务nova_cron)。
-
-***
-
-## 6. 案例和最佳实践
-
-### 6.1 示例一：文章统计插件
-
-在文章详情中添加阅读时长统计和关键词提取功能。
-
-```php
-class PostStatsPlugin extends Nova_Plugin {
-
-    protected $name = 'post-stats';
+class Greeting_Plugin extends Nova_Plugin {
+    protected $name = 'greeting';
 
     public function init() {
-        // 通过过滤器扩展文章数据
-        Nova_Hooks::add_filter('nova_post_data', [$this, 'addStats']);
+        Nova_Hooks::add_action('nova_footer', [$this, 'renderBar']);
     }
 
-    public function addStats($data) {
-        if (empty($data['content'])) return $data;
+    public function renderBar() {
+        // 读取 config.json（读取方式见 4.6）
+        $cfg = $this->getConfig();
+        if (($cfg['enabled'] ?? false) !== true) return;
 
-        $content = strip_tags($data['content']);
-
-        // 计算阅读时长（中文约每分钟 300 字）
-        $charCount = mb_strlen($content);
-        $readTime = max(1, ceil($charCount / 300));
-
-        // 提取关键词（简单取前 5 个出现次数最多的词）
-        $words = $this->extractKeywords($content, 5);
-
-        // 附加到文章数据
-        $data['stats'] = [
-            'char_count'    => $charCount,
-            'read_time'     => $readTime . ' 分钟',
-            'keywords'      => $words,
-            'image_count'   => substr_count($data['content'], '<img'),
-        ];
-
-        return $data;
-    }
-
-    private function extractKeywords($text, $limit = 5) {
-        // 简单的关键词提取实现
-        $stopWords = ['的', '了', '在', '是', '我', '有', '和', '就', '不', '人'];
-        $text = str_replace($stopWords, ' ', $text);
-        $words = array_filter(explode(' ', $text));
-        $counts = array_count_values($words);
-        arsort($counts);
-        return array_slice(array_keys($counts), 0, $limit);
+        $text = e((string)($cfg['text'] ?? '欢迎来访'));
+        echo "<div class=\"greeting-bar\">{$text}</div>\n";
     }
 }
-new PostStatsPlugin();
+new Greeting_Plugin();
 ```
 
-**预期效果：**
+### 6.2 案例二：页面路由型（参考 rss / sitemap）
 
-```json
-{
-    "id": 1,
-    "title": "文章标题",
-    "content": "文章内容...",
-    "stats": {
-        "char_count": 1520,
-        "read_time": "5 分钟",
-        "keywords": ["PHP", "编程", "入门", "教程", "开发"],
-        "image_count": 3
-    }
-}
-```
-
-***
-
-### 6.2 示例二：内容审核插件
-
-为评论系统添加自动内容审核功能。
+特点：`page_routes` 提供独立输出，常用于 XML/文件流。
 
 ```php
-class ContentModerationPlugin extends Nova_Plugin {
+<?php
+// plugin/robots-plus.php — page_routes: {"/robots-custom.txt": "plugin/robots-plus.php"}
+defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');
 
-    protected $name = 'content-moderation';
+header('Content-Type: text/plain; charset=utf-8');
 
-    private $badWords = ['垃圾广告', '恶意链接', '敏感词1', '敏感词2'];
-
-    public function init() {
-        // 在评论添加前进行审核
-        Nova_Hooks::add_filter('nova_comment_data', [$this, 'moderateComment']);
-    }
-
-    /**
-     * 审核评论内容
-     */
-    public function moderateComment($commentData) {
-        if (empty($commentData['content'])) return $commentData;
-
-        $content = $commentData['content'];
-
-        // 检查敏感词
-        foreach ($this->badWords as $word) {
-            if (mb_stripos($content, $word) !== false) {
-                $commentData['status'] = 'pending'; // 标记为待审核
-                $commentData['moderation_reason'] = '包含敏感内容';
-                return $commentData;
-            }
-        }
-
-        // 检查 URL 数量（垃圾评论通常含多个链接）
-        $urlCount = preg_match_all('/https?:\/\/[^\s]+/', $content);
-        if ($urlCount > 3) {
-            $commentData['status'] = 'pending';
-            $commentData['moderation_reason'] = '包含过多外部链接';
-            return $commentData;
-        }
-
-        // 检查重复评论
-        $db = new Nova_DB();
-        $similar = $db->get_var(
-            "SELECT COUNT(*) FROM comments WHERE content LIKE ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)",
-            ['%' . mb_substr($content, 0, 30) . '%']
-        );
-        if ($similar > 5) {
-            $commentData['status'] = 'spam';
-            $commentData['moderation_reason'] = '短时间内重复内容';
-            return $commentData;
-        }
-
-        // 默认通过
-        $commentData['status'] = 'approved';
-        return $commentData;
-    }
+$db = getDB();
+$disallow = [];
+foreach ($db->query("SELECT slug FROM posts WHERE status = 'draft'") as $row) {
+    $disallow[] = '/blog?id=' . (int)$row['slug'];
 }
-new ContentModerationPlugin();
+
+echo "User-agent: *\n";
+foreach ($disallow as $path) {
+    echo "Disallow: {$path}\n";
+}
 ```
 
-***
+### 6.3 案例三：定时任务型（结合数据库）
 
-### 6.3 示例三：自定义短代码插件
-
-在文章内容中支持 `[gallery]` 短代码。
+特点：`init()` 注册任务，回调中执行维护逻辑。
 
 ```php
-class ShortcodePlugin extends Nova_Plugin {
-
-    protected $name = 'shortcodes';
+class Cleanup_Plugin extends Nova_Plugin {
+    protected $name = 'cleanup';
 
     public function init() {
-        Nova_Hooks::add_filter('nova_post_content', [$this, 'parseShortcodes']);
+        Nova_Cron::register('cleanup-expired', 3600, [$this, 'purge'], '清理过期数据');
     }
 
-    public function parseShortcodes($content) {
-        // 处理 [gallery ids="1,2,3"]
-        $content = preg_replace_callback(
-            '/\[gallery\s+ids="([^"]+)"\]/',
-            [$this, 'renderGallery'],
-            $content
-        );
-
-        // 处理 [button url="https://..." text="点击"]
-        $content = preg_replace_callback(
-            '/\[button\s+url="([^"]+)"\s+text="([^"]+)"\]/',
-            [$this, 'renderButton'],
-            $content
-        );
-
-        // 处理 [highlight]文字[/highlight]
-        $content = preg_replace_callback(
-            '/\[highlight\](.*?)\[\/highlight\]/',
-            [$this, 'renderHighlight'],
-            $content
-        );
-
-        return $content;
-    }
-
-    private function renderGallery($matches) {
-        $ids = explode(',', $matches[1]);
-        $html = '<div class="plugin-gallery">';
-        foreach ($ids as $id) {
-            $imgSrc = "/uploads/gallery/photo{$id}.jpg";
-            $html .= "<img src=\"{$imgSrc}\" alt=\"\" class=\"gallery-item\">";
+    public function purge() {
+        $db = $this->db();
+        $db->query("DELETE FROM my_plugin_data WHERE expires_at < NOW()");
+        if (random_int(0, 99) === 0) {
+            throw new Exception('模拟失败：将被记录到任务状态');   // 抛异常即记为失败
         }
-        $html .= '</div>';
-        return $html;
-    }
-
-    private function renderButton($matches) {
-        $url = htmlspecialchars($matches[1]);
-        $text = htmlspecialchars($matches[2]);
-        return "<a href=\"{$url}\" class=\"btn btn-primary plugin-button\">{$text}</a>";
-    }
-
-    private function renderHighlight($matches) {
-        $text = htmlspecialchars($matches[1]);
-        return "<mark class=\"plugin-highlight\">{$text}</mark>";
     }
 }
-new ShortcodePlugin();
 ```
 
-**文章内容：**
+### 6.4 最佳实践清单
 
-```
-这是一篇测试文章。
-
-[gallery ids="1,2,3,4"]
-
-更多内容请 [button url="https://example.com" text="查看详情"]。
-
-请注意这段 [highlight]重要文字[/highlight] 是高亮的。
-```
-
-**渲染结果：**
-
-```html
-这是一篇测试文章。
-
-<div class="plugin-gallery">
-    <img src="/uploads/gallery/photo1.jpg" alt="" class="gallery-item">
-    <img src="/uploads/gallery/photo2.jpg" alt="" class="gallery-item">
-    <img src="/uploads/gallery/photo3.jpg" alt="" class="gallery-item">
-    <img src="/uploads/gallery/photo4.jpg" alt="" class="gallery-item">
-</div>
-
-更多内容请 <a href="https://example.com" class="btn btn-primary plugin-button">查看详情</a>。
-
-请注意这段 <mark class="plugin-highlight">重要文字</mark> 是高亮的。
-```
+1. **入口即校验**：所有 PHP 文件首行 `defined('NOVA_BOOTSTRAP') or exit('禁止直接访问');`
+2. **副作用放 init()**：路由注册、钩子挂载都写在 `init()`（禁用时不会被调用）；构造函数保持轻量
+3. **id 用英文且唯一**：与目录名（slug）保持一致可避免困惑
+4. **输出必须转义**：模板输出统一 `e()`，杜绝 XSS
+5. **状态变更带 CSRF**：后台 AJAX 用 `<meta name="csrf-token">` 的 token，服务端 `validateCSRFToken()` 校验
+6. **数据表先判断再建**：`table_exists()` 防重复建表报错
+7. **配置读取带缓存**：一次请求内多次读取只解析一次（参考 4.6 的 getConfig 写法）
+8. **路径写相对插件自身**：用 `$this->plugin_path` / `__DIR__`，勿硬编码绝对路径
+9. **页面路由不带 .php 后缀**：干净路径始终经 index.php 分发，不依赖伪静态细节
+10. **禁用态自检**：涉及定时任务时，任务回调里对数据缺失做容错（插件被禁用期间数据可能变化）
 
 ***
 
-## 附录
+## 7. 附录
 
-### 插件开发检查清单
+### 7.1 插件开发检查清单
 
-- [ ] 创建插件目录 `vendor/nova-plugins/{plugin-name}/`
-- [ ] 创建 `plugin.json` 元数据文件（**id 必须为英文且唯一**，排在 name 前；name、version、entry 等字段）
-- [ ] 创建 `plugin/plugin.php` 入口文件
-- [ ] 创建插件主类，继承 `Nova_Plugin`
-- [ ] 在 `init()` 方法中注册路由、钩子、菜单
-- [ ] 如果需要自定义页面路由（如 `/rss.xml`），在 `plugin.json` 中声明 `page_routes`
-- [ ] 如果需要配置表单，创建 `config.json`（声明式配置，自动渲染到插件详情页）
-- [ ] 如果需要数据库表，使用 `Nova_DB_Schema` 创建
-- [ ] 如果需要后台页面，继承 `Nova_Backend_Page`
-- [ ] 提供 `LICENSE` 许可证文件
-- [ ] 使用 `Nova_Hooks` 进行扩展，而非修改核心文件
-- [ ] 使用 `Nova_DB` 的参数绑定查询防止 SQL 注入
+- [ ] `plugin.json` 含英文 `id`（字母开头，仅字母/数字/`_`/`-`，唯一），排在 `name` 前
+- [ ] 入口文件为 `plugin/plugin.php`（或 `entry` 已声明）
+- [ ] 所有 PHP 文件有 `NOVA_BOOTSTRAP` 检查
+- [ ] 主类继承 `Nova_Plugin`，入口末尾 `new My_Plugin()`
+- [ ] 副作用逻辑在 `init()` 内
+- [ ] 页面路由路径无 `.php` 后缀
+- [ ] 后台页面（如有）位于 `plugin/admin/index.php`，自行 require 依赖
+- [ ] AJAX/表单带 CSRF token 并服务端校验
+- [ ] 数据库操作全部参数化（无字符串拼接 SQL）
+- [ ] `min_nova_version` 如实声明（用到 1.1+ 规范需 ≥ 1.1）
 
-### 文件说明
+### 7.2 相关文件索引
 
-| 文件路径                                                 | 说明               |
-| ---------------------------------------------------- | ---------------- |
-| `vendor/nova-plugins/{name}/plugin.json`             | 插件元数据（含英文 id）    |
-| `vendor/nova-plugins/{name}/config.json`             | 插件配置表单定义及存储（可选）  |
-| `vendor/nova-plugins/{name}/plugin/plugin.php`       | 插件入口文件（默认 entry） |
-| `vendor/nova-plugins/{name}/plugin/class-{name}.php` | 插件主类文件           |
-| `vendor/nova-plugins/{name}/plugin/routes/*.php`     | REST 路由文件（自动加载）  |
-| `vendor/nova-plugins/{name}/plugin/views/*.php`      | 后台视图模板           |
-| `vendor/nova-plugins/{name}/plugin/admin/*.php`      | 后台管理页面           |
-| `vendor/nova-plugins/{name}/assets/`                 | 静态资源目录（可选）       |
-| `vendor/nova-plugins/{name}/LICENSE`                 | 许可证文件            |
-| `vendor/nova-plugins/{name}/data/`                   | 运行时数据目录（可选）      |
+| 文件 | 作用 |
+| --- | --- |
+| `vendor/nova-json/class/plugin/class-plugin-registry.php` | 插件扫描、id 解析、启用状态 |
+| `vendor/nova-json/class/plugin/class-plugin.php` | 插件基类 |
+| `vendor/nova-json/init.php` | API 侧插件加载流程 |
+| `index.php` | 前台侧插件加载 + page_routes 匹配 + 注入钩子 |
+| `admin/plugins.php` | 插件管理页（列表/详情/开关/配置表单） |
+| `admin/plugin-page.php` | 后台页面通用渲染器 |
+| `admin/includes/header.php` | 侧边栏菜单自动注册 |
+| `vendor/nova-plugins/*/` | 六个内置插件（开发参考） |
 
-### 版本兼容性
+### 7.3 版本兼容性
 
-| NovaCMS 版本 | 插件 API 版本 | 变更说明                                                                                                                                      |
-| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.0+       | 1.0       | 初始版本                                                                                                                                      |
-| 1.1+       | 1.1       | 引入 `plugin.json` 元数据 + `plugin/` 子目录规范；`id` 由开发者手动填写（必须为英文），排在 `name` 之前；启用/禁用以 `id` 为准；支持 `page_routes` 自定义页面路由；支持 `config.json` 声明式配置表单 |
-| 1.2+       | 1.2       | 前台插件运行时：`index.php` 加载已启用插件入口并触发 `nova_init`；新增 4 个前台注入钩子 `nova_head` / `nova_body_start` / `nova_navbar_end` / `nova_footer`，通过输出缓冲拦截向 HTML 注入内容，无需修改主题文件；新增 `nova_inject` 过滤器，支持基于 CSS 选择器的任意位置注入（JS DOM 操作 + 重试机制，适配异步渲染）；新增 `Nova_Cron` 定时任务管理类（`system/class-cron.php`），插件可通过 `Nova_Cron::register()` 注册周期性任务，支持宝塔/1Panel 面板定时调用 `vendor/public/cron/cron.php` 与虚拟主机访问触发两种执行模式 |
+| NovaCMS 版本 | 插件规范 |
+| --- | --- |
+| 1.1+ | 当前规范：`plugin/` 子目录 + `plugin.json`（含英文 id、page_routes、sidebar、config_path、detail_tab） |
+| 1.0（旧） | 无 `plugin/` 子目录、无 id 的旧结构；系统对旧插件以 slug 回退 id，不做迁移，建议按新规范重排 |
 
-***
-
-> 最后更新：2026-08-23
-
+> 使用 `min_nova_version` 字段声明最低版本；后台插件管理页会展示该要求。
