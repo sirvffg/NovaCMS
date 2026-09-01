@@ -233,9 +233,10 @@ function ensureCommentSchema() {
             }
         }
         $configCols = [
-            'comment_login_required' => "ADD COLUMN comment_login_required TINYINT(1) NOT NULL DEFAULT 0 COMMENT '评论是否需要登录' AFTER active_theme",
-            'comment_private_enabled' => "ADD COLUMN comment_private_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否开启私密评论' AFTER comment_login_required",
-            'comment_avatar_api'     => "ADD COLUMN comment_avatar_api VARCHAR(255) NOT NULL DEFAULT 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm' COMMENT '评论头像API(QQ邮箱以外的头像)' AFTER comment_private_enabled",
+            'comment_login_required'    => "ADD COLUMN comment_login_required TINYINT(1) NOT NULL DEFAULT 0 COMMENT '评论是否需要登录' AFTER active_theme",
+            'comment_private_enabled'   => "ADD COLUMN comment_private_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否开启私密评论' AFTER comment_login_required",
+            'comment_moderation_enabled' => "ADD COLUMN comment_moderation_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT '评论是否需要审核' AFTER comment_private_enabled",
+            'comment_avatar_api'        => "ADD COLUMN comment_avatar_api VARCHAR(255) NOT NULL DEFAULT 'https://cravatar.cn/avatar/{hash}?s={size}&d=mm' COMMENT '评论头像API(QQ邮箱以外的头像)' AFTER comment_moderation_enabled",
         ];
         foreach ($configCols as $col => $ddl) {
             $check = $db->query("SHOW COLUMNS FROM website_config LIKE " . $db->quote($col));
@@ -369,6 +370,7 @@ function addComment($post_id, $content, $parent_id = null, $anon_name = null, $a
 
     $loginRequired  = (bool)getSiteConfigValue('comment_login_required', 0);
     $privateEnabled = (bool)getSiteConfigValue('comment_private_enabled', 0);
+    $moderationEnabled = (bool)getSiteConfigValue('comment_moderation_enabled', 0);
 
     // 当前登录用户（兼容 REST 与普通加载两种上下文）
     $currentUserId = 0;
@@ -472,11 +474,13 @@ function addComment($post_id, $content, $parent_id = null, $anon_name = null, $a
     $is_private = ($privateEnabled && $is_private) ? 1 : 0;
 
     try {
+        // 管理员（已登录用户）评论免审核，直接通过
+        $newStatus = ($moderationEnabled && $currentUserId === 0) ? 'pending' : 'approved';
         $stmt = $db->prepare("
             INSERT INTO blog_comments (post_id, user_id, username, email, website, content, parent_id, is_private, device_info, status, ip_address, user_agent)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $result = $stmt->execute([$post_id, $user_id, $username, $email, $website, $content, $parent_id, $is_private, $device_info, $ip_address, $user_agent]);
+        $result = $stmt->execute([$post_id, $user_id, $username, $email, $website, $content, $parent_id, $is_private, $device_info, $newStatus, $ip_address, $user_agent]);
 
         if ($result) {
             $comment_id = $db->lastInsertId();
@@ -497,7 +501,8 @@ function addComment($post_id, $content, $parent_id = null, $anon_name = null, $a
             }
 
             createCommentNotification($post_id, $comment_id, $content, $parent_id);
-            return ['success' => true, 'comment_id' => $comment_id, 'comment' => $comment, 'message' => '评论成功'];
+            $msg = $moderationEnabled ? '评论已提交，等待管理员审核' : '评论成功';
+            return ['success' => true, 'comment_id' => $comment_id, 'comment' => $comment, 'message' => $msg, 'pending_approval' => $moderationEnabled];
         }
     } catch (Exception $e) {
         error_log('Create comment error: ' . $e->getMessage());

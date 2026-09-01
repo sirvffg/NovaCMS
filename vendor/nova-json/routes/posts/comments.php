@@ -287,11 +287,12 @@ function nova_add_comment($request) {
     if ($result['success']) {
         return [
             'code'    => 'rest_ok',
-            'message' => '评论成功',
+            'message' => $result['message'] ?? '评论成功',
             'data'    => [
-                'status'     => 201,
-                'comment_id' => $result['comment_id'],
-                'comment'    => $result['comment'],
+                'status'          => 201,
+                'comment_id'      => $result['comment_id'],
+                'comment'         => $result['comment'],
+                'pending_approval' => !empty($result['pending_approval']),
             ],
         ];
     }

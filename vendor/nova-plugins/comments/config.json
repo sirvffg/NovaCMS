@@ -20,6 +20,13 @@
                     "help": "开启后，评论者可选择仅作者和管理员可见的私密评论。"
                 },
                 {
+                    "type": "switch",
+                    "name": "comment_moderation_enabled",
+                    "label": "评论需要审核",
+                    "value": false,
+                    "help": "开启后，新评论状态为「待审核」，需管理员在后台批准后才显示；关闭时评论直接通过。"
+                },
+                {
                     "type": "text",
                     "name": "comment_avatar_api",
                     "label": "评论头像 API",

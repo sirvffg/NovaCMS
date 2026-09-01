@@ -834,11 +834,15 @@
             button.disabled = true;
             feedback.textContent = '正在发布…';
             try {
-                await requestJson('/nova-json/v1/comments', jsonOptions('POST', payload));
+                var res = await requestJson('/nova-json/v1/comments', jsonOptions('POST', payload));
                 form.reset();
-                clearCommentReply(form, parentId ? '回复已发布。' : '评论已发布。');
+                if (res.pending_approval) {
+                    clearCommentReply(form, parentId ? '回复已提交，等待管理员审核。' : '评论已提交，等待管理员审核。');
+                } else {
+                    clearCommentReply(form, parentId ? '回复已发布。' : '评论已发布。');
+                    loadComments(postId);
+                }
                 applyIdentityVisibility();
-                loadComments(postId);
             } catch (error) {
                 feedback.textContent = error.status === 401 ? '请先登录，再参与讨论。' : error.message;
             } finally {
